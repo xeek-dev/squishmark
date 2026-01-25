@@ -13,7 +13,7 @@ SquishMark is a blogging platform that fetches your content from a GitHub reposi
 - **GitHub as CMS** - Your posts and pages live in a Git repo. Version control, PRs, and collaboration built-in.
 - **Jinja2 Themes** - Create themes with HTML, CSS, and Jinja2 templates. No Python required.
 - **Syntax Highlighting** - Server-side code highlighting with Pygments (500+ languages).
-- **Simple Deployment** - Deploy to Fly.io with a single command.
+- **Simple Deployment** - Deploy to Fly.io or any Docker host.
 - **Admin Features** - GitHub OAuth login, page analytics, content notes/corrections.
 
 ## Quick Start
@@ -24,18 +24,79 @@ Use the [squishmark-starter](https://github.com/xeek-dev/squishmark-starter) tem
 
 ### 2. Deploy SquishMark
 
+Choose your deployment method:
+
+#### Option A: Fly.io (Recommended)
+
+The easiest way to get started. Fly.io offers a free tier that works great for personal blogs.
+
 ```bash
+# Install Fly CLI: https://fly.io/docs/hands-on/install-flyctl/
+
 # Clone SquishMark
 git clone https://github.com/xeek-dev/squishmark.git
 cd squishmark
 
-# Deploy to Fly.io
+# Launch on Fly.io
 fly launch
+
+# Create a volume for the database
+fly volumes create squishmark_data --size 1
+
+# Set your content repo
 fly secrets set GITHUB_CONTENT_REPO=your-username/your-content-repo
+
+# For private content repos, add a GitHub token
+fly secrets set GITHUB_TOKEN=ghp_your_token_here
+
+# Deploy
 fly deploy
 ```
 
+#### Option B: Docker
+
+Run SquishMark anywhere Docker is supported (DigitalOcean, Linode, AWS, your own server, etc.)
+
+```bash
+# Pull the image
+docker pull ghcr.io/xeek-dev/squishmark:latest
+
+# Run with environment variables
+docker run -d \
+  --name squishmark \
+  -p 8000:8000 \
+  -v squishmark_data:/data \
+  -e GITHUB_CONTENT_REPO=your-username/your-content-repo \
+  -e GITHUB_TOKEN=ghp_your_token_here \
+  ghcr.io/xeek-dev/squishmark:latest
+```
+
+Or use Docker Compose:
+
+```yaml
+# docker-compose.yml
+services:
+  squishmark:
+    image: ghcr.io/xeek-dev/squishmark:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - squishmark_data:/data
+    environment:
+      - GITHUB_CONTENT_REPO=your-username/your-content-repo
+      - GITHUB_TOKEN=ghp_your_token_here  # Only for private repos
+
+volumes:
+  squishmark_data:
+```
+
+```bash
+docker-compose up -d
+```
+
 ### 3. Write posts
+
+Create markdown files in your content repo's `posts/` directory:
 
 ```markdown
 ---
@@ -53,12 +114,43 @@ print("Hello from SquishMark!")
 ```
 ```
 
+Push to GitHub, and your blog updates automatically.
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_CONTENT_REPO` | Yes | Your content repo (e.g., `username/my-blog-content`) |
+| `GITHUB_TOKEN` | For private repos | GitHub personal access token |
+| `CACHE_TTL_SECONDS` | No | How long to cache content (default: 300) |
+| `DATABASE_URL` | No | SQLite path (default: `/data/squishmark.db`) |
+
+### Content Repository Config
+
+Create a `config.yml` in your content repo:
+
+```yaml
+site:
+  title: "My Blog"
+  description: "A blog about things"
+  author: "Your Name"
+  url: "https://yourdomain.com"
+
+theme:
+  name: default
+  pygments_style: monokai
+
+posts:
+  per_page: 10
+```
+
 ## Documentation
 
 - [Getting Started Guide](docs/getting-started.md) *(coming soon)*
 - [Theming Guide](docs/theming.md) *(coming soon)*
 - [Configuration Reference](docs/configuration.md) *(coming soon)*
-- [Deployment Guide](docs/deployment.md) *(coming soon)*
 
 ## Tech Stack
 
@@ -66,7 +158,6 @@ print("Hello from SquishMark!")
 - **Jinja2** for templating
 - **Pygments** for syntax highlighting
 - **SQLite** for analytics and admin features
-- **Fly.io** for hosting (or any Docker-compatible platform)
 
 ## Contributing
 
