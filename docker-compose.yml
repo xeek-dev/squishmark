@@ -17,7 +17,7 @@ services:
     command: uvicorn squishmark.main:app --host 0.0.0.0 --port 8000 --reload
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.10-alpine
     ports:
       - "80:80"
       - "443:443"
