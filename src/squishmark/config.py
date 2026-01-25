@@ -28,10 +28,13 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
 
     # Database
-    database_url: str = "sqlite+aiosqlite:///data/squishmark.db"
+    database_url: str = "sqlite+aiosqlite:////data/squishmark.db"
 
     # Cache
     cache_ttl_seconds: int = 300
+
+    # Theme path (for Docker deployments where package is installed to site-packages)
+    themes_path: str = "/app/themes"
 
     # Debug mode
     debug: bool = False

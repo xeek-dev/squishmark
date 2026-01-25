@@ -14,7 +14,9 @@ COPY pyproject.toml README.md ./
 RUN mkdir -p src/squishmark && touch src/squishmark/__init__.py
 
 # Install production dependencies only (this layer is cached)
-RUN uv pip install --system --no-cache .
+# Cache mount persists uv's download cache between builds
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system .
 
 # Now copy actual source code (changes frequently, but deps are cached)
 COPY src/ src/
@@ -22,8 +24,12 @@ COPY src/ src/
 # Development stage - includes test dependencies (NOT lint tools)
 FROM base AS dev
 
+# Create data directory for SQLite database
+RUN mkdir -p /data
+
 # Install test dependencies only - ruff/pyright run locally, not in container
-RUN uv pip install --system --no-cache ".[test]"
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system ".[test]"
 
 COPY . .
 

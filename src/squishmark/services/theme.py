@@ -124,7 +124,10 @@ class ThemeEngine:
 
         # Default to the bundled theme
         if default_theme_path is None:
-            default_theme_path = Path(__file__).parent.parent.parent.parent / "themes" / "default"
+            from squishmark.config import get_settings
+
+            settings = get_settings()
+            default_theme_path = Path(settings.themes_path) / "default"
         self.default_theme_path = default_theme_path
 
         # Create loader and environment
