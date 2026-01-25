@@ -49,7 +49,7 @@ packages = ["src/squishmark"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
@@ -61,7 +61,7 @@ select = ["E", "F", "W", "I"]
 max-line-length = 120
 
 [tool.pyright]
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 typeCheckingMode = "standard"
 include = ["src"]
 exclude = ["tests", "themes"]
