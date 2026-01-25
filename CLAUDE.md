@@ -310,3 +310,37 @@ fly deploy
 
 ### Testing with a local content repo
 Set `GITHUB_CONTENT_REPO` to a local path (prefixed with `file://`) for development without GitHub API calls.
+
+## Skills
+
+The following slash commands are available for development tasks:
+
+### /dev
+Start the development server with hot reload.
+```bash
+cd D:/xeek-dev/squishmark && uvicorn squishmark.main:app --reload
+```
+
+### /test
+Run the test suite.
+```bash
+cd D:/xeek-dev/squishmark && pytest
+```
+
+### /lint
+Run linting with ruff.
+```bash
+cd D:/xeek-dev/squishmark && ruff check .
+```
+
+### /format
+Format code with ruff.
+```bash
+cd D:/xeek-dev/squishmark && ruff format .
+```
+
+### /typecheck
+Run type checking with pyright.
+```bash
+cd D:/xeek-dev/squishmark && pyright
+```

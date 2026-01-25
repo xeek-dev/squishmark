@@ -1,0 +1,30 @@
+# fly.toml - Fly.io configuration for SquishMark
+# See https://fly.io/docs/reference/configuration/ for documentation
+
+app = "squishmark"
+primary_region = "sea"
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "prod"
+
+[env]
+  DATABASE_URL = "sqlite+aiosqlite:///data/squishmark.db"
+  CACHE_TTL_SECONDS = "300"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[mounts]
+  source = "squishmark_data"
+  destination = "/data"

@@ -1,0 +1,34 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - ./src:/app/src:ro
+      - ./themes:/app/themes:ro
+      - squishmark_data:/data
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=true
+      - GITHUB_CONTENT_REPO=file:///content
+      - SECRET_KEY=dev-secret-key-change-in-prod
+      - ADMIN_USERS=x3ek
+    command: uvicorn squishmark.main:app --host 0.0.0.0 --port 8000 --reload
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  squishmark_data:
+  caddy_data:
+  caddy_config:

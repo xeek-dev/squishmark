@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      target: prod
+    volumes:
+      - squishmark_data:/data
+    environment:
+      - DEBUG=false
+      - GITHUB_CONTENT_REPO=${GITHUB_CONTENT_REPO}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SECRET_KEY=${SECRET_KEY}
+      - ADMIN_USERS=${ADMIN_USERS}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+    command: uvicorn squishmark.main:app --host 0.0.0.0 --port 8000
+
+  caddy:
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
