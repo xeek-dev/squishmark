@@ -313,34 +313,12 @@ Set `GITHUB_CONTENT_REPO` to a local path (prefixed with `file://`) for developm
 
 ## Skills
 
-The following slash commands are available for development tasks:
+Custom slash commands are available in `.claude/skills/`:
 
-### /dev
-Start the development server with hot reload.
-```bash
-cd D:/xeek-dev/squishmark && uvicorn squishmark.main:app --reload
-```
-
-### /test
-Run the test suite.
-```bash
-cd D:/xeek-dev/squishmark && pytest
-```
-
-### /lint
-Run linting with ruff.
-```bash
-cd D:/xeek-dev/squishmark && ruff check .
-```
-
-### /format
-Format code with ruff.
-```bash
-cd D:/xeek-dev/squishmark && ruff format .
-```
-
-### /typecheck
-Run type checking with pyright.
-```bash
-cd D:/xeek-dev/squishmark && pyright
-```
+| Command | Description |
+|---------|-------------|
+| `/dev` | Start the development server with hot reload |
+| `/test` | Run the test suite with pytest |
+| `/lint` | Run ruff linting |
+| `/format` | Format code with ruff |
+| `/typecheck` | Run pyright type checking |
