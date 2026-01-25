@@ -8,23 +8,46 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    subgraph Fly["Fly.io"]
+        subgraph Container["Single Container"]
+            App["SquishMark<br/>(FastAPI)"]
+            DB[("SQLite<br/>/data/app.db")]
+        end
+        Volume[("Fly Volume<br/>$0.15/GB/mo")]
+    end
+
+    GitHub[("GitHub Content Repo<br/>(posts, pages, config)")]
+
+    App -->|fetch content| GitHub
+    App -->|read/write| DB
+    Volume -.->|persists| DB
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Fly.io                                  │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │  Single Container                                         │ │
-│  │  ┌─────────────────┐     ┌──────────────────────────┐    │ │
-│  │  │  SquishMark     │────▶│  GitHub Content Repo     │    │ │
-│  │  │  (FastAPI)      │     │  (posts, pages, config)  │    │ │
-│  │  └────────┬────────┘     └──────────────────────────┘    │ │
-│  │           │                                               │ │
-│  │           ▼                                               │ │
-│  │  ┌─────────────────┐                                     │ │
-│  │  │  SQLite DB      │  ◀── Fly Volume ($0.15/GB/mo)       │ │
-│  │  │  /data/app.db   │                                     │ │
-│  │  └─────────────────┘                                     │ │
-│  └───────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as SquishMark
+    participant Cache
+    participant GitHub
+    participant DB as SQLite
+
+    User->>App: GET /posts/hello-world
+    App->>Cache: Check cache
+    alt Cache hit
+        Cache-->>App: Return cached content
+    else Cache miss
+        App->>GitHub: Fetch markdown
+        GitHub-->>App: Raw content
+        App->>App: Parse frontmatter + render markdown
+        App->>Cache: Store in cache
+    end
+    App->>DB: Log page view (async)
+    App->>App: Render Jinja2 template
+    App-->>User: HTML response
 ```
 
 ## Tech Stack
@@ -99,6 +122,21 @@ squishmark/
   2. Bundled default theme
 - Theme authors only need HTML/CSS/Jinja2 knowledge, no Python required
 
+```mermaid
+flowchart TD
+    Request["Render page"]
+    Check{"Custom theme<br/>in content repo?"}
+    Custom["Load from<br/>content repo /theme/"]
+    Default["Load bundled<br/>default theme"]
+    Render["Render with Jinja2"]
+
+    Request --> Check
+    Check -->|Yes| Custom
+    Check -->|No| Default
+    Custom --> Render
+    Default --> Render
+```
+
 ### Syntax Highlighting
 - Pygments renders code blocks server-side
 - HTML comes pre-highlighted, no client-side JavaScript needed
@@ -110,6 +148,33 @@ squishmark/
 - NOT for content - content lives in GitHub
 - Acceptable data loss risk since blog content is safe in GitHub
 - Simple setup: just mount the Fly Volume at `/data`
+
+```mermaid
+erDiagram
+    PAGE_VIEW {
+        int id PK
+        string path
+        string referrer
+        string user_agent
+        datetime timestamp
+    }
+
+    NOTE {
+        int id PK
+        string path
+        string text
+        boolean is_public
+        datetime created_at
+        datetime updated_at
+    }
+
+    SESSION {
+        string id PK
+        string user_id
+        string github_login
+        datetime expires_at
+    }
+```
 
 ### Admin Features
 - GitHub OAuth login for admin access
