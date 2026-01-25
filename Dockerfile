@@ -10,12 +10,12 @@ COPY pyproject.toml README.md ./
 COPY src/ src/
 
 # Install production dependencies
-RUN --mount=type=cache,target=/root/.cache/pip pip install .
+RUN pip install --no-cache-dir .
 
 # Development stage - includes dev dependencies
 FROM base AS dev
 
-RUN --mount=type=cache,target=/root/.cache/pip pip install ".[dev]"
+RUN pip install --no-cache-dir ".[dev]"
 
 COPY . .
 
