@@ -1,8 +1,7 @@
 """Markdown parsing and rendering service."""
 
+import datetime
 import re
-from datetime import date
-from typing import Any
 
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
@@ -38,7 +37,7 @@ class MarkdownService:
                     "smarty",  # Smart quotes
                     "nl2br",  # Newlines to <br>
                 ],
-                output_format="html5",
+                output_format="html",
             )
         return self._md
 
@@ -70,7 +69,7 @@ class MarkdownService:
             # Convert date string to date object if needed
             if "date" in data and isinstance(data["date"], str):
                 try:
-                    data["date"] = date.fromisoformat(data["date"])
+                    data["date"] = datetime.date.fromisoformat(data["date"])
                 except ValueError:
                     del data["date"]
 
@@ -170,7 +169,7 @@ class MarkdownService:
 
         return filename
 
-    def _extract_date_from_path(self, path: str) -> date | None:
+    def _extract_date_from_path(self, path: str) -> datetime.date | None:
         """Extract date from filename if present."""
         filename = path.split("/")[-1]
         date_pattern = re.compile(r"^(\d{4}-\d{2}-\d{2})-")
@@ -178,7 +177,7 @@ class MarkdownService:
 
         if match:
             try:
-                return date.fromisoformat(match.group(1))
+                return datetime.date.fromisoformat(match.group(1))
             except ValueError:
                 pass
 

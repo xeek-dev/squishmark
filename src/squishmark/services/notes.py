@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.models.db import Note
@@ -49,7 +49,7 @@ class NotesService:
         query = select(Note).where(Note.path == path)
 
         if not include_private:
-            query = query.where(Note.is_public == True)
+            query = query.where(Note.is_public.is_(True))
 
         query = query.order_by(Note.created_at.desc())
 
@@ -63,7 +63,7 @@ class NotesService:
         )
         return list(result.scalars().all())
 
-    async def update(
+    async def update_note(
         self,
         note_id: int,
         text: str | None = None,
@@ -86,7 +86,11 @@ class NotesService:
 
     async def delete(self, note_id: int) -> bool:
         """Delete a note. Returns True if deleted, False if not found."""
-        result = await self.session.execute(
-            delete(Note).where(Note.id == note_id)
-        )
-        return result.rowcount > 0
+        # First check if the note exists
+        note = await self.get_by_id(note_id)
+        if note is None:
+            return False
+
+        await self.session.delete(note)
+        await self.session.flush()
+        return True

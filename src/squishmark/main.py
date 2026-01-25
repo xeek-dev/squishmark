@@ -34,8 +34,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("Starting SquishMark")
     if settings.debug:
-        logger.debug(f"Debug mode enabled")
-        logger.debug(f"Content repo: {settings.github_content_repo}")
+        logger.debug("Debug mode enabled")
+        logger.debug("Content repo: %s", settings.github_content_repo)
 
     # Initialize database
     await init_db()
@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     github_service = get_github_service()
 
     # Load custom templates if any
-    theme_engine = await get_theme_engine(github_service)
+    await get_theme_engine(github_service)
     logger.info("Theme engine initialized")
 
     yield

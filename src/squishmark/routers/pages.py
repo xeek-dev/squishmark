@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from squishmark.models.content import Config
-from squishmark.services.github import GitHubService, get_github_service
+from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine
 

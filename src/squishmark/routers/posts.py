@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from squishmark.models.content import Config, Pagination, Post
 from squishmark.services.github import GitHubService, get_github_service
 from squishmark.services.markdown import MarkdownService, get_markdown_service
-from squishmark.services.theme import ThemeEngine, get_theme_engine
+from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

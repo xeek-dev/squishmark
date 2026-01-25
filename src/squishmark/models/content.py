@@ -1,6 +1,6 @@
 """Pydantic models for content (posts, pages, config)."""
 
-from datetime import date, datetime
+import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -10,7 +10,7 @@ class FrontMatter(BaseModel):
     """Frontmatter metadata extracted from markdown files."""
 
     title: str = "Untitled"
-    date: date | None = None
+    date: datetime.date | None = None
     tags: list[str] = Field(default_factory=list)
     description: str = ""
     draft: bool = False
@@ -25,7 +25,7 @@ class Post(BaseModel):
 
     slug: str
     title: str
-    date: date | None = None
+    date: datetime.date | None = None
     tags: list[str] = Field(default_factory=list)
     description: str = ""
     content: str = ""  # Raw markdown

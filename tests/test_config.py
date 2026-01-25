@@ -1,7 +1,5 @@
 """Tests for configuration module."""
 
-import os
-
 import pytest
 
 from squishmark.config import Settings

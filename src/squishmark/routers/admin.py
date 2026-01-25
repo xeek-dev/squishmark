@@ -3,7 +3,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -205,7 +205,7 @@ async def update_note(
 ) -> NoteResponse:
     """Update a note."""
     notes_service = NotesService(session)
-    note = await notes_service.update(
+    note = await notes_service.update_note(
         note_id=note_id,
         text=note_data.text,
         is_public=note_data.is_public,
