@@ -9,8 +9,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml and source code for dependency installation
-COPY pyproject.toml .
+# Copy project files needed for installation
+COPY pyproject.toml README.md ./
 COPY src/ src/
 
 # Install production dependencies
