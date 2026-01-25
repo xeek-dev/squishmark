@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - run: pip install ruff
+      - run: pip install ".[lint]"
       - run: ruff check .
       - run: ruff format --check .
 
@@ -25,8 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - run: pip install pyright
-      - run: pip install -e .
+      - run: pip install -e ".[lint]"
       - run: pyright
 
   test:
@@ -36,7 +35,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[test]"
       - run: pytest
 
   docker:
@@ -44,21 +43,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Hadolint - Dockerfile linting
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
           failure-threshold: error
 
-      # Build image to verify Dockerfile works
       - name: Build Docker image
         run: docker build -t squishmark:ci .
-
-      # Docker Scout - security scanning (optional, requires Docker Hub login)
-      # - name: Docker Scout scan
-      #   uses: docker/scout-action@v1
-      #   with:
-      #     command: cves
-      #     image: squishmark:ci
-      #     only-severities: critical,high
-      #     exit-code: true

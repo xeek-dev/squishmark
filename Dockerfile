@@ -1,21 +1,29 @@
 # syntax=docker/dockerfile:1
 
-# Base stage with Python and dependencies
 FROM python:3.14-slim AS base
 
 WORKDIR /app
 
-# Copy project files needed for installation
+# Install uv for faster package installation
+RUN pip install uv
+
+# Copy only dependency metadata first (cached unless pyproject.toml changes)
 COPY pyproject.toml README.md ./
+
+# Create stub package structure so editable install works
+RUN mkdir -p src/squishmark && touch src/squishmark/__init__.py
+
+# Install production dependencies only (this layer is cached)
+RUN uv pip install --system --no-cache .
+
+# Now copy actual source code (changes frequently, but deps are cached)
 COPY src/ src/
 
-# Install production dependencies
-RUN pip install --no-cache-dir .
-
-# Development stage - includes dev dependencies
+# Development stage - includes test dependencies (NOT lint tools)
 FROM base AS dev
 
-RUN pip install --no-cache-dir ".[dev]"
+# Install test dependencies only - ruff/pyright run locally, not in container
+RUN uv pip install --system --no-cache ".[test]"
 
 COPY . .
 

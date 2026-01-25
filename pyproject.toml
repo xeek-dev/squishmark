@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A lightweight, GitHub-powered blogging engine with Jinja2 theming"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [{ name = "x3ek" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -12,32 +12,42 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.34.0",
+    "fastapi>=0.128.0",
+    "uvicorn[standard]>=0.40.0",
     "httpx>=0.28.1",
     "jinja2>=3.1.5",
     "markdown>=3.7",
     "pygments>=2.19.1",
     "pyyaml>=6.0.2",
-    "pydantic-settings>=2.7.0",
-    "sqlalchemy>=2.0.36",
+    "pydantic-settings>=2.12.0",
+    "sqlalchemy>=2.0.46",
     "aiosqlite>=0.20.0",
     "authlib>=1.4.0",
     "itsdangerous>=2.2.0",
 ]
 
 [project.optional-dependencies]
-dev = [
+# Test dependencies - needed in Docker for running tests
+test = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.25.0",
-    "ruff>=0.9.0",
-    "pyright>=1.1.391",
     "httpx",
+]
+
+# Lint/type-check tools - run locally or in CI, NOT in Docker
+lint = [
+    "ruff>=0.14.0",
+    "pyright>=1.1.400",
+]
+
+# Full dev = test + lint (for local development)
+dev = [
+    "squishmark[test]",
+    "squishmark[lint]",
 ]
 
 [build-system]
