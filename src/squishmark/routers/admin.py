@@ -113,15 +113,18 @@ async def admin_dashboard(
             config,
             user={"login": admin},
             analytics=analytics,
-            notes=[NoteResponse(
-                id=n.id,
-                path=n.path,
-                text=n.text,
-                is_public=n.is_public,
-                author=n.author,
-                created_at=n.created_at.isoformat(),
-                updated_at=n.updated_at.isoformat(),
-            ) for n in notes],
+            notes=[
+                NoteResponse(
+                    id=n.id,
+                    path=n.path,
+                    text=n.text,
+                    is_public=n.is_public,
+                    author=n.author,
+                    created_at=n.created_at.isoformat(),
+                    updated_at=n.updated_at.isoformat(),
+                )
+                for n in notes
+            ],
             cache_size=cache.size,
         )
         return HTMLResponse(content=html)

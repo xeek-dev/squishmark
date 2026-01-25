@@ -39,9 +39,7 @@ class HybridLoader(BaseLoader):
                 self._loop = asyncio.new_event_loop()
             return self._loop
 
-    def get_source(
-        self, environment: Environment, template: str
-    ) -> tuple[str, str | None, Any]:
+    def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
         """
         Load a template source.
 
@@ -68,9 +66,7 @@ class HybridLoader(BaseLoader):
                 )
                 result = future.result()
         else:
-            result = loop.run_until_complete(
-                self.github_service.get_file(custom_path)
-            )
+            result = loop.run_until_complete(self.github_service.get_file(custom_path))
 
         if result is not None:
             # Found in custom theme
@@ -102,9 +98,7 @@ class AsyncHybridLoader(BaseLoader):
         """Clear the template cache."""
         self._template_cache.clear()
 
-    def get_source(
-        self, environment: Environment, template: str
-    ) -> tuple[str, str | None, Any]:
+    def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
         """Load a template from cache or default theme."""
         # Check cache first
         if template in self._template_cache:

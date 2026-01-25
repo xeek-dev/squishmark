@@ -35,9 +35,7 @@ class NotesService:
 
     async def get_by_id(self, note_id: int) -> Note | None:
         """Get a note by ID."""
-        result = await self.session.execute(
-            select(Note).where(Note.id == note_id)
-        )
+        result = await self.session.execute(select(Note).where(Note.id == note_id))
         return result.scalar_one_or_none()
 
     async def get_for_path(
@@ -58,9 +56,7 @@ class NotesService:
 
     async def get_all(self, limit: int = 100) -> list[Note]:
         """Get all notes, ordered by most recent first."""
-        result = await self.session.execute(
-            select(Note).order_by(Note.created_at.desc()).limit(limit)
-        )
+        result = await self.session.execute(select(Note).order_by(Note.created_at.desc()).limit(limit))
         return list(result.scalars().all())
 
     async def update_note(

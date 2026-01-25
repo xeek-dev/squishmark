@@ -26,9 +26,7 @@ class PageView(Base):
     ip_hash: Mapped[str] = mapped_column(String(64), nullable=False)  # SHA256 hash
     referrer: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=func.now(), index=True
-    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now(), index=True)
 
 
 class Note(Base):
@@ -41,12 +39,8 @@ class Note(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     author: Mapped[str] = mapped_column(String(100), nullable=False)  # GitHub login
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=func.now(), onupdate=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
 
 # Database engine and session factory
