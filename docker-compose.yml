@@ -6,6 +6,7 @@ services:
     volumes:
       - ./src:/app/src:ro
       - ./themes:/app/themes:ro
+      - ./content:/content:ro
       - squishmark_data:/data
     ports:
       - "8000:8000"

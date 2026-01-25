@@ -93,3 +93,6 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Local dev content
+/content/
