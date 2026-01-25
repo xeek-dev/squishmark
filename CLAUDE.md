@@ -311,29 +311,11 @@ fly deploy
 ### Testing with a local content repo
 Set `GITHUB_CONTENT_REPO` to a local path (prefixed with `file://`) for development without GitHub API calls.
 
-## Code Style & Gotchas
-
-### SQLAlchemy
-- **Boolean comparisons**: Use `.is_(True)` and `.is_(False)` instead of `== True`.
-  ```python
-  query.where(Note.is_public.is_(True))  # Correct
-  ```
-
-### python-markdown
-- **output_format**: Use `"html"` not `"html5"`.
-- **TocExtension with permalinks**: Headings get `id` attributes and anchor links. Test for `<h1 id=` not just `<h1>`.
-
-### Dockerfile
-- Copy ALL files referenced in pyproject.toml before `pip install .` (README.md, LICENSE, etc.).
-
 ## Skills
 
-Custom slash commands are available in `.claude/skills/`:
+Project-specific skills are available in `.claude/skills/`:
 
-| Command | Description |
-|---------|-------------|
-| `/dev` | Start the development server with hot reload |
-| `/test` | Run the test suite with pytest |
-| `/lint` | Run ruff linting |
-| `/format` | Format code with ruff |
-| `/typecheck` | Run pyright type checking |
+| Skill | Description |
+|-------|-------------|
+| `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
+| `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
