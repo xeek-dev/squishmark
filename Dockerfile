@@ -9,8 +9,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml for dependency installation
+# Copy pyproject.toml and source code for dependency installation
 COPY pyproject.toml .
+COPY src/ src/
 
 # Install production dependencies
 RUN pip install --no-cache-dir .

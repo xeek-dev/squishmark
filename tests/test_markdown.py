@@ -49,7 +49,9 @@ def test_render_markdown(markdown_service):
 
     html = markdown_service.render_markdown(content)
 
-    assert "<h1>" in html
+    # Verify the HTML output contains expected elements
+    # The TOC extension adds id and permalink to headings
+    assert html.startswith("<h1"), f"Expected HTML to start with h1 tag, got: {html[:50]}"
     assert "Hello World" in html
     assert "<strong>bold</strong>" in html
     assert "<em>italic</em>" in html
