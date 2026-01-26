@@ -108,3 +108,29 @@ def test_extract_slug(markdown_service):
 
     slug_no_date = markdown_service._extract_slug("pages/about.md", strip_date=False)
     assert slug_no_date == "about"
+
+
+def test_parse_post_rewrites_images(markdown_service):
+    """Test that parse_post rewrites relative image URLs to static/."""
+    content = """---
+title: Post with Image
+---
+
+![Test image](../static/images/pic.png)
+"""
+    post = markdown_service.parse_post("posts/2026-01-25-my-post.md", content)
+
+    assert 'src="/static/user/images/pic.png"' in post.html
+
+
+def test_parse_page_rewrites_images(markdown_service):
+    """Test that parse_page rewrites relative image URLs to static/."""
+    content = """---
+title: About Page
+---
+
+![Profile](../static/images/me.jpg)
+"""
+    page = markdown_service.parse_page("pages/about.md", content)
+
+    assert 'src="/static/user/images/me.jpg"' in page.html
