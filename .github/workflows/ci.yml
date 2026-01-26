@@ -16,7 +16,7 @@ jobs:
           python-version: "3.14"
       - run: pip install ".[lint]"
       - run: ruff check .
-      - run: ruff format --check .
+      - run: ruff format --check --diff .
 
   typecheck:
     runs-on: ubuntu-latest
