@@ -61,6 +61,7 @@ class SiteConfig(BaseModel):
     description: str = ""
     author: str = ""
     url: str = ""
+    favicon: str | None = None  # Custom favicon URL, e.g., "/static/user/custom-icon.png"
 
 
 class ThemeConfig(BaseModel):

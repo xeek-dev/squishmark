@@ -115,6 +115,13 @@ class AsyncHybridLoader(BaseLoader):
 class ThemeEngine:
     """Engine for rendering Jinja2 templates with theme support."""
 
+    # Favicon candidates in order of preference
+    FAVICON_CANDIDATES = [
+        ("static/favicon.ico", "image/x-icon"),
+        ("static/favicon.png", "image/png"),
+        ("static/favicon.svg", "image/svg+xml"),
+    ]
+
     def __init__(
         self,
         github_service: GitHubService,
@@ -142,6 +149,10 @@ class ThemeEngine:
         # Add custom filters
         self._setup_filters()
 
+        # Cached favicon URL (detected on first render)
+        self._favicon_url: str | None = None
+        self._favicon_checked: bool = False
+
     def _setup_filters(self) -> None:
         """Add custom Jinja2 filters."""
 
@@ -154,6 +165,33 @@ class ThemeEngine:
             return str(value)
 
         self.env.filters["format_date"] = format_date
+
+    async def detect_favicon(self) -> str | None:
+        """
+        Detect the favicon file in the content repository.
+
+        Returns:
+            URL path to the favicon (e.g., "/static/user/favicon.png") or None
+        """
+        if self._favicon_checked:
+            return self._favicon_url
+
+        self._favicon_checked = True
+
+        for path, _content_type in self.FAVICON_CANDIDATES:
+            file = await self.github_service.get_binary_file(path)
+            if file:
+                # Convert "static/favicon.png" to "/static/user/favicon.png"
+                filename = path.replace("static/", "")
+                self._favicon_url = f"/static/user/{filename}"
+                return self._favicon_url
+
+        return None
+
+    def clear_favicon_cache(self) -> None:
+        """Clear the cached favicon URL."""
+        self._favicon_url = None
+        self._favicon_checked = False
 
     async def load_custom_templates(self) -> int:
         """
@@ -195,10 +233,16 @@ class ThemeEngine:
         """
         template = self.env.get_template(template_name)
 
+        # Detect favicon if not explicitly set in config
+        favicon_url = config.site.favicon
+        if not favicon_url:
+            favicon_url = await self.detect_favicon()
+
         # Build the full context
         full_context = {
             "site": config.site,
             "theme": config.theme,
+            "favicon_url": favicon_url,
             **context,
         }
 
@@ -287,4 +331,6 @@ async def get_theme_engine(github_service: GitHubService | None = None) -> Theme
 def reset_theme_engine() -> None:
     """Reset the global theme engine. Useful for testing or cache refresh."""
     global _theme_engine
+    if _theme_engine:
+        _theme_engine.clear_favicon_cache()
     _theme_engine = None

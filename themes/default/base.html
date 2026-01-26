@@ -8,6 +8,9 @@
     {% if site.author %}
     <meta name="author" content="{{ site.author }}">
     {% endif %}
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    {% endif %}
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="/static/pygments.css">
     {% block head %}{% endblock %}

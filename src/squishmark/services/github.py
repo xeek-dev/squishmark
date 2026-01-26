@@ -20,6 +20,15 @@ class GitHubFile:
     sha: str | None = None
 
 
+@dataclass
+class GitHubBinaryFile:
+    """Represents a binary file fetched from GitHub or local filesystem."""
+
+    path: str
+    content: bytes
+    content_type: str
+
+
 class GitHubService:
     """Service for fetching content from GitHub or local filesystem."""
 
@@ -121,6 +130,91 @@ class GitHubService:
             result = await self._fetch_github_file(path, ref)
 
         # Cache the result (even None to avoid repeated lookups)
+        if use_cache and result is not None:
+            await self.cache.set(cache_key, result)
+
+        return result
+
+    def _get_content_type(self, path: str) -> str:
+        """Get content type based on file extension."""
+        ext = Path(path).suffix.lower()
+        content_types = {
+            ".ico": "image/x-icon",
+            ".png": "image/png",
+            ".svg": "image/svg+xml",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+            ".css": "text/css",
+            ".js": "application/javascript",
+        }
+        return content_types.get(ext, "application/octet-stream")
+
+    async def _fetch_local_binary_file(self, path: str) -> GitHubBinaryFile | None:
+        """Fetch a binary file from the local filesystem."""
+        try:
+            base_path = self._get_local_path()
+            file_path = base_path / path
+
+            if not file_path.exists():
+                return None
+
+            loop = asyncio.get_event_loop()
+            content = await loop.run_in_executor(None, lambda: file_path.read_bytes())
+
+            return GitHubBinaryFile(
+                path=path,
+                content=content,
+                content_type=self._get_content_type(path),
+            )
+        except Exception:
+            return None
+
+    async def _fetch_github_binary_file(self, path: str, ref: str = "main") -> GitHubBinaryFile | None:
+        """Fetch a binary file from GitHub."""
+        client = await self._get_client()
+        repo = self.settings.github_content_repo
+
+        url = f"{self.GITHUB_RAW_BASE}/{repo}/{ref}/{path}"
+
+        try:
+            response = await client.get(url)
+            if response.status_code == 404:
+                return None
+            response.raise_for_status()
+            return GitHubBinaryFile(
+                path=path,
+                content=response.content,
+                content_type=self._get_content_type(path),
+            )
+        except httpx.HTTPError:
+            return None
+
+    async def get_binary_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubBinaryFile | None:
+        """
+        Fetch a binary file from the content repository.
+
+        Args:
+            path: Path to the file within the repository
+            ref: Git ref (branch, tag, or commit) - only used for GitHub
+            use_cache: Whether to use cached content
+
+        Returns:
+            GitHubBinaryFile if found, None otherwise
+        """
+        cache_key = f"binary:{path}:{ref}"
+
+        if use_cache:
+            cached = await self.cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        if self.settings.is_local_content:
+            result = await self._fetch_local_binary_file(path)
+        else:
+            result = await self._fetch_github_binary_file(path, ref)
+
         if use_cache and result is not None:
             await self.cache.set(cache_key, result)
 

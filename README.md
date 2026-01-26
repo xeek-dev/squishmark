@@ -142,6 +142,7 @@ site:
   description: "A blog about things"
   author: "Your Name"
   url: "https://yourdomain.com"
+  favicon: "/static/user/custom-icon.png"  # Optional
 
 theme:
   name: default
@@ -150,6 +151,21 @@ theme:
 posts:
   per_page: 10
 ```
+
+### Favicon
+
+Add a favicon by placing `favicon.ico`, `favicon.png`, or `favicon.svg` in your content repo's `static/` directory:
+
+```
+my-content-repo/
+├── posts/
+├── pages/
+├── static/
+│   └── favicon.ico    # Auto-detected
+└── config.yml
+```
+
+The favicon is automatically detected and served at `/favicon.ico`.
 
 ## Documentation
 
