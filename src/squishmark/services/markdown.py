@@ -10,6 +10,7 @@ from markdown.extensions.toc import TocExtension
 from pygments.formatters import HtmlFormatter
 
 from squishmark.models.content import Config, FrontMatter, Page, Post
+from squishmark.services.url_rewriter import rewrite_image_urls
 
 
 class MarkdownService:
@@ -109,6 +110,7 @@ class MarkdownService:
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
         html = self.render_markdown(markdown_content)
+        html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "posts/2026-01-15-hello-world.md" -> "hello-world")
         slug = self._extract_slug(path)
@@ -143,6 +145,7 @@ class MarkdownService:
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
         html = self.render_markdown(markdown_content)
+        html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "pages/about.md" -> "about")
         slug = self._extract_slug(path, strip_date=False)
