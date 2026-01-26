@@ -5,7 +5,7 @@ FROM python:3.14-slim AS base
 WORKDIR /app
 
 # Install uv for faster package installation
-RUN pip install uv
+RUN pip install --no-cache-dir uv==0.9.26
 
 # Copy only dependency metadata first (cached unless pyproject.toml changes)
 COPY pyproject.toml README.md ./
