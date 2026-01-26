@@ -193,6 +193,8 @@ my-content-repo/
 │   └── 2026-01-15-another-post.md
 ├── pages/
 │   └── about.md
+├── static/                   # User static files (favicon, images)
+│   └── favicon.ico           # Auto-detected and served at /favicon.ico
 ├── theme/                    # Optional custom theme
 │   └── ...
 └── config.yml
@@ -237,6 +239,7 @@ site:
   description: "A blog about things"
   author: "Your Name"
   url: "https://example.com"
+  favicon: "/static/user/custom-icon.png"  # Optional: override auto-detected favicon
 
 theme:
   name: default

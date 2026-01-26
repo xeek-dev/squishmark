@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -181,6 +181,47 @@ def create_app() -> FastAPI:
     async def index(request: Request) -> RedirectResponse:
         """Redirect root to posts listing."""
         return RedirectResponse(url="/posts", status_code=302)
+
+    # Favicon endpoint - browsers request this automatically
+    @app.get("/favicon.ico")
+    async def serve_favicon() -> Response:
+        """Serve favicon from content repository."""
+        github_service = get_github_service()
+
+        # Try common favicon locations in order of preference
+        for path in ["static/favicon.ico", "static/favicon.png", "static/favicon.svg"]:
+            file = await github_service.get_binary_file(path)
+            if file:
+                return Response(
+                    content=file.content,
+                    media_type=file.content_type,
+                    headers={"Cache-Control": "public, max-age=86400"},
+                )
+
+        raise HTTPException(status_code=404, detail="Favicon not found")
+
+    # User static files from content repository
+    ALLOWED_STATIC_EXTENSIONS = {".ico", ".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".css", ".js"}
+
+    @app.get("/static/user/{path:path}")
+    async def serve_user_static(path: str) -> Response:
+        """Serve static files from the user's content repository."""
+        # Security: only allow specific file extensions
+        ext = Path(path).suffix.lower()
+        if ext not in ALLOWED_STATIC_EXTENSIONS:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        github_service = get_github_service()
+        file = await github_service.get_binary_file(f"static/{path}")
+
+        if file is None:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return Response(
+            content=file.content,
+            media_type=file.content_type,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
 
     # Include routers
     app.include_router(auth.router)
