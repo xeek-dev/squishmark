@@ -1,0 +1,9 @@
+# Normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Ensure shell scripts use LF (important for Docker)
+*.sh text eol=lf
+
+# Windows batch files keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

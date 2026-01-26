@@ -1,0 +1,9 @@
+# Hadolint configuration
+failure-threshold: error
+
+ignored:
+  - DL3008  # Pin versions in apt-get (sometimes impractical)
+
+trustedRegistries:
+  - docker.io
+  - ghcr.io

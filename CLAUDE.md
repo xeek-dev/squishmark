@@ -310,3 +310,12 @@ fly deploy
 
 ### Testing with a local content repo
 Set `GITHUB_CONTENT_REPO` to a local path (prefixed with `file://`) for development without GitHub API calls.
+
+## Skills
+
+Project-specific skills are available in `.claude/skills/`:
+
+| Skill | Description |
+|-------|-------------|
+| `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
+| `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
