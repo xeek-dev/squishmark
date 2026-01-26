@@ -1,5 +1,10 @@
 # SquishMark
 
+[![CI](https://github.com/xeek-dev/squishmark/actions/workflows/ci.yml/badge.svg)](https://github.com/xeek-dev/squishmark/actions/workflows/ci.yml)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 A lightweight, GitHub-powered blogging engine with Jinja2 theming.
 
 **Status:** In development
@@ -154,7 +159,7 @@ posts:
 
 ## Tech Stack
 
-- **Python 3.11+** with FastAPI
+- **Python 3.14+** with FastAPI
 - **Jinja2** for templating
 - **Pygments** for syntax highlighting
 - **SQLite** for analytics and admin features
