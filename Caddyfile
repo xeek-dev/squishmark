@@ -1,3 +1,7 @@
 {$DOMAIN:localhost} {
+    log {
+        output stdout
+        format console
+    }
     reverse_proxy app:8000
 }
