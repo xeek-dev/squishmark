@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - {{ site.title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
     <link rel="stylesheet" href="/static/{{ theme_name }}/admin.css">
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
@@ -156,13 +159,13 @@
                         {
                             label: 'Views',
                             data: viewsData.map(d => d.views),
-                            borderColor: '#0066cc',
+                            borderColor: '#3b82f6',
                             tension: 0.1
                         },
                         {
                             label: 'Unique Visitors',
                             data: viewsData.map(d => d.unique_visitors),
-                            borderColor: '#28a745',
+                            borderColor: '#10b981',
                             tension: 0.1
                         }
                     ]

@@ -21,6 +21,15 @@ SquishMark is a blogging platform that fetches your content from a GitHub reposi
 - **Simple Deployment** - Deploy to Fly.io or any Docker host.
 - **Admin Features** - GitHub OAuth login, page analytics, content notes/corrections.
 
+### Contents
+
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Themes](#themes)
+- [Development](#development)
+- [Tech Stack](#tech-stack)
+- [Contributing](#contributing)
+
 ## Quick Start
 
 ### 1. Create your content repository
@@ -172,6 +181,65 @@ The favicon is automatically detected and served at `/favicon.ico`.
 - [Getting Started Guide](docs/getting-started.md) *(coming soon)*
 - [Theming Guide](docs/theming.md) *(coming soon)*
 - [Configuration Reference](docs/configuration.md) *(coming soon)*
+
+## Themes
+
+SquishMark includes bundled themes:
+
+- **default** - Clean, minimal design
+- **blue-tech** - Dark SaaS aesthetic with electric blue accents, frosted glass nav, and hero section
+
+Set your theme in `config.yml`:
+
+```yaml
+theme:
+  name: blue-tech
+  pygments_style: nord
+```
+
+You can also override the theme per-page using frontmatter:
+
+```yaml
+---
+title: Special Page
+theme: default  # Use default theme for just this page
+---
+```
+
+## Development
+
+### Quick Start
+
+```bash
+# Clone the repo
+git clone https://github.com/xeek-dev/squishmark.git
+cd squishmark
+
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Start development server (auto-installs dependencies)
+python scripts/start-dev.py
+```
+
+The dev server:
+- Installs dependencies from `pyproject.toml` if missing
+- Uses local `content/` folder for test content
+- Creates `data/` directory for SQLite database
+- Runs with auto-reload enabled
+
+### Options
+
+```bash
+python scripts/start-dev.py --host=0.0.0.0 --port=3000 --no-reload
+```
+
+### Running with Docker
+
+```bash
+docker compose up --build
+```
 
 ## Tech Stack
 

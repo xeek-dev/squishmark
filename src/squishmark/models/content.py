@@ -15,6 +15,7 @@ class FrontMatter(BaseModel):
     description: str = ""
     draft: bool = False
     template: str | None = None  # Custom template override
+    theme: str | None = None  # Per-page theme override
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -32,6 +33,7 @@ class Post(BaseModel):
     html: str = ""  # Rendered HTML
     draft: bool = False
     template: str | None = None
+    theme: str | None = None  # Per-page theme override
 
     @property
     def url(self) -> str:
@@ -47,6 +49,7 @@ class Page(BaseModel):
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
     template: str | None = None
+    theme: str | None = None  # Per-page theme override
 
     @property
     def url(self) -> str:

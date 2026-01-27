@@ -11,8 +11,8 @@
     {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     {% endif %}
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/pygments.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/pygments.css">
     {% block head %}{% endblock %}
 </head>
 <body>

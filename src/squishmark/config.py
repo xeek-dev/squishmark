@@ -1,8 +1,17 @@
 """Application configuration using Pydantic Settings."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _default_themes_path() -> str:
+    """Compute default themes path relative to package location."""
+    # themes/ is at project root, which is ../../ from src/squishmark/
+    package_dir = Path(__file__).parent
+    themes_path = package_dir.parent.parent / "themes"
+    return str(themes_path.resolve())
 
 
 class Settings(BaseSettings):
@@ -33,8 +42,8 @@ class Settings(BaseSettings):
     # Cache
     cache_ttl_seconds: int = 300
 
-    # Theme path (for Docker deployments where package is installed to site-packages)
-    themes_path: str = "/app/themes"
+    # Theme path - defaults to themes/ relative to package, can be overridden
+    themes_path: str = ""
 
     # Debug mode
     debug: bool = False
@@ -50,6 +59,13 @@ class Settings(BaseSettings):
     def is_local_content(self) -> bool:
         """Check if content is loaded from local filesystem."""
         return self.github_content_repo.startswith("file://")
+
+    @property
+    def resolved_themes_path(self) -> str:
+        """Return themes path, using computed default if not set."""
+        if self.themes_path:
+            return self.themes_path
+        return _default_themes_path()
 
 
 @lru_cache

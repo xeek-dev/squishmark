@@ -84,11 +84,28 @@ class AsyncHybridLoader(BaseLoader):
     """
     Async-friendly template loader that caches templates in memory.
     Templates must be pre-loaded before rendering.
+
+    Supports loading from:
+    1. Custom templates cache (from content repo)
+    2. Current bundled theme directory
+    3. Default bundled theme directory (fallback)
     """
 
-    def __init__(self, default_theme_path: Path) -> None:
-        self.default_theme_path = default_theme_path
+    def __init__(self, themes_path: Path, default_theme: str = "default") -> None:
+        self.themes_path = themes_path
+        self.default_theme = default_theme
+        self._current_theme: str = default_theme
         self._template_cache: dict[str, str] = {}
+
+    @property
+    def current_theme(self) -> str:
+        """Get the current theme name."""
+        return self._current_theme
+
+    @current_theme.setter
+    def current_theme(self, value: str) -> None:
+        """Set the current theme name."""
+        self._current_theme = value
 
     def add_template(self, name: str, source: str) -> None:
         """Add a template to the cache."""
@@ -99,15 +116,23 @@ class AsyncHybridLoader(BaseLoader):
         self._template_cache.clear()
 
     def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
-        """Load a template from cache or default theme."""
-        # Check cache first
+        """Load a template from cache, current theme, or default theme."""
+        # Check cache first (custom templates from content repo)
         if template in self._template_cache:
             return self._template_cache[template], template, lambda: True
 
+        # Try current theme directory
+        if self._current_theme != self.default_theme:
+            current_path = self.themes_path / self._current_theme / template
+            if current_path.exists():
+                # Return lambda: False to force reload when theme changes
+                return current_path.read_text(encoding="utf-8"), str(current_path), lambda: False
+
         # Fall back to default theme
-        default_path = self.default_theme_path / template
+        default_path = self.themes_path / self.default_theme / template
         if default_path.exists():
-            return default_path.read_text(encoding="utf-8"), str(default_path), None
+            # Return lambda: False to force reload when theme changes
+            return default_path.read_text(encoding="utf-8"), str(default_path), lambda: False
 
         raise TemplateNotFound(template)
 
@@ -125,25 +150,26 @@ class ThemeEngine:
     def __init__(
         self,
         github_service: GitHubService,
-        default_theme_path: Path | None = None,
+        themes_path: Path | None = None,
     ) -> None:
         self.github_service = github_service
 
-        # Default to the bundled theme
-        if default_theme_path is None:
+        # Default to the bundled themes directory
+        if themes_path is None:
             from squishmark.config import get_settings
 
             settings = get_settings()
-            default_theme_path = Path(settings.themes_path) / "default"
-        self.default_theme_path = default_theme_path
+            themes_path = Path(settings.resolved_themes_path)
+        self.themes_path = themes_path
 
         # Create loader and environment
-        self.loader = AsyncHybridLoader(default_theme_path)
+        self.loader = AsyncHybridLoader(themes_path)
         self.env = Environment(
             loader=self.loader,
             autoescape=True,
             trim_blocks=True,
             lstrip_blocks=True,
+            auto_reload=True,  # Always check uptodate() to support dynamic theme switching
         )
 
         # Add custom filters
@@ -218,6 +244,7 @@ class ThemeEngine:
         self,
         template_name: str,
         config: Config,
+        theme_override: str | None = None,
         **context: Any,
     ) -> str:
         """
@@ -226,11 +253,18 @@ class ThemeEngine:
         Args:
             template_name: Name of the template (e.g., "post.html")
             config: Site configuration
+            theme_override: Override theme name for static file paths
             **context: Additional template context
 
         Returns:
             Rendered HTML string
         """
+        # Resolve theme name (override or config default)
+        theme_name = theme_override or config.theme.name
+
+        # Set the loader's current theme before getting template
+        self.loader.current_theme = theme_name
+
         template = self.env.get_template(template_name)
 
         # Detect favicon if not explicitly set in config
@@ -242,6 +276,7 @@ class ThemeEngine:
         full_context = {
             "site": config.site,
             "theme": config.theme,
+            "theme_name": theme_name,
             "favicon_url": favicon_url,
             **context,
         }
@@ -254,11 +289,13 @@ class ThemeEngine:
         posts: list[Post],
         pagination: Pagination,
         notes: list[Any] | None = None,
+        theme_override: str | None = None,
     ) -> str:
         """Render the index/home page."""
         return await self.render(
             "index.html",
             config,
+            theme_override=theme_override,
             posts=posts,
             pagination=pagination,
             notes=notes or [],
@@ -269,12 +306,16 @@ class ThemeEngine:
         config: Config,
         post: Post,
         notes: list[Any] | None = None,
+        theme_override: str | None = None,
     ) -> str:
         """Render a single post page."""
         template_name = post.template or "post.html"
+        # Use post's theme if set, otherwise use provided override
+        resolved_theme = post.theme or theme_override
         return await self.render(
             template_name,
             config,
+            theme_override=resolved_theme,
             post=post,
             notes=notes or [],
         )
@@ -284,20 +325,24 @@ class ThemeEngine:
         config: Config,
         page: Page,
         notes: list[Any] | None = None,
+        theme_override: str | None = None,
     ) -> str:
         """Render a static page."""
         template_name = page.template or "page.html"
+        # Use page's theme if set, otherwise use provided override
+        resolved_theme = page.theme or theme_override
         return await self.render(
             template_name,
             config,
+            theme_override=resolved_theme,
             page=page,
             notes=notes or [],
         )
 
-    async def render_404(self, config: Config) -> str:
+    async def render_404(self, config: Config, theme_override: str | None = None) -> str:
         """Render the 404 page."""
         try:
-            return await self.render("404.html", config)
+            return await self.render("404.html", config, theme_override=theme_override)
         except TemplateNotFound:
             # Fallback if no 404 template
             return "<h1>404 - Page Not Found</h1>"
@@ -305,10 +350,11 @@ class ThemeEngine:
     async def render_admin(
         self,
         config: Config,
+        theme_override: str | None = None,
         **context: Any,
     ) -> str:
         """Render the admin dashboard."""
-        return await self.render("admin/admin.html", config, **context)
+        return await self.render("admin/admin.html", config, theme_override=theme_override, **context)
 
 
 # Global theme engine instance
