@@ -10,19 +10,24 @@
     padding: 0;
 }
 
-/* Root variables */
+/* Root variables - Pomeranian color palette (light, airy cream Pom) */
 :root {
-    --color-bg: #ffffff;
-    --color-bg-alt: #f8f9fa;
-    --color-text: #212529;
-    --color-text-muted: #6c757d;
-    --color-link: #0066cc;
-    --color-link-hover: #004499;
-    --color-border: #dee2e6;
-    --color-accent: #0066cc;
-    --color-code-bg: #f4f4f4;
-    --color-note-bg: #fff3cd;
-    --color-note-border: #ffc107;
+    /* Background - warm white undercoat/belly */
+    --color-bg: #FFFBF7;
+    --color-bg-alt: #FFFFFF;
+    /* Text - all black */
+    --color-text: #000000;
+    --color-text-body: #000000;
+    --color-text-muted: #000000;
+    /* Accent - red/caramel fur */
+    --color-link: #C4652A;
+    --color-link-hover: #A3521F;
+    --color-border: #000000;
+    --color-accent: #C4652A;
+    /* Soft peach tones */
+    --color-code-bg: #2A211C;
+    --color-note-bg: #F4D3BA;
+    --color-note-border: #C4652A;
 
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
@@ -31,22 +36,7 @@
     --spacing-unit: 1rem;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --color-bg: #1a1a2e;
-        --color-bg-alt: #16213e;
-        --color-text: #e4e4e7;
-        --color-text-muted: #a1a1aa;
-        --color-link: #60a5fa;
-        --color-link-hover: #93c5fd;
-        --color-border: #3f3f46;
-        --color-accent: #60a5fa;
-        --color-code-bg: #27272a;
-        --color-note-bg: #422006;
-        --color-note-border: #d97706;
-    }
-}
+/* No dark mode override - this theme is light only */
 
 /* Base styles */
 html {
@@ -56,8 +46,18 @@ html {
 
 body {
     font-family: var(--font-sans);
-    color: var(--color-text);
-    background-color: var(--color-bg);
+    color: var(--color-text-body);
+    /* Pomeranian gradient - rich red/caramel fur covering most of page, white belly at bottom */
+    background: linear-gradient(180deg,
+        #D4845A 0%,      /* rich Pom red/caramel */
+        #E09A6A 20%,     /* warm caramel */
+        #ECAC7A 40%,     /* lighter caramel */
+        #F4C9A0 60%,     /* peach */
+        #FFEEE0 75%,     /* light peach - transition starts */
+        #FFFBF7 85%,     /* cream */
+        #FFFFFF 100%     /* pure white belly */
+    );
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -144,6 +144,7 @@ a:hover {
 /* Posts list */
 .posts-list h1 {
     margin-bottom: calc(var(--spacing-unit) * 2);
+    color: var(--color-text);
 }
 
 .posts {
@@ -235,6 +236,7 @@ a:hover {
 .post-header .post-title {
     font-size: 2rem;
     margin-bottom: var(--spacing-unit);
+    color: var(--color-text);
 }
 
 /* Post/page content */
@@ -251,6 +253,7 @@ a:hover {
 .page-content h2,
 .page-content h3,
 .page-content h4 {
+    color: var(--color-text);
     margin-top: calc(var(--spacing-unit) * 2);
     margin-bottom: var(--spacing-unit);
 }
@@ -376,6 +379,7 @@ a:hover {
 
 .page-title {
     font-size: 2rem;
+    color: var(--color-text);
 }
 
 /* Error page */
