@@ -13,8 +13,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 def ensure_dependencies() -> None:
     """Ensure the project is installed with dependencies."""
     try:
-        import squishmark  # noqa: F401
         import uvicorn  # noqa: F401
+
+        import squishmark  # noqa: F401
     except ImportError:
         print("Installing dependencies from pyproject.toml...")
         subprocess.run(
