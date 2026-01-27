@@ -30,6 +30,7 @@ When planning implementation work, follow this workflow:
 2. **Implementation**
    - Follow the approved plan
    - Run verification (tests, lint, format)
+   - Manual testing: start dev server with `python scripts/start-dev.py` and verify changes work
 
 3. **PR Workflow**
    - Commit and push changes
