@@ -46,20 +46,7 @@ class ThemeEngine:
         register_filters(self.env)
 
         # Favicon detector for content repository
-        self._favicon_detector = FaviconDetector(github_service)
-
-    async def detect_favicon(self) -> str | None:
-        """
-        Detect the favicon file in the content repository.
-
-        Returns:
-            URL path to the favicon (e.g., "/static/user/favicon.png") or None
-        """
-        return await self._favicon_detector.detect()
-
-    def clear_favicon_cache(self) -> None:
-        """Clear the cached favicon URL."""
-        self._favicon_detector.clear_cache()
+        self.favicon_detector = FaviconDetector(github_service)
 
     async def load_custom_templates(self) -> int:
         """
@@ -112,7 +99,7 @@ class ThemeEngine:
         # Detect favicon if not explicitly set in config
         favicon_url = config.site.favicon
         if not favicon_url:
-            favicon_url = await self.detect_favicon()
+            favicon_url = await self.favicon_detector.detect()
 
         # Build the full context
         full_context = {
@@ -220,5 +207,5 @@ def reset_theme_engine() -> None:
     """Reset the global theme engine. Useful for testing or cache refresh."""
     global _theme_engine
     if _theme_engine:
-        _theme_engine.clear_favicon_cache()
+        _theme_engine.favicon_detector.clear_cache()
     _theme_engine = None
