@@ -7,11 +7,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _default_themes_path() -> str:
-    """Compute default themes path relative to package location."""
-    # themes/ is at project root, which is ../../ from src/squishmark/
+    """Compute default themes path, checking multiple locations."""
+    # Try development path first (relative to package source)
     package_dir = Path(__file__).parent
-    themes_path = package_dir.parent.parent / "themes"
-    return str(themes_path.resolve())
+    dev_path = package_dir.parent.parent / "themes"
+    if dev_path.exists():
+        return str(dev_path.resolve())
+
+    # Fall back to Docker path
+    docker_path = Path("/app/themes")
+    if docker_path.exists():
+        return str(docker_path)
+
+    # Last resort: return dev path (will error with clear message)
+    return str(dev_path.resolve())
 
 
 class Settings(BaseSettings):

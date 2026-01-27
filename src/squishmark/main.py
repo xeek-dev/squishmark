@@ -235,7 +235,7 @@ def create_app() -> FastAPI:
         if ".." in file_path or file_path.startswith("/"):
             raise HTTPException(status_code=400, detail="Invalid file path")
 
-        themes_dir = Path(__file__).parent.parent.parent / "themes"
+        themes_dir = Path(settings.resolved_themes_path)
 
         # Try requested theme first
         file = themes_dir / theme_name / "static" / file_path
