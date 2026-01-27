@@ -5,7 +5,7 @@
 {% block content %}
 <section class="hero">
     <span class="hero-label">Latest Articles</span>
-    <h1 class="hero-title">{{ site.title }}</h1>
+    <h1 class="hero-title">{{ site.title | accent_first_word }}</h1>
     <p class="hero-subtitle">{{ site.description }}</p>
     <div class="hero-buttons">
         <a href="#posts" class="btn btn-primary">Browse Posts</a>
