@@ -6,6 +6,37 @@ This document provides context for AI assistants (and humans) working on the Squ
 
 SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pages) lives in a separate GitHub repository and is fetched at runtime. Themes use Jinja2 templates, making them accessible to web developers without Python knowledge.
 
+## Planning Workflow
+
+When planning implementation work, follow this workflow:
+
+1. **Git Setup**
+   - Switch to main branch and fetch/pull latest changes
+   - Prompt about GitHub issue tracking:
+     - "Should we use an existing GitHub issue, create a new one, or skip issue tracking?"
+     - If existing: ask for issue number
+     - If new: create issue with appropriate title/description
+   - Prompt about branch creation:
+     - "Should we create a new branch for this work?"
+     - Use **Conventional Commits style prefixes** matching the anticipated merge commit
+     - Format: `type/issue-description`
+     - Examples:
+       - `feat/42-user-authentication`
+       - `fix/15-header-overflow`
+       - `refactor/16-theme-subpackage`
+       - `chore/23-update-dependencies`
+       - `docs/8-api-documentation`
+
+2. **Implementation**
+   - Follow the approved plan
+   - Run verification (tests, lint, format)
+
+3. **PR Workflow**
+   - Commit and push changes
+   - Create PR linked to the issue
+   - Wait for CI checks to pass
+   - If checks fail: fix issues, commit, add brief PR comment about the fix, repeat
+
 ## Architecture
 
 ```mermaid
@@ -72,19 +103,29 @@ squishmark/
 │       ├── __init__.py
 │       ├── main.py              # FastAPI app entry
 │       ├── config.py            # Pydantic settings
+│       ├── dependencies.py      # FastAPI dependency injection
 │       ├── routers/
 │       │   ├── posts.py         # Blog post routes
 │       │   ├── pages.py         # Static page routes
-│       │   └── admin.py         # Notes, cache refresh, analytics
+│       │   ├── admin.py         # Notes, cache refresh, analytics
+│       │   ├── auth.py          # GitHub OAuth authentication
+│       │   └── webhooks.py      # GitHub webhook handling
 │       ├── services/
 │       │   ├── github.py        # Content fetching from GitHub
 │       │   ├── markdown.py      # Parsing + Pygments highlighting
-│       │   └── cache.py         # In-memory content cache
-│       ├── models/
-│       │   ├── content.py       # Post, Page, FrontMatter
-│       │   └── db.py            # SQLAlchemy models
-│       └── themes/
-│           └── engine.py        # Jinja2 theme loading/rendering
+│       │   ├── cache.py         # In-memory content cache
+│       │   ├── analytics.py     # Page view tracking
+│       │   ├── notes.py         # Admin notes functionality
+│       │   ├── url_rewriter.py  # URL rewriting for markdown
+│       │   └── theme/           # Jinja2 theme engine (subpackage)
+│       │       ├── __init__.py
+│       │       ├── engine.py
+│       │       ├── loader.py
+│       │       ├── filters.py
+│       │       └── favicon.py
+│       └── models/
+│           ├── content.py       # Post, Page, FrontMatter
+│           └── db.py            # SQLAlchemy models
 ├── themes/
 │   └── default/                 # Bundled default theme
 │       ├── base.html
