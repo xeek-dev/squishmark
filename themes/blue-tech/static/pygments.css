@@ -1,0 +1,193 @@
+/* Blue Tech - Nord-inspired Syntax Highlighting */
+
+.highlight {
+    background: #1a2235;
+    border-radius: 12px;
+}
+
+/* Comments */
+.highlight .c,
+.highlight .c1,
+.highlight .ch,
+.highlight .cm,
+.highlight .cp,
+.highlight .cpf,
+.highlight .cs {
+    color: #616e88;
+    font-style: italic;
+}
+
+/* Keywords */
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt {
+    color: #81a1c1;
+    font-weight: 600;
+}
+
+/* Operators */
+.highlight .o,
+.highlight .ow {
+    color: #81a1c1;
+}
+
+/* Punctuation */
+.highlight .p {
+    color: #eceff4;
+}
+
+/* Names */
+.highlight .n,
+.highlight .na,
+.highlight .nb,
+.highlight .nc,
+.highlight .no,
+.highlight .nd,
+.highlight .ni,
+.highlight .ne,
+.highlight .nf,
+.highlight .nl,
+.highlight .nn,
+.highlight .nx,
+.highlight .py,
+.highlight .nt,
+.highlight .nv,
+.highlight .vc,
+.highlight .vg,
+.highlight .vi,
+.highlight .vm {
+    color: #eceff4;
+}
+
+/* Functions */
+.highlight .nf,
+.highlight .fm {
+    color: #88c0d0;
+}
+
+/* Classes */
+.highlight .nc {
+    color: #8fbcbb;
+}
+
+/* Strings */
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sa,
+.highlight .sb,
+.highlight .sc,
+.highlight .dl,
+.highlight .sd,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .sr,
+.highlight .ss,
+.highlight .sx {
+    color: #a3be8c;
+}
+
+/* Numbers */
+.highlight .m,
+.highlight .mb,
+.highlight .mf,
+.highlight .mh,
+.highlight .mi,
+.highlight .mo,
+.highlight .il {
+    color: #b48ead;
+}
+
+/* Built-ins */
+.highlight .nb {
+    color: #88c0d0;
+}
+
+/* Constants / Booleans */
+.highlight .kc,
+.highlight .bp {
+    color: #81a1c1;
+}
+
+/* Decorators / Attributes */
+.highlight .nd {
+    color: #d08770;
+}
+
+/* Tags (HTML/XML) */
+.highlight .nt {
+    color: #81a1c1;
+}
+
+/* Attribute Names */
+.highlight .na {
+    color: #8fbcbb;
+}
+
+/* Attribute Values */
+.highlight .s,
+.highlight .s1,
+.highlight .s2 {
+    color: #a3be8c;
+}
+
+/* Error */
+.highlight .err {
+    color: #bf616a;
+    background-color: transparent;
+}
+
+/* Generic styles */
+.highlight .gd {
+    color: #bf616a;
+}
+
+.highlight .gi {
+    color: #a3be8c;
+}
+
+.highlight .gh {
+    color: #88c0d0;
+    font-weight: bold;
+}
+
+.highlight .gu {
+    color: #616e88;
+    font-weight: bold;
+}
+
+.highlight .ge {
+    font-style: italic;
+}
+
+.highlight .gs {
+    font-weight: bold;
+}
+
+/* Line numbers */
+.highlight .linenos {
+    color: #4c566a;
+    background: transparent;
+    padding-right: 1rem;
+    user-select: none;
+}
+
+/* Whitespace */
+.highlight .w {
+    color: #eceff4;
+}
+
+/* Text */
+.highlight .text {
+    color: #eceff4;
+}
+
+/* Special */
+.highlight .x {
+    color: #d8dee9;
+}

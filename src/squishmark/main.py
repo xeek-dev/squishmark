@@ -2,13 +2,13 @@
 
 import asyncio
 import logging
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.middleware.sessions import SessionMiddleware
 
 from squishmark.config import get_settings
@@ -223,17 +223,38 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "public, max-age=86400"},
         )
 
+    # Theme static files - serve from theme directories with fallback
+    VALID_THEME_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+    @app.get("/static/{theme_name}/{file_path:path}")
+    async def serve_theme_static(theme_name: str, file_path: str) -> Response:
+        """Serve static files from theme directories with fallback to default."""
+        # Security: validate theme name and file path to prevent path traversal
+        if not VALID_THEME_NAME.match(theme_name):
+            raise HTTPException(status_code=400, detail="Invalid theme name")
+        if ".." in file_path or file_path.startswith("/"):
+            raise HTTPException(status_code=400, detail="Invalid file path")
+
+        themes_dir = Path(settings.resolved_themes_path)
+
+        # Try requested theme first
+        file = themes_dir / theme_name / "static" / file_path
+        if file.exists() and file.is_file():
+            return FileResponse(file, headers={"Cache-Control": "public, max-age=86400"})
+
+        # Fall back to default theme
+        fallback = themes_dir / "default" / "static" / file_path
+        if fallback.exists() and fallback.is_file():
+            return FileResponse(fallback, headers={"Cache-Control": "public, max-age=86400"})
+
+        raise HTTPException(status_code=404, detail="Static file not found")
+
     # Include routers
     app.include_router(auth.router)
     app.include_router(admin.router)
     app.include_router(webhooks.router)
     app.include_router(posts.router)
     app.include_router(pages.router)  # Catch-all for static pages, must be last
-
-    # Mount static files from default theme
-    themes_path = Path(__file__).parent.parent.parent / "themes" / "default" / "static"
-    if themes_path.exists():
-        app.mount("/static", StaticFiles(directory=themes_path), name="static")
 
     return app
 

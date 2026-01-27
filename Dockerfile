@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir uv==0.9.26
 # Copy only dependency metadata first (cached unless pyproject.toml changes)
 COPY pyproject.toml README.md ./
 
-# Create stub package structure so editable install works
+# Create stub package structure for dependency resolution
 RUN mkdir -p src/squishmark && touch src/squishmark/__init__.py
 
 # Install production dependencies only (this layer is cached)
@@ -20,6 +20,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Now copy actual source code (changes frequently, but deps are cached)
 COPY src/ src/
+
+# Reinstall with real source (deps already cached, this is fast)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system .
 
 # Development stage - includes test dependencies (NOT lint tools)
 FROM base AS dev

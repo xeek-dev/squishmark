@@ -130,6 +130,7 @@ class MarkdownService:
             html=html,
             draft=frontmatter.draft,
             template=frontmatter.template,
+            theme=frontmatter.theme,
         )
 
     def parse_page(self, path: str, content: str) -> Page:
@@ -156,6 +157,7 @@ class MarkdownService:
             content=markdown_content,
             html=html,
             template=frontmatter.template,
+            theme=frontmatter.theme,
         )
 
     def _extract_slug(self, path: str, strip_date: bool = True) -> str:
