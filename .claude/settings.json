@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Before starting work, check if any skills in .claude/skills/ are relevant and invoke them first.'"
+          }
+        ]
+      }
+    ]
+  }
+}
