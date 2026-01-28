@@ -8,7 +8,7 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 ## Skills
 
-LOAD SKILLS early, if it's relevant you MUST use these skills. Project-specific skills are available in `.claude/skills/`:
+**INSTRUCTION:** If your task involves Python or Docker, invoke the relevant skill using `Skill(skill-name)`.
 
 | Skill | Description |
 |-------|-------------|

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Before starting work, check if any skills in .claude/skills/ are relevant and invoke them first.'"
+            "command": "echo 'INSTRUCTION: If relevant, invoke skills from .claude/skills/ using Skill(skill-name)'"
           }
         ]
       }
