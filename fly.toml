@@ -6,7 +6,7 @@ primary_region = "sea"
 
 [build]
   dockerfile = "Dockerfile"
-  target = "prod"
+  build-target = "prod"
 
 [env]
   DATABASE_URL = "sqlite+aiosqlite:///data/squishmark.db"
