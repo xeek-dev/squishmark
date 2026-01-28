@@ -6,6 +6,15 @@ This document provides context for AI assistants (and humans) working on the Squ
 
 SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pages) lives in a separate GitHub repository and is fetched at runtime. Themes use Jinja2 templates, making them accessible to web developers without Python knowledge.
 
+## Skills
+
+**INSTRUCTION:** If your task involves Python or Docker, invoke the relevant skill using `Skill(skill-name)`.
+
+| Skill | Description |
+|-------|-------------|
+| `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
+| `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
+
 ## Planning Workflow
 
 When planning implementation work, follow this workflow:
@@ -355,12 +364,3 @@ fly deploy
 
 ### Testing with a local content repo
 Set `GITHUB_CONTENT_REPO` to a local path (prefixed with `file://`) for development without GitHub API calls.
-
-## Skills
-
-Project-specific skills are available in `.claude/skills/`:
-
-| Skill | Description |
-|-------|-------------|
-| `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
-| `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |

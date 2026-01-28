@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'INSTRUCTION: If relevant, invoke skills from .claude/skills/ using Skill(skill-name)'"
+          }
+        ]
+      }
+    ]
+  }
+}
