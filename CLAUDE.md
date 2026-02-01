@@ -47,6 +47,37 @@ When planning implementation work, follow this workflow:
    - Wait for CI checks to pass
    - If checks fail: fix issues, commit, add brief PR comment about the fix, repeat
 
+## GitHub Interaction
+
+For all GitHub operations (issues, PRs, comments, reviews), use this priority order:
+
+1. **GitHub MCP Server** (PREFERRED) — Use `mcp__github__*` tools when available
+2. **`gh` CLI** (FALLBACK) — Use via Bash if MCP tools fail or are unavailable
+3. **Manual Setup Required** — If both fail with auth errors, tell the developer:
+   ```bash
+   # For gh CLI
+   gh auth login
+
+   # For MCP server, check Claude Code settings and ensure GitHub MCP is configured
+   ```
+
+### Signing Comments
+
+When commenting on PRs or issues, ALWAYS sign your comments so it's clear they're AI-generated:
+
+```
+Your comment text here.
+
+*— Claude*
+```
+
+### Issue Creation
+
+Before creating issues:
+- Search for existing issues to avoid duplicates
+- Use appropriate labels (enhancement, bug, documentation)
+- Link related issues when applicable
+
 ## Architecture
 
 ```mermaid
@@ -95,7 +126,7 @@ sequenceDiagram
 
 | Component | Choice | Notes |
 |-----------|--------|-------|
-| Language | Python 3.11+ | Type hints throughout |
+| Language | Python 3.14 | Type hints throughout |
 | Framework | FastAPI | Async, modern, auto-docs |
 | Templating | Jinja2 | Familiar to Jekyll/Hugo users |
 | Database | SQLite | On Fly Volume, no backup service |
