@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # Debug mode
     debug: bool = False
 
+    # Dev mode auth bypass (requires debug=True AND dev_skip_auth=True)
+    dev_skip_auth: bool = False
+
     @property
     def admin_users_list(self) -> list[str]:
         """Return admin users as a list."""

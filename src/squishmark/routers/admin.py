@@ -1,5 +1,6 @@
 """Admin routes for notes, analytics, and cache management."""
 
+import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -15,6 +16,8 @@ from squishmark.services.cache import get_cache
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -64,13 +67,19 @@ async def get_current_admin(request: Request) -> str:
     Raises HTTPException 401 if not authenticated.
     Raises HTTPException 403 if not an admin.
     """
+    settings = get_settings()
+
+    # Dev mode auth bypass (requires both flags)
+    if settings.debug and settings.dev_skip_auth:
+        logger.warning("Auth bypassed - returning dev-admin user")
+        return "dev-admin"
+
     # Check for user in session (set by OAuth callback)
     user = request.session.get("user") if hasattr(request, "session") else None
 
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    settings = get_settings()
     if user["login"] not in settings.admin_users_list:
         raise HTTPException(status_code=403, detail="Not authorized")
 
