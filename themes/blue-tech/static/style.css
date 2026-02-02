@@ -553,6 +553,10 @@ img {
     color: var(--color-text-muted);
     opacity: 0.7;
     text-transform: uppercase;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .post-content pre,
