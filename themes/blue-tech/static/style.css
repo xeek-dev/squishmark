@@ -546,17 +546,21 @@ img {
 /* Code block language labels */
 .highlight .filename {
     position: absolute;
-    top: 0;
-    right: 0;
-    padding: 4px 8px;
-    font-size: 0.75rem;
+    top: 12px;
+    right: 12px;
+    padding: 2px 6px;
+    font-size: 0.65rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
     color: var(--color-text-muted);
-    opacity: 0.7;
+    opacity: 0.4;
     text-transform: uppercase;
-    max-width: 150px;
+    letter-spacing: 0.05em;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    z-index: 1;
+    pointer-events: none;
 }
 
 .post-content pre,
