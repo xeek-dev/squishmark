@@ -16,6 +16,7 @@ class FrontMatter(BaseModel):
     draft: bool = False
     template: str | None = None  # Custom template override
     theme: str | None = None  # Per-page theme override
+    author: str | None = None  # Per-post author override
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -34,6 +35,7 @@ class Post(BaseModel):
     draft: bool = False
     template: str | None = None
     theme: str | None = None  # Per-page theme override
+    author: str | None = None  # Per-post author override
 
     @property
     def url(self) -> str:

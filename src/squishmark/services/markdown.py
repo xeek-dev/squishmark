@@ -144,6 +144,7 @@ class MarkdownService:
             draft=frontmatter.draft,
             template=frontmatter.template,
             theme=frontmatter.theme,
+            author=frontmatter.author,
         )
 
     def parse_page(self, path: str, content: str) -> Page:
