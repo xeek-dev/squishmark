@@ -136,16 +136,29 @@ async def admin_dashboard(
             ],
             cache_size=cache.size,
         )
-        return HTMLResponse(content=html)
     except Exception:
         # Fallback if admin template doesn't exist
-        return HTMLResponse(
-            content=f"<h1>Admin Dashboard</h1><p>Welcome, {admin}</p>"
+        html = (
+            f"<html><body><h1>Admin Dashboard</h1><p>Welcome, {admin}</p>"
             f"<p>Total views (30d): {analytics['total_views']}</p>"
             f"<p>Unique visitors (30d): {analytics['unique_visitors']}</p>"
             f"<p>Notes: {len(notes)}</p>"
-            f"<p>Cache entries: {cache.size}</p>"
+            f"<p>Cache entries: {cache.size}</p></body></html>"
         )
+
+    # Inject dev mode banner if auth bypass is active
+    settings = get_settings()
+    if settings.debug and settings.dev_skip_auth:
+        import re
+        from pathlib import Path
+
+        templates_dir = Path(__file__).parent.parent / "templates"
+        banner_html = (templates_dir / "dev_auth_banner.html").read_text()
+        banner_css = (templates_dir / "dev_auth_banner.css").read_text()
+        banner = f"<style>{banner_css}</style>{banner_html}"
+        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
+
+    return HTMLResponse(content=html)
 
 
 # Analytics endpoints
