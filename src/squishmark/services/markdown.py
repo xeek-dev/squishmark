@@ -13,6 +13,17 @@ from squishmark.models.content import Config, FrontMatter, Page, Post
 from squishmark.services.url_rewriter import rewrite_image_urls
 
 
+class LabeledFormatter(HtmlFormatter):
+    """Displays language labels on code blocks using Pygments' filename feature."""
+
+    def __init__(self, **options):
+        lang_str = options.pop("lang_str", "")
+        lang = lang_str.replace("language-", "") if lang_str else ""
+        if lang and lang != "text":
+            options["filename"] = lang
+        super().__init__(**options)
+
+
 class MarkdownService:
     """Service for parsing and rendering markdown content."""
 
@@ -33,6 +44,7 @@ class MarkdownService:
                         css_class="highlight",
                         linenums=False,
                         guess_lang=False,
+                        pygments_formatter=LabeledFormatter,
                     ),
                     TocExtension(permalink=True),
                     "smarty",  # Smart quotes

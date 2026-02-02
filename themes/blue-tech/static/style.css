@@ -543,6 +543,18 @@ img {
     margin: 2rem 0;
 }
 
+/* Code block language labels */
+.highlight .filename {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+    text-transform: uppercase;
+}
+
 .post-content pre,
 .page-content pre {
     background: var(--color-code-bg);
