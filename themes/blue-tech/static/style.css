@@ -421,11 +421,15 @@ img {
     margin-bottom: 1rem;
 }
 
-.post-header .post-date {
+.post-header .post-meta {
     color: var(--color-text-muted);
     font-size: 1rem;
     margin-bottom: 1rem;
-    display: block;
+}
+
+.post-header .post-meta .post-date,
+.post-header .post-meta .post-author {
+    display: inline;
 }
 
 .post-header .post-tags {
