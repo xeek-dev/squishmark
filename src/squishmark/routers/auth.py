@@ -20,6 +20,10 @@ async def login(request: Request) -> RedirectResponse:
     """Redirect to GitHub OAuth authorization."""
     settings = get_settings()
 
+    # Dev mode auth bypass (requires both flags)
+    if settings.debug and settings.dev_skip_auth:
+        return RedirectResponse(url="/admin", status_code=302)
+
     if not settings.github_client_id:
         raise HTTPException(
             status_code=500,

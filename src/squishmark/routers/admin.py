@@ -1,5 +1,6 @@
 """Admin routes for notes, analytics, and cache management."""
 
+import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -15,6 +16,8 @@ from squishmark.services.cache import get_cache
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -64,13 +67,19 @@ async def get_current_admin(request: Request) -> str:
     Raises HTTPException 401 if not authenticated.
     Raises HTTPException 403 if not an admin.
     """
+    settings = get_settings()
+
+    # Dev mode auth bypass (requires both flags)
+    if settings.debug and settings.dev_skip_auth:
+        logger.warning("Auth bypassed - returning dev-admin user")
+        return "dev-admin"
+
     # Check for user in session (set by OAuth callback)
     user = request.session.get("user") if hasattr(request, "session") else None
 
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    settings = get_settings()
     if user["login"] not in settings.admin_users_list:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -127,16 +136,29 @@ async def admin_dashboard(
             ],
             cache_size=cache.size,
         )
-        return HTMLResponse(content=html)
     except Exception:
         # Fallback if admin template doesn't exist
-        return HTMLResponse(
-            content=f"<h1>Admin Dashboard</h1><p>Welcome, {admin}</p>"
+        html = (
+            f"<html><body><h1>Admin Dashboard</h1><p>Welcome, {admin}</p>"
             f"<p>Total views (30d): {analytics['total_views']}</p>"
             f"<p>Unique visitors (30d): {analytics['unique_visitors']}</p>"
             f"<p>Notes: {len(notes)}</p>"
-            f"<p>Cache entries: {cache.size}</p>"
+            f"<p>Cache entries: {cache.size}</p></body></html>"
         )
+
+    # Inject dev mode banner if auth bypass is active
+    settings = get_settings()
+    if settings.debug and settings.dev_skip_auth:
+        import re
+        from pathlib import Path
+
+        templates_dir = Path(__file__).parent.parent / "templates"
+        banner_html = (templates_dir / "dev_auth_banner.html").read_text()
+        banner_css = (templates_dir / "dev_auth_banner.css").read_text()
+        banner = f"<style>{banner_css}</style>{banner_html}"
+        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
+
+    return HTMLResponse(content=html)
 
 
 # Analytics endpoints
