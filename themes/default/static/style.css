@@ -173,11 +173,15 @@ a:hover {
     color: var(--color-link);
 }
 
-.post-date {
-    display: block;
+.post-meta {
     font-size: 0.875rem;
     color: var(--color-text-muted);
     margin-bottom: 0.5rem;
+}
+
+.post-meta .post-date,
+.post-meta .post-author {
+    display: inline;
 }
 
 .post-description {
