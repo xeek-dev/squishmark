@@ -10,8 +10,11 @@
         <h1 class="post-title">{{ post.title }}</h1>
         {% if post.date %}
         <time class="post-date" datetime="{{ post.date }}">
-            {{ post.date | format_date }}{% if post.author or site.author %} · {{ post.author or site.author }}{% endif %}
+            {{ post.date | format_date }}
         </time>
+        {% endif %}
+        {% if post.author or site.author %}
+        <span class="post-author">{% if post.date %} · {% endif %}{{ post.author or site.author }}</span>
         {% endif %}
         {% if post.tags %}
         <div class="post-tags">

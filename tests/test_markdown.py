@@ -105,6 +105,38 @@ Post content here.
     assert post.tags == ["test"]
     assert post.description == "A test post"
     assert "Post content here." in post.html
+    assert post.author is None  # No author specified
+
+
+def test_parse_post_with_author(markdown_service):
+    """Test parsing a post with explicit author in frontmatter."""
+    content = """---
+title: Guest Post
+date: 2026-01-25
+author: Guest Writer
+---
+
+Content by guest.
+"""
+    post = markdown_service.parse_post("posts/2026-01-25-guest-post.md", content)
+
+    assert post.title == "Guest Post"
+    assert post.author == "Guest Writer"
+
+
+def test_parse_post_without_author(markdown_service):
+    """Test that posts without author frontmatter have None author."""
+    content = """---
+title: Regular Post
+date: 2026-01-25
+---
+
+Regular content.
+"""
+    post = markdown_service.parse_post("posts/2026-01-25-regular-post.md", content)
+
+    assert post.title == "Regular Post"
+    assert post.author is None
 
 
 def test_extract_date_from_path(markdown_service):

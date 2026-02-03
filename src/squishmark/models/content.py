@@ -16,7 +16,7 @@ class FrontMatter(BaseModel):
     draft: bool = False
     template: str | None = None  # Custom template override
     theme: str | None = None  # Per-page theme override
-    author: str | None = None  # Per-post author override
+    author: str | None = None  # Per-content author override (used by posts)
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
