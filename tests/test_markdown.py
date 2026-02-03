@@ -69,6 +69,21 @@ def hello():
 
     assert "highlight" in html
     assert "def" in html
+    # Verify language label is present
+    assert '<span class="filename">python</span>' in html
+
+
+def test_render_code_block_no_label_for_text(markdown_service):
+    """Test that 'text' language does not get a label."""
+    content = """
+```text
+Plain text content
+```
+"""
+    html = markdown_service.render_markdown(content)
+
+    assert "highlight" in html
+    assert "filename" not in html
 
 
 def test_parse_post(markdown_service):
