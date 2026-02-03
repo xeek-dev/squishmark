@@ -8,12 +8,13 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 ## Skills
 
-**INSTRUCTION:** If your task involves Python or Docker, invoke the relevant skill using `Skill(skill-name)`.
+**INSTRUCTION:** If your task involves Python, Docker, or browser testing, invoke the relevant skill using `Skill(skill-name)`.
 
 | Skill | Description |
 |-------|-------------|
 | `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
 | `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
+| `playwright` | E2E browser testing with Playwright MCP (navigation, screenshots, hard refresh, cache busting) |
 
 ## Planning Workflow
 
