@@ -2,6 +2,7 @@
 
 import datetime
 import re
+from typing import Any
 
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
@@ -16,7 +17,7 @@ from squishmark.services.url_rewriter import rewrite_image_urls
 class LabeledFormatter(HtmlFormatter):
     """Displays language labels on code blocks using Pygments' filename feature."""
 
-    def __init__(self, **options):
+    def __init__(self, **options: Any) -> None:
         lang_str = options.pop("lang_str", "")
         lang = lang_str.replace("language-", "") if lang_str else ""
         if lang and lang != "text":
