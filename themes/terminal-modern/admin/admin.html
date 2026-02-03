@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - {{ site.title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/admin.css">
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+</head>
+<body class="admin-body">
+    <header class="admin-header">
+        <div class="admin-header-content">
+            <h1>SquishMark Admin</h1>
+            <div class="admin-user">
+                {% if user.avatar_url %}
+                <img src="{{ user.avatar_url }}" alt="{{ user.login }}" class="avatar">
+                {% endif %}
+                <span>@{{ user.login }}</span>
+                <a href="/auth/logout" class="logout-link">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <!-- Analytics Section -->
+        <section class="admin-section">
+            <h2>Analytics (Last {{ analytics.period_days }} days)</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ analytics.total_views }}</div>
+                    <div class="stat-label">Total Views</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ analytics.unique_visitors }}</div>
+                    <div class="stat-label">Unique Visitors</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="viewsChart"></canvas>
+            </div>
+
+            <h3>Top Pages</h3>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Page</th>
+                        <th>Views</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for page in analytics.top_pages %}
+                    <tr>
+                        <td><a href="{{ page.path }}">{{ page.path }}</a></td>
+                        <td>{{ page.views }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2">No data yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Notes Section -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>Notes</h2>
+                <button class="btn btn-primary" onclick="toggleNoteForm()">+ Add Note</button>
+            </div>
+
+            <form id="note-form" class="note-form hidden" hx-post="/admin/notes" hx-target="#notes-list" hx-swap="afterbegin">
+                <div class="form-group">
+                    <label for="note-path">Page Path</label>
+                    <input type="text" id="note-path" name="path" placeholder="/posts/my-post" required>
+                </div>
+                <div class="form-group">
+                    <label for="note-text">Note Text</label>
+                    <textarea id="note-text" name="text" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="is_public" value="true">
+                        Make this note public
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Note</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleNoteForm()">Cancel</button>
+                </div>
+            </form>
+
+            <div id="notes-list">
+                {% for note in notes %}
+                <div class="note-item" id="note-{{ note.id }}">
+                    <div class="note-header">
+                        <span class="note-path">{{ note.path }}</span>
+                        <span class="note-status {% if note.is_public %}public{% else %}private{% endif %}">
+                            {{ "Public" if note.is_public else "Private" }}
+                        </span>
+                    </div>
+                    <p class="note-text">{{ note.text }}</p>
+                    <div class="note-meta">
+                        <span>By {{ note.author }} on {{ note.created_at[:10] }}</span>
+                        <button class="btn btn-danger btn-sm"
+                                hx-delete="/admin/notes/{{ note.id }}"
+                                hx-target="#note-{{ note.id }}"
+                                hx-swap="outerHTML"
+                                hx-confirm="Delete this note?">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <p class="no-data">No notes yet</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Cache Section -->
+        <section class="admin-section">
+            <h2>Cache</h2>
+            <div class="cache-info">
+                <p>Cached items: <strong>{{ cache_size }}</strong></p>
+                <button class="btn btn-primary"
+                        hx-post="/admin/cache/refresh"
+                        hx-target="#cache-result"
+                        hx-swap="innerHTML"
+                        hx-indicator="#cache-spinner">
+                    Refresh Cache
+                </button>
+                <span id="cache-spinner" class="htmx-indicator">Refreshing...</span>
+            </div>
+            <div id="cache-result"></div>
+        </section>
+    </main>
+
+    <script>
+        // Toggle note form
+        function toggleNoteForm() {
+            document.getElementById('note-form').classList.toggle('hidden');
+        }
+
+        // Initialize chart with terminal-modern colors
+        const viewsData = {{ analytics.views_by_day | tojson | safe }};
+        if (viewsData.length > 0) {
+            const ctx = document.getElementById('viewsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: viewsData.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'Views',
+                            data: viewsData.map(d => d.views),
+                            borderColor: '#3399ff',
+                            backgroundColor: 'rgba(51, 153, 255, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Unique Visitors',
+                            data: viewsData.map(d => d.unique_visitors),
+                            borderColor: '#00dd00',
+                            backgroundColor: 'rgba(0, 221, 0, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#999999',
+                                font: {
+                                    family: "'JetBrains Mono', monospace"
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#999999',
+                                font: {
+                                    family: "'JetBrains Mono', monospace"
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#999999',
+                                font: {
+                                    family: "'JetBrains Mono', monospace"
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

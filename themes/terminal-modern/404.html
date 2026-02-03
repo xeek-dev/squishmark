@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - {{ site.title }}{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>404</h1>
+    <p>Page not found</p>
+    <p class="terminal-prompt">cat requested_page.html</p>
+    <p>The page you're looking for doesn't exist or has been moved.</p>
+    <a href="/" class="home-link">cd /home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site.title }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ site.description }}{% endblock %}">
+    {% if site.author %}
+    <meta name="author" content="{{ site.author }}">
+    {% endif %}
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    {% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/pygments.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-container">
+            <a href="/" class="site-title">{{ site.title }}</a>
+            <div class="nav-links">
+                <a href="/posts">Posts</a>
+                <a href="/about">About</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            {% if site.author %}
+            <p>&copy; {{ site.author }}</p>
+            {% endif %}
+            <p>Powered by <a href="https://github.com/xeek-dev/squishmark">SquishMark</a></p>
+        </div>
+    </footer>
+</body>
+</html>

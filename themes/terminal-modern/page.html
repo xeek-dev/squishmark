@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - {{ site.title }}{% endblock %}
+
+{% block content %}
+<article class="page">
+    <header class="page-header">
+        <h1 class="page-title">{{ page.title | accent_first_word }}</h1>
+    </header>
+
+    {% if notes %}
+    <aside class="notes">
+        {% for note in notes %}
+        <div class="note {% if note.is_public %}note-public{% else %}note-private{% endif %}">
+            <p>{{ note.text }}</p>
+            <span class="note-author">- {{ note.author }}</span>
+        </div>
+        {% endfor %}
+    </aside>
+    {% endif %}
+
+    <div class="page-content">
+        {{ page.html | safe }}
+    </div>
+</article>
+{% endblock %}
