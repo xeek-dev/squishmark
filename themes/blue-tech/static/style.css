@@ -135,14 +135,23 @@ img {
 .nav-logo {
     font-family: var(--font-sans);
     font-size: 1.25rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--color-text);
     white-space: nowrap;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    padding: 6px 10px;
+    margin: -6px -10px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    transition: border-color var(--transition);
 }
 
 .nav-logo:hover {
+    border-color: var(--color-accent-light);
+}
+
+.nav-logo .accent {
     color: var(--color-accent);
 }
 
