@@ -18,7 +18,7 @@ Add these settings to your content repository's `config.yml`:
 ```yaml
 theme:
   name: terminal
-  pygments_style: monokai
+  pygments_style: monokai         # required: must be monokai (theme has custom color remap)
   background: matrix        # optional, defaults to "plain" if omitted
   nav_image: /static/user/logo.png   # optional, replaces pixel art in navbar
   hero_image: /static/user/hero.png  # optional, replaces pixel art hero on homepage
@@ -29,7 +29,7 @@ theme:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `name` | string | `"default"` | Set to `"terminal"` to use this theme |
-| `pygments_style` | string | `"monokai"` | Pygments style for code block syntax highlighting |
+| `pygments_style` | string | `"monokai"` | Must be `"monokai"` — this theme ships a custom-remapped `pygments.css` built on Monokai's class names. Changing this will break syntax highlighting. See [#33](https://github.com/xeek-dev/squishmark/issues/33). |
 | `background` | string | none | Background effect — theme defaults to `"plain"` if omitted (see below) |
 | `nav_image` | string | `null` | Image URL to replace the pixel art logo in the navbar |
 | `hero_image` | string | `null` | Image URL to replace the pixel art hero on the homepage |
