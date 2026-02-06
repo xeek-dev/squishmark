@@ -74,7 +74,7 @@ class ThemeConfig(BaseModel):
 
     name: str = "default"
     pygments_style: str = "monokai"
-    background: str = "plain"
+    background: str | None = None
     nav_image: str | None = None
     hero_image: str | None = None
 

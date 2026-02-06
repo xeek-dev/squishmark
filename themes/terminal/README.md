@@ -19,7 +19,7 @@ Add these settings to your content repository's `config.yml`:
 theme:
   name: terminal
   pygments_style: monokai
-  background: matrix        # optional, defaults to "plain"
+  background: matrix        # optional, defaults to "plain" if omitted
   nav_image: /static/user/logo.png   # optional, replaces pixel art in navbar
   hero_image: /static/user/hero.png  # optional, replaces pixel art hero on homepage
 ```
@@ -30,7 +30,7 @@ theme:
 |-------|------|---------|-------------|
 | `name` | string | `"default"` | Set to `"terminal"` to use this theme |
 | `pygments_style` | string | `"monokai"` | Pygments style for code block syntax highlighting |
-| `background` | string | `"plain"` | Background effect (see below) |
+| `background` | string | none | Background effect — theme defaults to `"plain"` if omitted (see below) |
 | `nav_image` | string | `null` | Image URL to replace the pixel art logo in the navbar |
 | `hero_image` | string | `null` | Image URL to replace the pixel art hero on the homepage |
 
