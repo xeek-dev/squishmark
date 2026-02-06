@@ -43,6 +43,9 @@ When planning implementation work, follow this workflow:
    - Manual testing: start dev server with `python scripts/start-dev.py` and verify changes work
 
 3. **PR Workflow**
+   - Commit messages and PR titles **must** use [Conventional Commits](https://www.conventionalcommits.org/) format: `type(scope): description`
+     - Examples: `feat(terminal): add pixel art title renderer`, `fix(docs): correct cache-busting instructions`
+     - Use the same `type` as the branch prefix; `scope` is optional but recommended
    - Commit and push changes
    - Create PR linked to the issue
    - Wait for CI checks to pass
