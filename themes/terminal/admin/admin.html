@@ -7,15 +7,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
-    <link rel="stylesheet" href="/static/{{ theme_name }}/admin.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/admin.css">
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 </head>
 <body class="admin-body">
     <header class="admin-header">
         <div class="admin-header-content">
-            <h1>SquishMark Admin</h1>
+            <a href="/" class="admin-title">
+                {% if theme.nav_image %}
+                <img src="{{ theme.nav_image }}" alt="{{ site.title }}" class="nav-image">
+                {% else %}
+                <div class="nav-pixel-art" data-pixel-text="{{ site.title }}"
+                     data-pixel-size="8" data-pixel-gap="0"
+                     data-pixel-cursor="solid" data-pixel-skew="-6"
+                     data-pixel-split="6"
+                     data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
+                {% endif %}
+            </a>
             <div class="admin-user">
                 {% if user.avatar_url %}
                 <img src="{{ user.avatar_url }}" alt="{{ user.login }}" class="avatar">
@@ -126,42 +136,8 @@
         </section>
     </main>
 
-    <script>
-        function toggleNoteForm() {
-            document.getElementById('note-form').classList.toggle('hidden');
-        }
-
-        const viewsData = {{ analytics.views_by_day | tojson | safe }};
-        if (viewsData.length > 0) {
-            const ctx = document.getElementById('viewsChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: viewsData.map(d => d.date),
-                    datasets: [
-                        {
-                            label: 'Views',
-                            data: viewsData.map(d => d.views),
-                            borderColor: '#3b82f6',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Unique Visitors',
-                            data: viewsData.map(d => d.unique_visitors),
-                            borderColor: '#4ade80',
-                            tension: 0.1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-    </script>
+    <script src="/static/{{ theme_name }}/js/pixel-font.js"></script>
+    <script id="views-data" type="application/json">{{ analytics.views_by_day | tojson | safe }}</script>
+    <script src="/static/{{ theme_name }}/js/admin.js"></script>
 </body>
 </html>

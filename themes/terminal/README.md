@@ -103,7 +103,9 @@ Setting `nav_image` or `hero_image` in the theme config replaces the correspondi
 
 | File | Purpose |
 |------|---------|
-| `static/style.css` | All theme styles including backgrounds and responsive breakpoints |
-| `static/pygments.css` | Syntax highlighting colors for code blocks |
-| `static/pixel-font.js` | Pixel art text renderer (auto-initializes on `DOMContentLoaded`) |
-| `static/backgrounds.js` | Canvas-based background effects (matrix, noise, hex) |
+| `static/css/style.css` | All theme styles including backgrounds and responsive breakpoints |
+| `static/css/pygments.css` | Syntax highlighting colors for code blocks |
+| `static/css/admin.css` | Admin dashboard styles |
+| `static/js/pixel-font.js` | Pixel art text renderer (auto-initializes on `DOMContentLoaded`) |
+| `static/js/backgrounds.js` | Canvas-based background effects (matrix, noise, hex) |
+| `static/js/admin.js` | Admin dashboard chart and form interactions |

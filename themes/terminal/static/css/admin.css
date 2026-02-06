@@ -20,6 +20,7 @@
 }
 
 .admin-header-content {
+    width: 100%;
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 0 1.5rem;
@@ -28,11 +29,30 @@
     align-items: center;
 }
 
-.admin-header h1 {
-    font-family: var(--font-mono);
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text);
+.admin-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.admin-title .nav-pixel-art {
+    transform: scale(0.22);
+    transform-origin: left top;
+    height: 56px;
+    margin-bottom: -44px;
+    width: 500px;
+    max-width: 500px;
+    margin-right: -390px;
+}
+
+.admin-title .nav-image {
+    height: 28px;
+    width: auto;
+}
+
+.admin-title {
+    text-decoration: none;
 }
 
 .admin-user {
@@ -69,6 +89,7 @@
    Admin Main Content
    ============================================ */
 .admin-main {
+    width: 100%;
     max-width: var(--max-width);
     margin: 0 auto;
     padding: 2rem 1.5rem;

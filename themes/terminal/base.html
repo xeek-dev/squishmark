@@ -14,8 +14,8 @@
     {% if favicon_url %}
     <link rel="icon" href="{{ favicon_url }}">
     {% endif %}
-    <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
-    <link rel="stylesheet" href="/static/{{ theme_name }}/pygments.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/pygments.css">
     {% block head %}{% endblock %}
 </head>
 <body class="bg-{{ theme.background|default('plain') }}">
@@ -29,7 +29,7 @@
                 {% else %}
                 <div class="nav-pixel-art" data-pixel-text="{{ site.title }}"
                      data-pixel-size="8" data-pixel-gap="0"
-                     data-pixel-cursor="outline" data-pixel-skew="-6"
+                     data-pixel-cursor="solid" data-pixel-skew="-6"
                      data-pixel-split="6"
                      data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
                 {% endif %}
@@ -56,9 +56,9 @@
         </div>
     </footer>
 
-    <script src="/static/{{ theme_name }}/pixel-font.js"></script>
+    <script src="/static/{{ theme_name }}/js/pixel-font.js"></script>
     {% if theme.background in ['matrix', 'noise', 'hex'] %}
-    <script src="/static/{{ theme_name }}/backgrounds.js"></script>
+    <script src="/static/{{ theme_name }}/js/backgrounds.js"></script>
     {% endif %}
 </body>
 </html>

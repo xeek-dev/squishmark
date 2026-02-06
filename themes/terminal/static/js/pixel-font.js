@@ -132,7 +132,7 @@
         cursor.style.marginLeft = pixelSize + 'px';
         cursor.style.alignSelf = 'start';
         if (style === 'outline') {
-            var borderW = Math.max(1, Math.round(pixelSize * 0.4));
+            var borderW = Math.max(1, Math.round(pixelSize * 0.7));
             cursor.style.border = borderW + 'px solid ' + color;
             cursor.style.background = 'transparent';
         } else {
