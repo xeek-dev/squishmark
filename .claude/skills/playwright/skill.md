@@ -40,21 +40,38 @@ Requires Node.js (`brew install node` on macOS).
 
 ### 2. Hard Cache Refresh
 
-**IMPORTANT:** Regular `location.reload(true)` is deprecated and unreliable.
+**IMPORTANT:** The following DO NOT reliably bypass the browser cache:
+- `Meta+Shift+r` / `Ctrl+Shift+R` keyboard shortcuts
+- `location.reload(true)` (deprecated, ignored)
+- `browser_close` + `browser_navigate`
+- Cache API (`caches.delete`)
+- Query params on the HTML URL
 
-Use keyboard shortcut for hard refresh:
+**Use CDP `Network.setCacheDisabled` instead** — this is the DevTools "Disable cache" checkbox equivalent:
+
 ```
-mcp__playwright__browser_press_key with key="Control+Shift+r"
+mcp__playwright__browser_run_code with code:
+async (page) => {
+  const client = await page.context().newCDPSession(page);
+  await client.send('Network.enable');
+  await client.send('Network.setCacheDisabled', { cacheDisabled: true });
+  await page.reload({ waitUntil: 'networkidle' });
+  await client.send('Network.setCacheDisabled', { cacheDisabled: false });
+  await client.detach();
+}
 ```
 
-Or on macOS:
-```
-mcp__playwright__browser_press_key with key="Meta+Shift+r"
-```
+This temporarily disables cache for the reload only, then re-enables it. Works for all resource types (CSS, JS, images, fonts).
 
-Alternative approaches:
-- Close browser and reopen: `mcp__playwright__browser_close` then `mcp__playwright__browser_navigate`
-- Add cache-busting query param: `?v=timestamp` or `?nocache=1`
+**Nuclear option** — wipe the entire browser cache:
+```
+mcp__playwright__browser_run_code with code:
+async (page) => {
+  const client = await page.context().newCDPSession(page);
+  await client.send('Network.clearBrowserCache');
+  await page.reload();
+}
+```
 
 ### 3. Verifying CSS Changes
 
@@ -65,9 +82,13 @@ When testing CSS changes that might be cached:
    curl -s http://localhost:8000/static/theme/style.css | grep "your-selector"
    ```
 
-2. If browser shows old styles, do a hard refresh (see above)
+2. Use the CDP cache-disable reload (see above)
 
-3. If still cached, close browser completely and reopen
+3. **Always verify with computed styles**, not screenshots:
+   ```
+   mcp__playwright__browser_evaluate with function:
+   () => getComputedStyle(document.querySelector('.your-element')).backgroundColor
+   ```
 
 ### 4. Element Interaction
 
@@ -142,9 +163,9 @@ mcp__playwright__browser_take_screenshot with type="png", filename="test.png", r
 
 ### Cached CSS not updating
 
-1. Hard refresh: `Ctrl+Shift+R` / `Cmd+Shift+R`
-2. Close and reopen browser
-3. Verify CSS on server with curl
+1. Verify CSS on server with `curl`
+2. Use CDP `Network.setCacheDisabled` reload (see "Hard Cache Refresh" section above)
+3. Verify with `browser_evaluate` + `getComputedStyle()` — never trust screenshots alone for CSS verification
 
 ### Element not found
 
