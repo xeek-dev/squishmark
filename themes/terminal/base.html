@@ -23,11 +23,17 @@
     <nav class="nav">
         <div class="nav-container">
             <a href="/" class="nav-logo">
-                <div data-pixel-text="{{ site.title }}"
-                     data-pixel-size="2" data-pixel-gap="0"
+                {% block nav_logo %}
+                {% if theme.nav_image %}
+                <img src="{{ theme.nav_image }}" alt="{{ site.title }}" class="nav-image">
+                {% else %}
+                <div class="nav-pixel-art" data-pixel-text="{{ site.title }}"
+                     data-pixel-size="8" data-pixel-gap="0"
                      data-pixel-cursor="outline" data-pixel-skew="-6"
                      data-pixel-split="6"
                      data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
+                {% endif %}
+                {% endblock %}
             </a>
             <div class="nav-links">
                 <a href="/posts">Posts</a>

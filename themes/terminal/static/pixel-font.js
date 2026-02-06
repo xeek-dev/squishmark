@@ -95,7 +95,9 @@
             letterEl.style.display = 'grid';
             letterEl.style.gridTemplateColumns = 'repeat(' + cols + ', ' + pixelSize + 'px)';
             letterEl.style.gridTemplateRows = 'repeat(' + rows + ', ' + pixelSize + 'px)';
-            letterEl.style.gap = gap + 'px';
+            if (gap > 0) {
+                letterEl.style.gap = gap + 'px';
+            }
             letterEl.style.marginRight = (pixelSize + gap) + 'px';
 
             for (var r = 0; r < rows; r++) {

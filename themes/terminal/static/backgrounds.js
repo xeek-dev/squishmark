@@ -25,12 +25,16 @@
 
         var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*';
         var fontSize = 14;
+        var rows = Math.floor(canvas.height / fontSize);
         var columns = Math.floor(canvas.width / fontSize);
-        var drops = Array(columns).fill(1);
+        var drops = [];
+        for (var i = 0; i < columns; i++) drops[i] = Math.floor(Math.random() * rows);
 
         window.addEventListener('resize', function() {
             columns = Math.floor(canvas.width / fontSize);
-            drops = Array(columns).fill(1);
+            rows = Math.floor(canvas.height / fontSize);
+            drops = [];
+            for (var j = 0; j < columns; j++) drops[j] = Math.floor(Math.random() * rows);
         });
 
         function draw() {
@@ -45,6 +49,12 @@
                 drops[i]++;
             }
         }
+
+        // Pre-fill: run frames offscreen to build up trails before showing
+        canvas.style.visibility = 'hidden';
+        for (var f = 0; f < 80; f++) draw();
+        canvas.style.visibility = 'visible';
+
         setInterval(draw, 50);
     }
 
