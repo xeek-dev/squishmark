@@ -1,0 +1,84 @@
+/* Terminal Theme - Monokai Syntax Highlighting */
+.highlight { background: #1a1e2e; border-radius: 10px; }
+.highlight pre { margin: 0; padding: 1rem; }
+
+/* Comments */
+.highlight .c,
+.highlight .c1,
+.highlight .ch,
+.highlight .cm,
+.highlight .cp,
+.highlight .cpf,
+.highlight .cs { color: #75715e; font-style: italic; }
+
+/* Keywords */
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt { color: #66d9ef; }
+.highlight .kd { font-style: italic; }
+
+/* Strings */
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sa,
+.highlight .sb,
+.highlight .sc,
+.highlight .sd,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .ss,
+.highlight .sx { color: #e6db74; }
+
+/* Numbers */
+.highlight .m,
+.highlight .mb,
+.highlight .mf,
+.highlight .mh,
+.highlight .mi,
+.highlight .mo,
+.highlight .il { color: #ae81ff; }
+
+/* Names / Functions */
+.highlight .n { color: #f8f8f2; }
+.highlight .na { color: #a6e22e; }
+.highlight .nb { color: #f8f8f2; }
+.highlight .nc { color: #a6e22e; font-weight: bold; }
+.highlight .nd { color: #a6e22e; }
+.highlight .ne { color: #a6e22e; font-weight: bold; }
+.highlight .nf { color: #a6e22e; }
+.highlight .ni { color: #f8f8f2; }
+.highlight .nl { color: #f8f8f2; }
+.highlight .nn { color: #f8f8f2; }
+.highlight .no { color: #66d9ef; }
+.highlight .nt { color: #f92672; }
+.highlight .nv { color: #f8f8f2; }
+.highlight .bp { color: #f8f8f2; }
+.highlight .vc,
+.highlight .vg,
+.highlight .vi { color: #f8f8f2; }
+
+/* Operators */
+.highlight .o,
+.highlight .ow { color: #f92672; }
+
+/* Punctuation */
+.highlight .p { color: #f8f8f2; }
+
+/* Generic */
+.highlight .gd { color: #f92672; }
+.highlight .ge { font-style: italic; }
+.highlight .gi { color: #a6e22e; }
+.highlight .gs { font-weight: bold; }
+.highlight .gu { color: #75715e; }
+
+/* Errors */
+.highlight .err { color: #960050; background-color: #1e0010; }
+
+/* Text */
+.highlight .w { color: #f8f8f2; }

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.title }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-pixel-container"
+         data-pixel-text="{{ site.title }}"
+         data-pixel-size="6" data-pixel-gap="1"
+         data-pixel-cursor="solid" data-pixel-skew="0"
+         data-pixel-split="6"
+         data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
+    <p class="hero-subtitle">{{ site.description }}</p>
+</section>
+
+<section id="posts" class="posts-section">
+    {% if posts %}
+    <div class="posts-grid">
+        {% for post in posts %}
+        <article class="post-card">
+            <div class="post-card-content">
+                {% if post.date %}
+                <time class="post-date" datetime="{{ post.date }}">
+                    {{ post.date | format_date }}
+                </time>
+                {% endif %}
+                <h2 class="post-title">
+                    <a href="{{ post.url }}">{{ post.title }}</a>
+                </h2>
+                {% if post.description %}
+                <p class="post-excerpt">{{ post.description }}</p>
+                {% endif %}
+                {% if post.tags %}
+                <div class="post-tags">
+                    {% for tag in post.tags %}
+                    <span class="tag {% if loop.index is odd %}tag-green{% else %}tag-blue{% endif %}">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if pagination.total_pages > 1 %}
+    <nav class="pagination">
+        {% if pagination.has_prev %}
+        <a href="/posts?page={{ pagination.prev_page }}" class="pagination-link prev">&larr; Newer</a>
+        {% else %}
+        <span class="pagination-link prev disabled">&larr; Newer</span>
+        {% endif %}
+
+        <span class="pagination-info">
+            Page {{ pagination.page }} of {{ pagination.total_pages }}
+        </span>
+
+        {% if pagination.has_next %}
+        <a href="/posts?page={{ pagination.next_page }}" class="pagination-link next">Older &rarr;</a>
+        {% else %}
+        <span class="pagination-link next disabled">Older &rarr;</span>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="no-posts">
+        <p>No posts yet. Check back soon!</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

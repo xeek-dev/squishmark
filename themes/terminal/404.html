@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - {{ site.title }}{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">404</div>
+    <p class="error-title">$ cat page.md</p>
+    <p class="error-message">cat: page.md: No such file or directory</p>
+    <a href="/" class="btn btn-primary">cd ~</a>
+</div>
+{% endblock %}

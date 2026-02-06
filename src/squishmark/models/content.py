@@ -74,6 +74,7 @@ class ThemeConfig(BaseModel):
 
     name: str = "default"
     pygments_style: str = "monokai"
+    background: str = "plain"
 
 
 class PostsConfig(BaseModel):
