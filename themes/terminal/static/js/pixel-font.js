@@ -170,5 +170,4 @@
 
     /* Export for external use */
     window.renderPixelText = renderPixelText;
-    window.makeCursor = makeCursor;
 })();

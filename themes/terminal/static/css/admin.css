@@ -219,47 +219,22 @@
 }
 
 /* ============================================
-   Buttons
+   Button overrides for admin (smaller sizing)
+   Base .btn styles come from style.css
    ============================================ */
-.btn {
-    display: inline-block;
+.admin-body .btn {
     padding: 0.5rem 1rem;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
     font-size: 0.875rem;
-    font-family: var(--font-mono);
-    transition: all var(--transition);
-    cursor: pointer;
-    border: none;
-}
-
-.btn-primary {
-    background: var(--color-blue);
-    color: var(--color-text);
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-}
-
-.btn-secondary {
-    background: var(--color-bg-card);
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover {
-    background: var(--color-surface);
-    border-color: var(--color-border-hover);
+    font-weight: 500;
 }
 
 .btn-danger {
-    background: #ef4444;
+    background: var(--color-danger);
     color: var(--color-text);
 }
 
 .btn-danger:hover {
-    background: #dc2626;
+    background: var(--color-danger-hover);
 }
 
 .btn-sm {

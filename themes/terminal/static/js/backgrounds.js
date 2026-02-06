@@ -16,26 +16,20 @@
         container.appendChild(canvas);
         var ctx = canvas.getContext('2d');
 
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*';
+        var fontSize = 14;
+        var columns, rows, drops;
+
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-        }
-        resize();
-        window.addEventListener('resize', resize);
-
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*';
-        var fontSize = 14;
-        var rows = Math.floor(canvas.height / fontSize);
-        var columns = Math.floor(canvas.width / fontSize);
-        var drops = [];
-        for (var i = 0; i < columns; i++) drops[i] = Math.floor(Math.random() * rows);
-
-        window.addEventListener('resize', function() {
             columns = Math.floor(canvas.width / fontSize);
             rows = Math.floor(canvas.height / fontSize);
             drops = [];
-            for (var j = 0; j < columns; j++) drops[j] = Math.floor(Math.random() * rows);
-        });
+            for (var i = 0; i < columns; i++) drops[i] = Math.floor(Math.random() * rows);
+        }
+        resize();
+        window.addEventListener('resize', resize);
 
         function draw() {
             ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
@@ -86,12 +80,12 @@
     }
 
     function initHexWatermark(container) {
-        var hex = '';
+        var parts = [];
         for (var i = 0; i < 8000; i++) {
-            hex += Math.floor(Math.random() * 16).toString(16);
-            if (i % 2 === 1) hex += ' ';
-            if (i % 64 === 63) hex += '\n';
+            parts.push(Math.floor(Math.random() * 16).toString(16));
+            if (i % 2 === 1) parts.push(' ');
+            if (i % 64 === 63) parts.push('\n');
         }
-        container.textContent = hex;
+        container.textContent = parts.join('');
     }
 })();
