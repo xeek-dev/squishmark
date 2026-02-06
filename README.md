@@ -188,6 +188,7 @@ SquishMark includes bundled themes:
 
 - **default** - Clean, minimal design
 - **blue-tech** - Dark SaaS aesthetic with electric blue accents, frosted glass nav, and hero section
+- **terminal** - Dark terminal aesthetic with CSS pixel art titles, 9 configurable backgrounds, and custom syntax highlighting
 
 Set your theme in `config.yml`:
 
