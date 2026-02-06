@@ -1,0 +1,442 @@
+/* Terminal Theme - Admin Styles */
+
+/* ============================================
+   Admin Body
+   ============================================ */
+.admin-body {
+    background: var(--color-bg);
+    min-height: 100vh;
+}
+
+/* ============================================
+   Admin Header
+   ============================================ */
+.admin-header {
+    background: rgba(10, 14, 23, 0.5);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1rem 0;
+}
+
+.admin-header-content {
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.admin-title .nav-pixel-art {
+    transform: scale(0.22);
+    transform-origin: left top;
+    height: 56px;
+    margin-bottom: -44px;
+    width: 500px;
+    max-width: 500px;
+    margin-right: -390px;
+}
+
+.admin-title .nav-image {
+    height: 28px;
+    width: auto;
+}
+
+.admin-title {
+    text-decoration: none;
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-user .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+}
+
+.admin-user span {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.logout-link {
+    color: var(--color-blue);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    margin-left: 1rem;
+}
+
+.logout-link:hover {
+    color: var(--color-green);
+}
+
+/* ============================================
+   Admin Main Content
+   ============================================ */
+.admin-main {
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* ============================================
+   Admin Sections
+   ============================================ */
+.admin-section {
+    background: var(--color-bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.admin-section h2 {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 1.5rem;
+}
+
+.admin-section h3 {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 2rem 0 1rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   Stats Grid
+   ============================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid var(--color-border);
+}
+
+.stat-value {
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--color-green);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+/* ============================================
+   Chart Container
+   ============================================ */
+.chart-container {
+    height: 300px;
+    margin-bottom: 2rem;
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+}
+
+/* ============================================
+   Admin Table
+   ============================================ */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.admin-table th {
+    color: var(--color-text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.admin-table td {
+    color: var(--color-text);
+}
+
+.admin-table td a {
+    color: var(--color-blue);
+}
+
+.admin-table td a:hover {
+    color: var(--color-green);
+}
+
+.admin-table tr:hover td {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* ============================================
+   Button overrides for admin (smaller sizing)
+   Base .btn styles come from style.css
+   ============================================ */
+.admin-body .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.btn-danger {
+    background: var(--color-danger);
+    color: var(--color-text);
+}
+
+.btn-danger:hover {
+    background: var(--color-danger-hover);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* ============================================
+   Forms
+   ============================================ */
+.note-form {
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--color-border);
+}
+
+.note-form.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    transition: border-color var(--transition);
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-blue);
+}
+
+.form-group input[type="text"]::placeholder,
+.form-group textarea::placeholder {
+    color: var(--color-text-muted);
+}
+
+.form-group input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+/* ============================================
+   Notes List
+   ============================================ */
+.note-item {
+    background: var(--color-bg);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.note-path {
+    font-family: var(--font-mono);
+    color: var(--color-green);
+    font-size: 0.875rem;
+}
+
+.note-status {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+}
+
+.note-status.public {
+    background: rgba(74, 222, 128, 0.2);
+    color: #4ade80;
+}
+
+.note-status.private {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.note-text {
+    color: var(--color-text);
+}
+
+.note-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+/* ============================================
+   Cache Section
+   ============================================ */
+.cache-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cache-info p {
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    margin: 0;
+}
+
+.cache-info strong {
+    color: var(--color-green);
+}
+
+/* ============================================
+   HTMX Indicator
+   ============================================ */
+.htmx-indicator {
+    display: none;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline;
+}
+
+/* ============================================
+   No Data
+   ============================================ */
+.no-data {
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 2rem;
+    font-family: var(--font-mono);
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+    .admin-header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .note-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .note-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .cache-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

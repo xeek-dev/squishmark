@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site.title }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ site.description }}{% endblock %}">
+    {% if site.author %}
+    <meta name="author" content="{{ site.author }}">
+    {% endif %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {% if favicon_url %}
+    <link rel="icon" href="{{ favicon_url }}">
+    {% endif %}
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/style.css">
+    <link rel="stylesheet" href="/static/{{ theme_name }}/css/pygments.css">
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-{{ theme.background|default('plain') }}">
+    <!-- Sticky frosted glass nav -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                {% block nav_logo %}
+                {% if theme.nav_image %}
+                <img src="{{ theme.nav_image }}" alt="{{ site.title }}" class="nav-image">
+                {% else %}
+                <div class="nav-pixel-art" data-pixel-text="{{ site.title }}"
+                     data-pixel-size="8" data-pixel-gap="0"
+                     data-pixel-cursor="solid" data-pixel-skew="-6"
+                     data-pixel-split="6"
+                     data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
+                {% endif %}
+                {% endblock %}
+            </a>
+            <div class="nav-links">
+                <a href="/posts">Posts</a>
+                <a href="/about">About</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conditional background canvas layer for JS backgrounds -->
+    {% if theme.background in ['matrix', 'noise', 'hex'] %}
+    <div id="bg-canvas-layer" data-background="{{ theme.background }}"></div>
+    {% endif %}
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <span class="footer-powered">Powered by <a href="https://github.com/xeek-dev/squishmark">SquishMark</a></span>
+            <a href="/admin" class="admin-link">Admin</a>
+        </div>
+    </footer>
+
+    <script src="/static/{{ theme_name }}/js/pixel-font.js"></script>
+    {% if theme.background in ['matrix', 'noise', 'hex'] %}
+    <script src="/static/{{ theme_name }}/js/backgrounds.js"></script>
+    {% endif %}
+</body>
+</html>

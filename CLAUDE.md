@@ -172,13 +172,15 @@ squishmark/
 │           ├── content.py       # Post, Page, FrontMatter
 │           └── db.py            # SQLAlchemy models
 ├── themes/
-│   └── default/                 # Bundled default theme
-│       ├── base.html
-│       ├── index.html
-│       ├── post.html
-│       ├── page.html
-│       └── static/
-│           └── style.css
+│   ├── default/                 # Bundled default theme
+│   │   ├── base.html
+│   │   ├── index.html
+│   │   ├── post.html
+│   │   ├── page.html
+│   │   └── static/
+│   │       └── style.css
+│   ├── blue-tech/               # Dark SaaS aesthetic
+│   └── terminal/                # Dark terminal with pixel art titles
 ├── tests/
 ├── pyproject.toml
 ├── Dockerfile

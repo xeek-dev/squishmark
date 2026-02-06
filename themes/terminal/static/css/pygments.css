@@ -1,0 +1,84 @@
+/* Terminal Theme - Custom Syntax Highlighting */
+.highlight { background: #1a1e2e; border-radius: 10px; }
+.highlight pre { margin: 0; padding: 1rem; }
+
+/* Comments — muted gray */
+.highlight .c,
+.highlight .c1,
+.highlight .ch,
+.highlight .cm,
+.highlight .cp,
+.highlight .cpf,
+.highlight .cs { color: #64748b; font-style: italic; }
+
+/* Keywords — blue */
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt { color: #3b82f6; }
+.highlight .kd { font-style: italic; }
+
+/* Strings — green */
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sa,
+.highlight .sb,
+.highlight .sc,
+.highlight .sd,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .ss,
+.highlight .sx { color: #4ade80; }
+
+/* Numbers — soft purple */
+.highlight .m,
+.highlight .mb,
+.highlight .mf,
+.highlight .mh,
+.highlight .mi,
+.highlight .mo,
+.highlight .il { color: #a78bfa; }
+
+/* Names / Functions — light blue */
+.highlight .n { color: #e2e8f0; }
+.highlight .na { color: #7dd3fc; }
+.highlight .nb { color: #e2e8f0; }
+.highlight .nc { color: #7dd3fc; font-weight: bold; }
+.highlight .nd { color: #a78bfa; }
+.highlight .ne { color: #7dd3fc; font-weight: bold; }
+.highlight .nf { color: #7dd3fc; }
+.highlight .ni { color: #e2e8f0; }
+.highlight .nl { color: #e2e8f0; }
+.highlight .nn { color: #e2e8f0; }
+.highlight .no { color: #3b82f6; }
+.highlight .nt { color: #3b82f6; }
+.highlight .nv { color: #e2e8f0; }
+.highlight .bp { color: #94a3b8; }
+.highlight .vc,
+.highlight .vg,
+.highlight .vi { color: #e2e8f0; }
+
+/* Operators — symbols soft red, keyword-operators blue */
+.highlight .o { color: #f87171; }
+.highlight .ow { color: #3b82f6; }
+
+/* Punctuation — muted gray */
+.highlight .p { color: #94a3b8; }
+
+/* Generic */
+.highlight .gd { color: #f87171; }
+.highlight .ge { font-style: italic; }
+.highlight .gi { color: #4ade80; }
+.highlight .gs { font-weight: bold; }
+.highlight .gu { color: #64748b; }
+
+/* Errors */
+.highlight .err { color: #f87171; background-color: rgba(248, 113, 113, 0.1); }
+
+/* Text */
+.highlight .w { color: #e2e8f0; }
