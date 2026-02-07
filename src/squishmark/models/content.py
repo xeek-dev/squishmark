@@ -78,6 +78,9 @@ class ThemeConfig(BaseModel):
     nav_image: str | None = None
     hero_image: str | None = None
 
+    # Allow extra fields for extensibility
+    model_config = {"extra": "allow"}
+
 
 class PostsConfig(BaseModel):
     """Posts configuration from config.yml."""
