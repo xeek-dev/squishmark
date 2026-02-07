@@ -8,7 +8,7 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 ## Skills
 
-**INSTRUCTION:** If your task involves Python, Docker, browser testing, or GitHub operations, invoke the relevant skill using `Skill(skill-name)`.
+**INSTRUCTION:** If your task involves Python, Docker, browser testing, GitHub operations, or theme creation, invoke the relevant skill using `Skill(skill-name)`.
 
 | Skill | Description |
 |-------|-------------|
@@ -16,6 +16,7 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 | `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
 | `playwright` | E2E browser testing with Playwright MCP (navigation, screenshots, hard refresh, cache busting) |
 | `github` | GitHub operations via gh CLI (issues, PRs, labels, milestones, GraphQL) |
+| `theme-creator` | Theme authoring — templates, variables, filters, static files |
 
 ## Planning Workflow
 
