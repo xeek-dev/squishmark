@@ -64,7 +64,7 @@ Use the `gh` CLI for all GitHub operations. Run individual `gh` commands via the
    # List milestones to get the number
    gh api repos/{owner}/{repo}/milestones --jq '.[].title'
 
-   # Assign milestone (use milestone number, not name)
+   # Assign milestone by title
    gh issue edit 42 --milestone "SquishMark 1.0"
    ```
 
@@ -209,11 +209,11 @@ gh pr view 42
 # Check CI status
 gh pr checks 42
 
-# Add a comment (always sign with *-- Claude*)
+# Add a comment (always sign with *— Claude*)
 gh pr comment 42 --body "$(cat <<'EOF'
 Looks good! One minor suggestion on the error handling.
 
-*-- Claude*
+*— Claude*
 EOF
 )"
 
@@ -240,7 +240,7 @@ Always sign comments on PRs and issues so it is clear they are AI-generated:
 ```
 Your comment text here.
 
-*-- Claude*
+*— Claude*
 ```
 
 ### Conventional Commits
