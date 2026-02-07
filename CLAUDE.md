@@ -8,13 +8,14 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 ## Skills
 
-**INSTRUCTION:** If your task involves Python, Docker, or browser testing, invoke the relevant skill using `Skill(skill-name)`.
+**INSTRUCTION:** If your task involves Python, Docker, browser testing, or GitHub operations, invoke the relevant skill using `Skill(skill-name)`.
 
 | Skill | Description |
 |-------|-------------|
 | `python` | Python coding standards and gotchas (SQLAlchemy, python-markdown, async patterns) |
 | `docker` | Dockerfile standards (hatchling builds, multi-stage patterns) |
 | `playwright` | E2E browser testing with Playwright MCP (navigation, screenshots, hard refresh, cache busting) |
+| `github` | GitHub operations via gh CLI (issues, PRs, labels, milestones, GraphQL) |
 
 ## Planning Workflow
 
@@ -53,34 +54,9 @@ When planning implementation work, follow this workflow:
 
 ## GitHub Interaction
 
-For all GitHub operations (issues, PRs, comments, reviews), use this priority order:
+For all GitHub operations (issues, PRs, labels, milestones), use the `github` skill. If `gh` commands fail with auth errors, run `gh auth login`.
 
-1. **GitHub MCP Server** (PREFERRED) — Use `mcp__github__*` tools when available
-2. **`gh` CLI** (FALLBACK) — Use via Bash if MCP tools fail or are unavailable
-3. **Manual Setup Required** — If both fail with auth errors, tell the developer:
-   ```bash
-   # For gh CLI
-   gh auth login
-
-   # For MCP server, check Claude Code settings and ensure GitHub MCP is configured
-   ```
-
-### Signing Comments
-
-When commenting on PRs or issues, ALWAYS sign your comments so it's clear they're AI-generated:
-
-```
-Your comment text here.
-
-*— Claude*
-```
-
-### Issue Creation
-
-Before creating issues:
-- Search for existing issues to avoid duplicates
-- Use appropriate labels (enhancement, bug, documentation)
-- Link related issues when applicable
+When commenting on PRs or issues, always sign with `*— Claude*`.
 
 ## Architecture
 
