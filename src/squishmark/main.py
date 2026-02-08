@@ -16,6 +16,7 @@ from squishmark.models.db import close_db, get_db_session, init_db
 from squishmark.routers import admin, auth, pages, posts, webhooks
 from squishmark.services.analytics import AnalyticsService
 from squishmark.services.github import get_github_service, shutdown_github_service
+from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
 
 # Configure logging
@@ -199,6 +200,23 @@ def create_app() -> FastAPI:
                 )
 
         raise HTTPException(status_code=404, detail="Favicon not found")
+
+    # Dynamic Pygments CSS - generates syntax highlighting styles from config
+    @app.get("/pygments.css")
+    async def serve_pygments_css() -> Response:
+        """Serve dynamically generated Pygments CSS based on configured style."""
+        github_service = get_github_service()
+        config_data = await github_service.get_config()
+        from squishmark.models.content import Config
+
+        config = Config.from_dict(config_data)
+        md_service = get_markdown_service(config)
+        css = md_service.get_pygments_css()
+        return Response(
+            content=css,
+            media_type="text/css",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
 
     # User static files from content repository
     ALLOWED_STATIC_EXTENSIONS = {".ico", ".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".css", ".js"}
