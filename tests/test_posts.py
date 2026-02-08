@@ -1,10 +1,10 @@
 """Tests for post routes and draft filtering."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from squishmark.routers.posts import _is_admin
+from squishmark.routers.posts import _get_all_posts, _is_admin
 
 
 @pytest.fixture
@@ -77,50 +77,45 @@ class TestIsAdmin:
 class TestGetAllPostsDraftFiltering:
     """Tests for draft filtering in _get_all_posts."""
 
-    @pytest.fixture
-    def markdown_service(self):
+    @pytest.mark.asyncio
+    async def test_get_all_posts_excludes_drafts(self):
+        """_get_all_posts should exclude draft posts by default."""
         from squishmark.services.markdown import MarkdownService
 
-        return MarkdownService()
+        mock_github = AsyncMock()
+        mock_github.list_directory.return_value = [
+            "posts/2026-01-01-published.md",
+            "posts/2026-01-02-draft.md",
+        ]
+        mock_github.get_file.side_effect = [
+            MagicMock(content="---\ntitle: Published\ndate: 2026-01-01\n---\nContent"),
+            MagicMock(content="---\ntitle: Draft\ndate: 2026-01-02\ndraft: true\n---\nContent"),
+        ]
+        md = MarkdownService()
 
-    def test_draft_post_excluded_by_default(self, markdown_service):
-        """Draft posts should be excluded when include_drafts is False."""
-        content = """---
-title: Draft Post
-date: 2026-01-25
-draft: true
----
+        posts = await _get_all_posts(mock_github, md, include_drafts=False)
 
-Draft content.
-"""
-        post = markdown_service.parse_post("posts/2026-01-25-draft-post.md", content)
-        assert post.draft is True
+        assert len(posts) == 1
+        assert posts[0].title == "Published"
 
-    def test_published_post_included(self, markdown_service):
-        """Published posts (draft: false or missing) should always be included."""
-        content = """---
-title: Published Post
-date: 2026-01-25
----
+    @pytest.mark.asyncio
+    async def test_get_all_posts_includes_drafts_when_requested(self):
+        """_get_all_posts should include drafts when include_drafts=True."""
+        from squishmark.services.markdown import MarkdownService
 
-Published content.
-"""
-        post = markdown_service.parse_post(
-            "posts/2026-01-25-published-post.md", content
-        )
-        assert post.draft is False
+        mock_github = AsyncMock()
+        mock_github.list_directory.return_value = [
+            "posts/2026-01-01-published.md",
+            "posts/2026-01-02-draft.md",
+        ]
+        mock_github.get_file.side_effect = [
+            MagicMock(content="---\ntitle: Published\ndate: 2026-01-01\n---\nContent"),
+            MagicMock(content="---\ntitle: Draft\ndate: 2026-01-02\ndraft: true\n---\nContent"),
+        ]
+        md = MarkdownService()
 
-    def test_explicit_draft_false(self, markdown_service):
-        """Posts with explicit draft: false should be included."""
-        content = """---
-title: Explicit Published
-date: 2026-01-25
-draft: false
----
+        posts = await _get_all_posts(mock_github, md, include_drafts=True)
 
-Content.
-"""
-        post = markdown_service.parse_post(
-            "posts/2026-01-25-explicit-published.md", content
-        )
-        assert post.draft is False
+        assert len(posts) == 2
+        titles = {p.title for p in posts}
+        assert titles == {"Published", "Draft"}

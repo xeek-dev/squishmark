@@ -71,9 +71,7 @@ async def list_posts(
 
     # Get all posts (admins can see drafts)
     include_drafts = _is_admin(request)
-    all_posts = await _get_all_posts(
-        github_service, markdown_service, include_drafts=include_drafts
-    )
+    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     # Paginate
     per_page = config.posts.per_page
@@ -118,9 +116,7 @@ async def get_post(
 
     # Get all posts and find the matching one (admins can see drafts)
     include_drafts = _is_admin(request)
-    all_posts = await _get_all_posts(
-        github_service, markdown_service, include_drafts=include_drafts
-    )
+    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
 
