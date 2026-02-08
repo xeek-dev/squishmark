@@ -157,6 +157,13 @@ def test_extract_slug(markdown_service):
     assert slug_no_date == "about"
 
 
+def test_heading_anchor_uses_hash(markdown_service):
+    """Heading permalinks should use # not pilcrow."""
+    html = markdown_service.render_markdown("## Hello World")
+    assert "#" in html  # permalink character
+    assert "\u00b6" not in html  # should NOT use pilcrow
+
+
 def test_parse_post_rewrites_images(markdown_service):
     """Test that parse_post rewrites relative image URLs to static/."""
     content = """---

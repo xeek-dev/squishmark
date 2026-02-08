@@ -47,7 +47,7 @@ class MarkdownService:
                         guess_lang=False,
                         pygments_formatter=LabeledFormatter,
                     ),
-                    TocExtension(permalink=True),
+                    TocExtension(permalink="#"),
                     "smarty",  # Smart quotes
                     "nl2br",  # Newlines to <br>
                 ],
