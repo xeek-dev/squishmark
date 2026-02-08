@@ -3,12 +3,24 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 
+from squishmark.config import get_settings
 from squishmark.models.content import Config, Pagination, Post
 from squishmark.services.github import GitHubService, get_github_service
 from squishmark.services.markdown import MarkdownService, get_markdown_service
 from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+def _is_admin(request: Request) -> bool:
+    """Check if the current user is an admin without requiring auth."""
+    settings = get_settings()
+    if settings.debug and settings.dev_skip_auth:
+        return True
+    user = request.session.get("user") if hasattr(request, "session") else None
+    if user is None:
+        return False
+    return user.get("login") in settings.admin_users_list
 
 
 async def _get_all_posts(
@@ -57,8 +69,9 @@ async def list_posts(
     # Get markdown service with config
     markdown_service = get_markdown_service(config)
 
-    # Get all posts
-    all_posts = await _get_all_posts(github_service, markdown_service)
+    # Get all posts (admins can see drafts)
+    include_drafts = _is_admin(request)
+    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     # Paginate
     per_page = config.posts.per_page
@@ -101,8 +114,9 @@ async def get_post(
     # Get markdown service with config
     markdown_service = get_markdown_service(config)
 
-    # Get all posts and find the matching one
-    all_posts = await _get_all_posts(github_service, markdown_service)
+    # Get all posts and find the matching one (admins can see drafts)
+    include_drafts = _is_admin(request)
+    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
 
