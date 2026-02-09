@@ -42,6 +42,7 @@ def main() -> None:
     host = "127.0.0.1"
     port = "8000"
     reload = True
+    background = False
 
     for arg in sys.argv[1:]:
         if arg.startswith("--host="):
@@ -50,6 +51,8 @@ def main() -> None:
             port = arg.split("=", 1)[1]
         elif arg == "--no-reload":
             reload = False
+        elif arg in ("-b", "--background"):
+            background = True
 
     # Build uvicorn command
     cmd = [
@@ -66,12 +69,18 @@ def main() -> None:
     print(f"Starting dev server at http://{host}:{port}")
     print(f"Content: {env['GITHUB_CONTENT_REPO']}")
     print(f"Database: {env['DATABASE_URL']}")
+    if background:
+        print("Running in background mode (PID will be printed)")
     print()
 
-    try:
-        subprocess.run(cmd, env=env, check=True)
-    except KeyboardInterrupt:
-        print("\nServer stopped.")
+    if background:
+        process = subprocess.Popen(cmd, env=env)
+        print(f"Server started in background (PID: {process.pid})")
+    else:
+        try:
+            subprocess.run(cmd, env=env, check=True)
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
 
 
 if __name__ == "__main__":

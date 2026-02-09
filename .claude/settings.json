@@ -1,4 +1,9 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/start-dev*)"
+    ]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
