@@ -163,11 +163,14 @@ def cleanup_worktree(name: str, *, force: bool = False) -> None:
         )
     except subprocess.CalledProcessError:
         print("  Retrying with --force...")
-        run(
+        result = run(
             ["git", "worktree", "remove", "--force", str(worktree_path)],
             cwd=PROJECT_ROOT,
             check=False,
         )
+        if result.returncode != 0:
+            print(f"Error: Failed to remove worktree '{name}'. Skipping branch deletion.")
+            sys.exit(1)
 
     # Delete local branch
     print("Deleting local branch...")

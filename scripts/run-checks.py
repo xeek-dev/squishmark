@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run CI checks locally: formatting, linting, tests, and type checking."""
 
+from __future__ import annotations
+
 import argparse
 import subprocess
 import sys

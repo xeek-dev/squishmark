@@ -24,7 +24,7 @@ import os
 import signal
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Project root is parent of scripts/
@@ -43,8 +43,13 @@ def _read_registry() -> list[dict]:
         return []
     try:
         data = json.loads(REGISTRY_PATH.read_text())
-        return data.get("servers", [])
-    except (json.JSONDecodeError, KeyError):
+        if not isinstance(data, dict):
+            return []
+        servers = data.get("servers", [])
+        if not isinstance(servers, list):
+            return []
+        return servers
+    except (json.JSONDecodeError, TypeError, AttributeError):
         return []
 
 
@@ -131,7 +136,7 @@ def _register_server(name: str, pid: int, port: int, branch: str) -> None:
             "pid": pid,
             "port": port,
             "branch": branch,
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
         }
     )
     _write_registry(servers)
@@ -212,11 +217,12 @@ def _stop_entry(entry: dict, servers: list[dict]) -> None:
     if _is_pid_alive(pid):
         if _kill_registered_pid(pid, servers):
             print(f"Stopped '{name}' (PID {pid}).")
+            _deregister_server(name)
         else:
-            print(f"Failed to stop '{name}' (PID {pid}).")
+            print(f"Failed to stop '{name}' (PID {pid}). Entry kept in registry.")
     else:
         print(f"'{name}' (PID {pid}) was already stopped.")
-    _deregister_server(name)
+        _deregister_server(name)
 
 
 def cmd_stop(target: str) -> None:
@@ -237,6 +243,7 @@ def cmd_stop(target: str) -> None:
             _stop_entry(entry, servers)
             return
     except ValueError:
+        # Target is not a numeric PID; fall through to "not found" message below
         pass
 
     print(f"No tracked server matching '{target}' (looked up by name and PID).")
@@ -400,13 +407,18 @@ def main() -> int:
         print(f"Server '{name}' started in background (PID: {process.pid})")
         return 0
     else:
-        # Register foreground server too, deregister on exit
-        _register_server(name, os.getpid(), port, branch)
+        # Use Popen so we register the actual uvicorn child PID
+        process = subprocess.Popen(cmd, env=env)
+        _register_server(name, process.pid, port, branch)
         try:
-            result = subprocess.run(cmd, env=env)
-            return result.returncode
+            return process.wait()
         except KeyboardInterrupt:
             print("\nServer stopped.")
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
             return 0
         finally:
             _deregister_server(name)
