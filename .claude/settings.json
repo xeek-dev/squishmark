@@ -16,7 +16,10 @@
       "Bash(gh label *)",
       "Bash(gh run list *)",
       "Bash(gh run view *)",
-      "Bash(gh run watch *)"
+      "Bash(gh run watch *)",
+      "Bash(gh api repos/*/milestones*)",
+      "Bash(gh api repos/*/pulls/*/comments*)",
+      "Bash(gh api repos/*/pulls/comments/*/replies*)"
     ]
   },
   "hooks": {
