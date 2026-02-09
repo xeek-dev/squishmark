@@ -157,6 +157,38 @@ def test_extract_slug(markdown_service):
     assert slug_no_date == "about"
 
 
+def test_heading_anchor_uses_hash(markdown_service):
+    """Heading permalinks should use # not pilcrow."""
+    from html.parser import HTMLParser
+
+    html = markdown_service.render_markdown("## Hello World")
+
+    # Parse the HTML to check the headerlink anchor's visible text specifically,
+    # since '#' also appears in href fragments like href="#hello-world".
+    class AnchorTextExtractor(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.in_headerlink = False
+            self.headerlink_text = ""
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "a" and ("class", "headerlink") in attrs:
+                self.in_headerlink = True
+
+        def handle_data(self, data):
+            if self.in_headerlink:
+                self.headerlink_text += data
+
+        def handle_endtag(self, tag):
+            if tag == "a":
+                self.in_headerlink = False
+
+    parser = AnchorTextExtractor()
+    parser.feed(html)
+    assert parser.headerlink_text == "#", f"Expected headerlink text to be '#', got '{parser.headerlink_text}'"
+    assert "\u00b6" not in html  # should NOT use pilcrow
+
+
 def test_parse_post_rewrites_images(markdown_service):
     """Test that parse_post rewrites relative image URLs to static/."""
     content = """---
