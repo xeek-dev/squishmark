@@ -41,7 +41,7 @@ test = [
 
 # Lint/type-check tools - run locally or in CI, NOT in Docker
 lint = [
-    "ruff>=0.14.0",
+    "ruff>=0.14.0,<0.15",
     "pyright>=1.1.400",
 ]
 

@@ -1,4 +1,28 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/start-dev*)",
+      "Bash(python scripts/run-checks*)",
+      "Bash(python scripts/setup-worktree*)",
+      "Bash(python scripts/github-issue-updater*)",
+      "Bash(source .venv/bin/activate*)",
+      "Bash(gh issue *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh label *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh run watch *)",
+      "Bash(gh api repos/*/milestones*)",
+      "Bash(gh api repos/*/pulls/*/comments*)",
+      "Bash(gh api repos/*/pulls/comments/*/replies*)"
+    ]
+  },
   "hooks": {
     "UserPromptSubmit": [
       {

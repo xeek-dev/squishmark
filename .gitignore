@@ -96,3 +96,9 @@ docker-compose.override.yml
 
 # Local dev content
 /content/
+
+# Dev server registry
+.dev-servers.json
+
+# Git worktrees
+.worktrees/
