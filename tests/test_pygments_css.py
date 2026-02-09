@@ -1,11 +1,58 @@
-"""Tests for the /pygments.css dynamic route."""
+"""Tests for dynamic pygments CSS integration."""
 
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from squishmark.models.content import Config, ThemeConfig
 from squishmark.services.markdown import MarkdownService, reset_markdown_service
+from squishmark.services.theme.engine import THEME_PYGMENTS_DEFAULTS, ThemeEngine
+
+# ---------------------------------------------------------------------------
+# Unit tests for resolve_pygments_css_url
+# ---------------------------------------------------------------------------
+
+
+class TestResolvePygmentsCssUrl:
+    """Tests for ThemeEngine.resolve_pygments_css_url."""
+
+    def _config_with_style(self, style: str) -> Config:
+        return Config(theme=ThemeConfig(pygments_style=style))
+
+    def test_default_theme_matching_style_returns_static(self):
+        """When user style matches theme default, serve static CSS."""
+        url = ThemeEngine.resolve_pygments_css_url("default", self._config_with_style("monokai"))
+        assert url == "/static/default/pygments.css"
+
+    def test_blue_tech_matching_style_returns_static(self):
+        url = ThemeEngine.resolve_pygments_css_url("blue-tech", self._config_with_style("monokai"))
+        assert url == "/static/blue-tech/pygments.css"
+
+    def test_terminal_matching_style_returns_static_with_css_subdir(self):
+        """Terminal theme stores CSS in css/ subdirectory."""
+        url = ThemeEngine.resolve_pygments_css_url("terminal", self._config_with_style("monokai"))
+        assert url == "/static/terminal/css/pygments.css"
+
+    def test_overridden_style_returns_dynamic(self):
+        """When user style differs from theme default, serve dynamic CSS."""
+        url = ThemeEngine.resolve_pygments_css_url("default", self._config_with_style("dracula"))
+        assert url == "/pygments.css"
+
+    def test_unknown_theme_returns_dynamic(self):
+        """Unknown themes always use dynamic CSS (no known default to match)."""
+        url = ThemeEngine.resolve_pygments_css_url("custom-theme", self._config_with_style("monokai"))
+        assert url == "/pygments.css"
+
+    def test_all_bundled_themes_have_defaults(self):
+        """Every bundled theme should declare its default pygments style."""
+        for theme_name in ("default", "blue-tech", "terminal"):
+            assert theme_name in THEME_PYGMENTS_DEFAULTS, f"Missing default for {theme_name}"
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for get_pygments_css
+# ---------------------------------------------------------------------------
 
 
 def test_get_pygments_css_default_style():
@@ -24,6 +71,11 @@ def test_get_pygments_css_custom_style():
 
     assert monokai != dracula
     assert ".highlight" in dracula
+
+
+# ---------------------------------------------------------------------------
+# Integration test for /pygments.css route
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.asyncio

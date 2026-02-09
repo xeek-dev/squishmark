@@ -13,6 +13,15 @@ from squishmark.services.theme.loader import AsyncHybridLoader
 if TYPE_CHECKING:
     from squishmark.services.github import GitHubService
 
+# Default pygments style shipped with each bundled theme.
+# When the user's configured pygments_style matches, the theme's hand-tuned
+# static CSS is served. When it differs, dynamic CSS is generated instead.
+THEME_PYGMENTS_DEFAULTS: dict[str, str] = {
+    "default": "monokai",
+    "blue-tech": "monokai",
+    "terminal": "monokai",
+}
+
 
 class ThemeEngine:
     """Engine for rendering Jinja2 templates with theme support."""
@@ -69,6 +78,28 @@ class ThemeEngine:
 
         return count
 
+    @staticmethod
+    def resolve_pygments_css_url(theme_name: str, config: Config) -> str:
+        """Return the URL for pygments CSS, choosing static or dynamic.
+
+        If the user's configured ``pygments_style`` differs from the theme's
+        built-in default, the dynamic ``/pygments.css`` endpoint is returned so
+        the browser gets CSS that matches the HTML class names Pygments emits.
+        Otherwise the theme's static file is used (preserving hand-tuned CSS).
+        """
+        theme_default = THEME_PYGMENTS_DEFAULTS.get(theme_name)
+        user_style = config.theme.pygments_style
+
+        if theme_default is not None and user_style == theme_default:
+            # Theme has a static file that matches -- use it
+            # Terminal theme stores CSS in css/ subdirectory
+            if theme_name == "terminal":
+                return f"/static/{theme_name}/css/pygments.css"
+            return f"/static/{theme_name}/pygments.css"
+
+        # Unknown theme or user overrode the style -- use dynamic route
+        return "/pygments.css"
+
     async def render(
         self,
         template_name: str,
@@ -107,6 +138,7 @@ class ThemeEngine:
             "theme": config.theme,
             "theme_name": theme_name,
             "favicon_url": favicon_url,
+            "pygments_css_url": self.resolve_pygments_css_url(theme_name, config),
             **context,
         }
 
