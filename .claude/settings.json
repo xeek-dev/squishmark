@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python scripts/start-dev*)"
+      "Bash(python scripts/start-dev*)",
+      "Bash(python scripts/run-checks*)",
+      "Bash(python scripts/setup-worktree*)",
+      "Bash(source .venv/bin/activate*)"
     ]
   },
   "hooks": {
