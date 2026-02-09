@@ -334,6 +334,55 @@ pip install -e ".[dev]"
 uvicorn squishmark.main:app --reload
 ```
 
+### Development Scripts
+
+Three scripts in `scripts/` streamline local development:
+
+#### `start-dev.py` — Dev server with multi-server management
+
+Starts a uvicorn dev server pointing at the local `content/` directory. Supports running multiple named server instances simultaneously (tracked in `.dev-servers.json`). The default instance name is the current git branch.
+
+```bash
+# Basic usage
+python scripts/start-dev.py                     # foreground on :8000
+python scripts/start-dev.py -b                  # background on :8000
+python scripts/start-dev.py -b --port 8001      # background on :8001
+python scripts/start-dev.py --name api -b       # named background instance
+
+# Server management
+python scripts/start-dev.py --list              # show all tracked servers
+python scripts/start-dev.py --stop              # stop current branch's server
+python scripts/start-dev.py --stop api          # stop named server
+python scripts/start-dev.py --stop 12345        # stop server by PID
+python scripts/start-dev.py --stop-all          # stop all servers
+python scripts/start-dev.py --restart -b        # restart in background
+
+# Other options
+python scripts/start-dev.py --host 0.0.0.0     # bind to all interfaces
+python scripts/start-dev.py --no-reload         # disable auto-reload
+```
+
+#### `run-checks.py` — Local CI checks
+
+Runs the same checks as CI: **ruff format**, **ruff check**, **pytest**, and **pyright**. By default runs all checks and reports a summary.
+
+```bash
+python scripts/run-checks.py                    # run all checks
+python scripts/run-checks.py --fail-fast        # stop on first failure
+python scripts/run-checks.py --docker           # also run docker build (slow)
+```
+
+#### `setup-worktree.py` — Git worktree management
+
+Creates isolated worktrees in `.worktrees/` for parallel development. Branch names follow the project's `type/issue-description` convention; the type prefix is stripped to form the directory name (e.g., `feat/42-dark-mode` becomes `.worktrees/42-dark-mode`).
+
+```bash
+python scripts/setup-worktree.py feat/42-dark-mode   # create worktree + branch
+python scripts/setup-worktree.py --list               # list active worktrees
+python scripts/setup-worktree.py --cleanup 42-dark-mode        # remove worktree + branch
+python scripts/setup-worktree.py --cleanup 42-dark-mode --force  # skip confirmation
+```
+
 ### Running Tests
 
 ```bash

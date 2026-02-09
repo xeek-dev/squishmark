@@ -129,9 +129,12 @@ mcp__playwright__browser_take_screenshot with type="png", filename="test.png", r
 
 3. **Start dev server in background** before testing:
    ```bash
-   python scripts/start-dev.py -b  # run in background
-   sleep 2  # wait for server
-   curl -s http://localhost:8000/  # verify it's running
+   python scripts/start-dev.py -b              # start in background on :8000
+   python scripts/start-dev.py -b --port 8001  # second instance on :8001
+   python scripts/start-dev.py --name theme-test -b  # named instance
+   python scripts/start-dev.py --list           # see all running servers
+   python scripts/start-dev.py --stop           # stop current branch's server
+   python scripts/start-dev.py --stop-all       # stop everything
    ```
 
 4. **Clean up artifacts** after testing:

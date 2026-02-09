@@ -4,7 +4,18 @@
       "Bash(python scripts/start-dev*)",
       "Bash(python scripts/run-checks*)",
       "Bash(python scripts/setup-worktree*)",
-      "Bash(source .venv/bin/activate*)"
+      "Bash(source .venv/bin/activate*)",
+      "Bash(gh issue *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh label *)",
+      "Bash(gh api *)",
+      "Bash(gh run *)"
     ]
   },
   "hooks": {

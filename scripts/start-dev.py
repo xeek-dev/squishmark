@@ -11,12 +11,14 @@ Usage:
     python scripts/start-dev.py --list            # show all tracked servers
     python scripts/start-dev.py --stop            # stop default server
     python scripts/start-dev.py --stop api        # stop named server
+    python scripts/start-dev.py --stop 12345      # stop server by PID
     python scripts/start-dev.py --stop-all        # stop all servers
     python scripts/start-dev.py --restart -b      # restart default server
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import signal
@@ -63,8 +65,17 @@ def _is_pid_alive(pid: int) -> bool:
     return True
 
 
-def _kill_pid(pid: int) -> bool:
-    """Kill a process by PID. Returns True if successfully killed."""
+def _kill_registered_pid(pid: int, servers: list[dict] | None = None) -> bool:
+    """Kill a process by PID, but only if it exists in the server registry.
+
+    Returns True if successfully killed.
+    """
+    if servers is None:
+        servers = _read_registry()
+    registered_pids = {s["pid"] for s in servers}
+    if pid not in registered_pids:
+        print(f"Error: PID {pid} is not in the server registry. Refusing to kill.")
+        return False
     try:
         os.kill(pid, signal.SIGTERM)
         return True
@@ -84,7 +95,7 @@ def _get_git_branch() -> str:
         if result.returncode == 0:
             return result.stdout.strip()
     except FileNotFoundError:
-        pass
+        print("Warning: git is not installed. Using 'default' as server name.")
     return "default"
 
 
@@ -97,6 +108,14 @@ def _find_server(servers: list[dict], name: str) -> dict | None:
     """Find a server entry by name."""
     for s in servers:
         if s["name"] == name:
+            return s
+    return None
+
+
+def _find_server_by_pid(servers: list[dict], pid: int) -> dict | None:
+    """Find a server entry by PID."""
+    for s in servers:
+        if s["pid"] == pid:
             return s
     return None
 
@@ -126,6 +145,40 @@ def _deregister_server(name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Validation helpers
+# ---------------------------------------------------------------------------
+
+
+def _check_port_conflict(servers: list[dict], port: int, name: str) -> None:
+    """Check if the port is already in use by another server. Exits on conflict."""
+    for s in servers:
+        if s["port"] == port and s["name"] != name:
+            if _is_pid_alive(s["pid"]):
+                print(
+                    f"Error: Port {port} is already in use by server '{s['name']}' "
+                    f"(PID {s['pid']}). Use --restart or --stop first."
+                )
+                sys.exit(1)
+            else:
+                # Stale entry, clean it up
+                _deregister_server(s["name"])
+
+
+def _check_existing_server(name: str) -> None:
+    """Check if a server with this name is already running. Exits on conflict."""
+    entry = _find_server(_read_registry(), name)
+    if entry is not None and _is_pid_alive(entry["pid"]):
+        print(
+            f"Error: Server '{name}' is already running (PID {entry['pid']}, port {entry['port']}). "
+            f"Use --restart or --stop first."
+        )
+        sys.exit(1)
+    elif entry is not None:
+        # Stale entry, clean it up
+        _deregister_server(name)
+
+
+# ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
 
@@ -152,25 +205,42 @@ def cmd_list() -> None:
         print(f"\n{stale_count} stale server(s). Use --stop NAME or --stop-all to clean up.")
 
 
-def cmd_stop(name: str) -> None:
-    """Stop a specific server by name."""
-    servers = _read_registry()
-    entry = _find_server(servers, name)
-    if entry is None:
-        print(f"No tracked server named '{name}'.")
-        sys.exit(1)
-
+def _stop_entry(entry: dict, servers: list[dict]) -> None:
+    """Stop a single server entry and deregister it."""
     pid = entry["pid"]
+    name = entry["name"]
     if _is_pid_alive(pid):
-        if _kill_pid(pid):
-            print(f"Stopped server '{name}' (PID {pid}).")
+        if _kill_registered_pid(pid, servers):
+            print(f"Stopped '{name}' (PID {pid}).")
         else:
-            print(f"Failed to stop server '{name}' (PID {pid}).")
-            sys.exit(1)
+            print(f"Failed to stop '{name}' (PID {pid}).")
     else:
-        print(f"Server '{name}' (PID {pid}) was already stopped (stale entry removed).")
-
+        print(f"'{name}' (PID {pid}) was already stopped.")
     _deregister_server(name)
+
+
+def cmd_stop(target: str) -> None:
+    """Stop a server by name or PID."""
+    servers = _read_registry()
+
+    # Try name lookup first
+    entry = _find_server(servers, target)
+    if entry is not None:
+        _stop_entry(entry, servers)
+        return
+
+    # Try PID lookup
+    try:
+        pid = int(target)
+        entry = _find_server_by_pid(servers, pid)
+        if entry is not None:
+            _stop_entry(entry, servers)
+            return
+    except ValueError:
+        pass
+
+    print(f"No tracked server matching '{target}' (looked up by name and PID).")
+    sys.exit(1)
 
 
 def cmd_stop_all() -> None:
@@ -181,15 +251,7 @@ def cmd_stop_all() -> None:
         return
 
     for s in servers:
-        pid = s["pid"]
-        name = s["name"]
-        if _is_pid_alive(pid):
-            if _kill_pid(pid):
-                print(f"Stopped '{name}' (PID {pid}).")
-            else:
-                print(f"Failed to stop '{name}' (PID {pid}).")
-        else:
-            print(f"'{name}' (PID {pid}) was already stopped.")
+        _stop_entry(s, servers)
 
     _write_registry([])
 
@@ -215,79 +277,81 @@ def ensure_dependencies() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the dev server script."""
+    parser = argparse.ArgumentParser(
+        description="Development server startup script with multi-server management.",
+    )
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind to (default: 8000)")
+    parser.add_argument("--no-reload", action="store_true", help="Disable auto-reload")
+    parser.add_argument("-b", "--background", action="store_true", help="Run in background mode")
+    parser.add_argument("--name", default=None, help="Server instance name (default: git branch)")
+
+    # Management commands (mutually exclusive)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--list", action="store_true", help="Show all tracked servers")
+    group.add_argument(
+        "--stop",
+        nargs="?",
+        const="__default__",
+        metavar="NAME_OR_PID",
+        help="Stop a server by name or PID (default: current branch)",
+    )
+    group.add_argument("--stop-all", action="store_true", help="Stop all tracked servers")
+    group.add_argument("--restart", action="store_true", help="Restart the server")
+
+    return parser
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 
-def main() -> None:
-    """Start the development server with local content."""
+def main() -> int:
+    """Start the development server with local content. Returns exit code."""
     os.chdir(PROJECT_ROOT)
 
-    # Parse arguments
-    host = "127.0.0.1"
-    port = "8000"
-    reload = True
-    background = False
-    name: str | None = None
-    action: str | None = None  # "list", "stop", "stop-all", "restart"
-    stop_target: str | None = None  # name for --stop
+    parser = _build_parser()
+    args = parser.parse_args()
 
-    args = sys.argv[1:]
-    i = 0
-    while i < len(args):
-        arg = args[i]
-        if arg.startswith("--host="):
-            host = arg.split("=", 1)[1]
-        elif arg.startswith("--port="):
-            port = arg.split("=", 1)[1]
-        elif arg == "--no-reload":
-            reload = False
-        elif arg in ("-b", "--background"):
-            background = True
-        elif arg.startswith("--name="):
-            name = arg.split("=", 1)[1]
-        elif arg == "--name" and i + 1 < len(args) and not args[i + 1].startswith("-"):
-            i += 1
-            name = args[i]
-        elif arg == "--list":
-            action = "list"
-        elif arg == "--stop-all":
-            action = "stop-all"
-        elif arg == "--stop":
-            action = "stop"
-            # Check for optional name argument
-            if i + 1 < len(args) and not args[i + 1].startswith("-"):
-                i += 1
-                stop_target = args[i]
-        elif arg == "--restart":
-            action = "restart"
-        i += 1
+    host = args.host
+    port = args.port
+    reload = not args.no_reload
+    background = args.background
+    name = args.name
 
     # Default name: current git branch or "default"
     if name is None:
         name = _get_git_branch()
 
     # Handle management commands
-    if action == "list":
+    if args.list:
         cmd_list()
-        return
+        return 0
 
-    if action == "stop":
-        cmd_stop(stop_target or name)
-        return
+    if args.stop is not None:
+        target = name if args.stop == "__default__" else args.stop
+        cmd_stop(target)
+        return 0
 
-    if action == "stop-all":
+    if args.stop_all:
         cmd_stop_all()
-        return
+        return 0
 
-    if action == "restart":
+    if args.restart:
         # Stop the server if it's running, then fall through to start
         servers = _read_registry()
         entry = _find_server(servers, name)
         if entry is not None:
             pid = entry["pid"]
             if _is_pid_alive(pid):
-                _kill_pid(pid)
+                _kill_registered_pid(pid, servers)
                 print(f"Stopped '{name}' (PID {pid}).")
             _deregister_server(name)
 
@@ -305,30 +369,8 @@ def main() -> None:
     # Clean stale entries and check for port conflicts
     servers = _clean_stale(_read_registry())
     _write_registry(servers)
-    port_int = int(port)
-    for s in servers:
-        if s["port"] == port_int and s["name"] != name:
-            if _is_pid_alive(s["pid"]):
-                print(
-                    f"Error: Port {port} is already in use by server '{s['name']}' "
-                    f"(PID {s['pid']}). Use --restart or --stop first."
-                )
-                sys.exit(1)
-            else:
-                # Stale entry, clean it up
-                _deregister_server(s["name"])
-
-    # Check if this name already has a running server
-    entry = _find_server(_read_registry(), name)
-    if entry is not None and _is_pid_alive(entry["pid"]):
-        print(
-            f"Error: Server '{name}' is already running (PID {entry['pid']}, port {entry['port']}). "
-            f"Use --restart or --stop first."
-        )
-        sys.exit(1)
-    elif entry is not None:
-        # Stale entry, clean it up
-        _deregister_server(name)
+    _check_port_conflict(servers, port, name)
+    _check_existing_server(name)
 
     # Build uvicorn command
     cmd = [
@@ -354,18 +396,21 @@ def main() -> None:
 
     if background:
         process = subprocess.Popen(cmd, env=env)
-        _register_server(name, process.pid, port_int, branch)
+        _register_server(name, process.pid, port, branch)
         print(f"Server '{name}' started in background (PID: {process.pid})")
+        return 0
     else:
         # Register foreground server too, deregister on exit
-        _register_server(name, os.getpid(), port_int, branch)
+        _register_server(name, os.getpid(), port, branch)
         try:
-            subprocess.run(cmd, env=env, check=True)
+            result = subprocess.run(cmd, env=env)
+            return result.returncode
         except KeyboardInterrupt:
             print("\nServer stopped.")
+            return 0
         finally:
             _deregister_server(name)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
