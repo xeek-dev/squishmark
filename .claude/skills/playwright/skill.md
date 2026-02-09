@@ -129,7 +129,7 @@ mcp__playwright__browser_take_screenshot with type="png", filename="test.png", r
 
 3. **Start dev server in background** before testing:
    ```bash
-   python scripts/start-dev.py &  # run in background
+   python scripts/start-dev.py -b  # run in background
    sleep 2  # wait for server
    curl -s http://localhost:8000/  # verify it's running
    ```

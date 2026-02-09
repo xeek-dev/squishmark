@@ -234,6 +234,7 @@ The dev server:
 
 ```bash
 python scripts/start-dev.py --host=0.0.0.0 --port=3000 --no-reload
+python scripts/start-dev.py -b  # run in background (prints PID)
 ```
 
 ### Running with Docker

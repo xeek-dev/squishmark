@@ -42,7 +42,7 @@ When planning implementation work, follow this workflow:
 2. **Implementation**
    - Follow the approved plan
    - Run verification (tests, lint, format)
-   - Manual testing: start dev server with `python scripts/start-dev.py` and verify changes work
+   - Manual testing: start dev server with `python scripts/start-dev.py` (or `-b` for background) and verify changes work
 
 3. **PR Workflow**
    - Commit messages and PR titles **must** use [Conventional Commits](https://www.conventionalcommits.org/) format: `type(scope): description`
