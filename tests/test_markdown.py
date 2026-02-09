@@ -185,9 +185,7 @@ def test_heading_anchor_uses_hash(markdown_service):
 
     parser = AnchorTextExtractor()
     parser.feed(html)
-    assert parser.headerlink_text == "#", (
-        f"Expected headerlink text to be '#', got '{parser.headerlink_text}'"
-    )
+    assert parser.headerlink_text == "#", f"Expected headerlink text to be '#', got '{parser.headerlink_text}'"
     assert "\u00b6" not in html  # should NOT use pilcrow
 
 
