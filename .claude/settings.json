@@ -4,6 +4,7 @@
       "Bash(python scripts/start-dev*)",
       "Bash(python scripts/run-checks*)",
       "Bash(python scripts/setup-worktree*)",
+      "Bash(python scripts/github-issue-updater*)",
       "Bash(source .venv/bin/activate*)",
       "Bash(gh issue *)",
       "Bash(gh pr create *)",

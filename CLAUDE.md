@@ -383,6 +383,17 @@ python scripts/setup-worktree.py --cleanup 42-dark-mode        # remove worktree
 python scripts/setup-worktree.py --cleanup 42-dark-mode --force  # skip confirmation
 ```
 
+#### `github-issue-updater.py` — Issue metadata updater
+
+Sets issue type (task/bug/feature), adds labels, and assigns milestones in a single command. Issue types require GraphQL mutations which this script handles automatically.
+
+```bash
+python scripts/github-issue-updater.py 42 --type task
+python scripts/github-issue-updater.py 42 --add-label "engine,themes"
+python scripts/github-issue-updater.py 42 --milestone "SquishMark 1.0"
+python scripts/github-issue-updater.py 42 --type task --add-label engine --milestone "SquishMark 1.0"
+```
+
 ### Running Tests
 
 ```bash

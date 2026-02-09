@@ -87,6 +87,8 @@ gh issue list --label "engine" --state open
 
 Issue types are not exposed via the standard CLI. Use GraphQL mutations.
 
+**Shortcut:** Use `python scripts/github-issue-updater.py <issue> --type task|bug|feature` to set type, labels, and milestone in one command.
+
 ### Lookup Project Issue Types
 
 ```bash
