@@ -40,7 +40,7 @@ class LiveReloadService:
             return
 
         disconnected: list[WebSocket] = []
-        for ws in self._clients:
+        for ws in list(self._clients):
             try:
                 await ws.send_text("reload")
             except Exception:
