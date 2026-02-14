@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 
 from squishmark.config import get_settings
-from squishmark.models.content import Config, Pagination, Post
+from squishmark.models.content import Config, Pagination, Post, SiteConfig
 from squishmark.services.github import GitHubService, get_github_service
 from squishmark.services.markdown import MarkdownService, get_markdown_service
 from squishmark.services.theme import get_theme_engine
@@ -54,6 +54,23 @@ async def _get_all_posts(
     return posts
 
 
+def get_featured_posts(posts: list[Post], site_config: SiteConfig) -> list[Post]:
+    """Filter and sort featured posts from a list of posts.
+
+    Sort order: featured_order ascending (nulls last), then date descending.
+    Limited to site_config.featured_max entries.
+    """
+    featured = [p for p in posts if p.featured]
+    featured.sort(
+        key=lambda p: (
+            0 if p.featured_order is not None else 1,
+            p.featured_order if p.featured_order is not None else 0,
+            -(p.date.toordinal() if p.date else 0),
+        ),
+    )
+    return featured[: site_config.featured_max]
+
+
 @router.get("", response_class=HTMLResponse)
 async def list_posts(
     request: Request,
@@ -92,9 +109,12 @@ async def list_posts(
         total_pages=total_pages,
     )
 
+    # Featured posts for template context
+    featured = get_featured_posts(all_posts, config.site)
+
     # Render
     theme_engine = await get_theme_engine(github_service)
-    html = await theme_engine.render_index(config, posts, pagination)
+    html = await theme_engine.render_index(config, posts, pagination, featured_posts=featured)
 
     return HTMLResponse(content=html)
 
@@ -126,8 +146,11 @@ async def get_post(
     # TODO: Get notes for this post from database
     notes: list = []
 
+    # Featured posts for template context
+    featured = get_featured_posts(all_posts, config.site)
+
     # Render
     theme_engine = await get_theme_engine(github_service)
-    html = await theme_engine.render_post(config, post, notes)
+    html = await theme_engine.render_post(config, post, notes, featured_posts=featured)
 
     return HTMLResponse(content=html)
