@@ -1,6 +1,7 @@
 """Pydantic models for content (posts, pages, config)."""
 
 import datetime
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -19,6 +20,7 @@ class FrontMatter(BaseModel):
     template: str | None = None  # Custom template override
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-content author override (used by posts)
+    image: str | None = None  # Featured image URL (used for og:image)
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -40,11 +42,21 @@ class Post(BaseModel):
     template: str | None = None
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-post author override
+    image: str | None = None  # Featured image URL (used for og:image)
 
     @property
     def url(self) -> str:
         """Return the URL path for this post."""
         return f"/posts/{self.slug}"
+
+    @property
+    def reading_time(self) -> str:
+        """Estimate reading time based on word count (~238 WPM)."""
+        # Strip markdown/HTML artifacts for a rough word count
+        text = re.sub(r"<[^>]+>", "", self.html) if self.html else self.content
+        word_count = len(text.split())
+        minutes = max(1, round(word_count / 238))
+        return f"{minutes} min read"
 
 
 class Page(BaseModel):
@@ -52,12 +64,14 @@ class Page(BaseModel):
 
     slug: str
     title: str
+    description: str = ""
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
     featured: bool = False
     featured_order: int | None = None  # Explicit ordering (lower = first)
     template: str | None = None
     theme: str | None = None  # Per-page theme override
+    image: str | None = None  # Featured image URL (used for og:image)
 
     @property
     def url(self) -> str:
