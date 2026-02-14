@@ -59,18 +59,33 @@ def slugify(branch_name: str) -> str:
     return slug
 
 
-def install_editable(worktree_path: Path) -> None:
-    """Run pip install -e from the worktree so imports resolve to its code."""
-    print("Installing editable package from worktree...")
+def install_editable(path: Path) -> None:
+    """Run pip install -e from the given path so imports resolve to its code."""
+    print(f"Installing editable package from {path}...")
     try:
         run(
-            [sys.executable, "-m", "pip", "install", "-e", f"{worktree_path}[dev]"],
+            [sys.executable, "-m", "pip", "install", "-e", f"{path}[dev]"],
             capture=False,
         )
         print("Editable install complete.")
     except subprocess.CalledProcessError:
         print("Warning: pip install failed. You may need to install manually:")
-        print(f'  pip install -e "{worktree_path}[dev]"')
+        print(f'  pip install -e "{path}[dev]"')
+
+
+def is_installed_from(path: Path) -> bool:
+    """Check if squishmark is currently editable-installed from the given path."""
+    result = run(
+        [sys.executable, "-m", "pip", "show", "squishmark"],
+        check=False,
+    )
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.splitlines():
+        if line.startswith("Editable project location:"):
+            location = Path(line.split(":", 1)[1].strip()).resolve()
+            return str(location).startswith(str(path.resolve()))
+    return False
 
 
 def copy_content(worktree_path: Path) -> None:
@@ -196,6 +211,9 @@ def cleanup_worktree(name: str, *, force: bool = False) -> None:
     print(f"Worktree: {worktree_path}")
     print(f"Branch:   {branch}")
 
+    # Check if editable install points at this worktree before removing it
+    needs_reinstall = is_installed_from(worktree_path)
+
     # Confirmation unless --force
     if not force:
         print()
@@ -229,6 +247,11 @@ def cleanup_worktree(name: str, *, force: bool = False) -> None:
         cwd=PROJECT_ROOT,
         check=False,
     )
+
+    # Restore editable install to main repo if it pointed at the removed worktree
+    if needs_reinstall:
+        print("\nRestoring editable install to main repo...")
+        install_editable(PROJECT_ROOT)
 
     print(f"\nCleaned up worktree '{name}'.")
 
