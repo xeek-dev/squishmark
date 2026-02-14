@@ -1,6 +1,10 @@
 """Tests for configuration module."""
 
-from squishmark.config import Settings
+from pathlib import Path
+
+import pytest
+
+from squishmark.config import Settings, parse_file_url
 
 
 def test_settings_defaults():
@@ -44,3 +48,19 @@ def test_is_local_content():
         _env_file=None,
     )
     assert settings.is_local_content is False
+
+
+def test_parse_file_url_unix():
+    """Test parsing a Unix file:// URL."""
+    assert parse_file_url("file:///home/user/content") == Path("/home/user/content")
+
+
+def test_parse_file_url_windows():
+    """Test parsing a Windows file:// URL."""
+    assert parse_file_url("file:///D:/Projects/content") == Path("D:/Projects/content")
+
+
+def test_parse_file_url_rejects_non_file():
+    """Test that non-file:// URLs raise ValueError."""
+    with pytest.raises(ValueError, match="Not a file:// URL"):
+        parse_file_url("https://example.com")
