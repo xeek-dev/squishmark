@@ -42,6 +42,10 @@ async def get_page(
     # Parse the page
     page = markdown_service.parse_page(page_path, file.content)
 
+    # Hidden pages return 404
+    if page.visibility == "hidden":
+        raise HTTPException(status_code=404, detail="Page not found")
+
     # TODO: Get notes for this page from database
     notes: list = []
 

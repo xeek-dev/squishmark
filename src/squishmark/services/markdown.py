@@ -189,6 +189,8 @@ class MarkdownService:
             template=frontmatter.template,
             theme=frontmatter.theme,
             image=frontmatter.image,
+            visibility=frontmatter.visibility,
+            nav_order=frontmatter.nav_order,
         )
 
     @staticmethod

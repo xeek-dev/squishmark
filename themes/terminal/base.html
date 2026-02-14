@@ -48,7 +48,9 @@
             </a>
             <div class="nav-links">
                 <a href="/posts">Posts</a>
-                <a href="/about">About</a>
+                {% for page in nav_pages %}
+                <a href="{{ page.url }}">{{ page.title }}</a>
+                {% endfor %}
             </div>
         </div>
     </nav>

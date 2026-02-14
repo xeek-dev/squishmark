@@ -35,7 +35,9 @@
             <a href="/" class="nav-logo">{{ site.title | accent_first_word }}</a>
             <div class="nav-links">
                 <a href="/posts">Posts</a>
-                <a href="/about">About</a>
+                {% for page in nav_pages %}
+                <a href="{{ page.url }}">{{ page.title }}</a>
+                {% endfor %}
             </div>
             <a href="/posts" class="nav-cta">Read Blog</a>
         </div>
