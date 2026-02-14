@@ -2,16 +2,20 @@
 """Manage git worktrees in .worktrees/ directory.
 
 Usage:
-    setup-worktree.py <branch-name>            Create worktree for branch
-    setup-worktree.py --list                   List worktree directory names
-    setup-worktree.py --cleanup NAME           Remove a worktree
-    setup-worktree.py --cleanup NAME --force   Remove without confirmation
+    setup-worktree.py <branch-name>                       Create worktree for branch
+    setup-worktree.py <branch-name> --install             Also pip install -e from worktree
+    setup-worktree.py <branch-name> --with-content        Also copy content/ directory
+    setup-worktree.py <branch-name> --integration         Shorthand for --install --with-content
+    setup-worktree.py --list                              List worktree directory names
+    setup-worktree.py --cleanup NAME                      Remove a worktree
+    setup-worktree.py --cleanup NAME --force              Remove without confirmation
 """
 
 from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -55,7 +59,44 @@ def slugify(branch_name: str) -> str:
     return slug
 
 
-def create_worktree(branch_name: str) -> None:
+def install_editable(worktree_path: Path) -> None:
+    """Run pip install -e from the worktree so imports resolve to its code."""
+    print("Installing editable package from worktree...")
+    try:
+        run(
+            [sys.executable, "-m", "pip", "install", "-e", f"{worktree_path}[dev]"],
+            capture=False,
+        )
+        print("Editable install complete.")
+    except subprocess.CalledProcessError:
+        print("Warning: pip install failed. You may need to install manually:")
+        print(f'  pip install -e "{worktree_path}[dev]"')
+
+
+def copy_content(worktree_path: Path) -> None:
+    """Copy the content/ directory into the worktree if it exists."""
+    src = PROJECT_ROOT / "content"
+    dest = worktree_path / "content"
+
+    if dest.exists():
+        print("Content directory already exists in worktree, skipping copy.")
+        return
+
+    if not src.exists():
+        print("No content/ directory found in main repo, skipping copy.")
+        return
+
+    print("Copying content/ into worktree...")
+    shutil.copytree(src, dest)
+    print(f"Copied {sum(1 for _ in dest.rglob('*') if _.is_file())} files to {dest}")
+
+
+def create_worktree(
+    branch_name: str,
+    *,
+    install: bool = False,
+    with_content: bool = False,
+) -> None:
     """Create a worktree in .worktrees/ for the given branch."""
     slug = slugify(branch_name)
     worktree_path = WORKTREES_DIR / slug
@@ -90,6 +131,15 @@ def create_worktree(branch_name: str) -> None:
     except subprocess.CalledProcessError:
         print("Error: Failed to create worktree.")
         sys.exit(1)
+
+    # Post-creation setup
+    if with_content:
+        print()
+        copy_content(worktree_path)
+
+    if install:
+        print()
+        install_editable(worktree_path)
 
     print()
     print("=" * 60)
@@ -190,9 +240,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  %(prog)s feat/42-dark-mode       Create worktree for branch
-  %(prog)s --list                  List active worktrees
-  %(prog)s --cleanup 42-dark-mode  Remove worktree '42-dark-mode'
+  %(prog)s feat/42-dark-mode              Create worktree for branch
+  %(prog)s feat/42-dark-mode --install    Also pip install -e from worktree
+  %(prog)s feat/42-dark-mode --integration  Install + copy content/
+  %(prog)s --list                         List active worktrees
+  %(prog)s --cleanup 42-dark-mode         Remove worktree '42-dark-mode'
 """,
     )
 
@@ -216,6 +268,21 @@ Examples:
         action="store_true",
         help="Skip confirmation prompt during cleanup",
     )
+    parser.add_argument(
+        "--install",
+        action="store_true",
+        help="Run pip install -e from the worktree after creation",
+    )
+    parser.add_argument(
+        "--with-content",
+        action="store_true",
+        help="Copy content/ directory into the worktree",
+    )
+    parser.add_argument(
+        "--integration",
+        action="store_true",
+        help="Shorthand for --install --with-content",
+    )
 
     return parser
 
@@ -230,7 +297,9 @@ def main() -> None:
     elif args.cleanup:
         cleanup_worktree(args.cleanup, force=args.force)
     elif args.branch:
-        create_worktree(args.branch)
+        install = args.install or args.integration
+        with_content = args.with_content or args.integration
+        create_worktree(args.branch, install=install, with_content=with_content)
     else:
         parser.print_help()
         sys.exit(1)
