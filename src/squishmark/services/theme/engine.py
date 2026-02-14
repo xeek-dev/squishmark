@@ -132,13 +132,14 @@ class ThemeEngine:
         if not favicon_url:
             favicon_url = await self.favicon_detector.detect()
 
-        # Build the full context
-        full_context = {
+        # Build the full context — featured_posts is always available for themes
+        full_context: dict[str, Any] = {
             "site": config.site,
             "theme": config.theme,
             "theme_name": theme_name,
             "favicon_url": favicon_url,
             "pygments_css_url": self.resolve_pygments_css_url(theme_name, config),
+            "featured_posts": [],
             **context,
         }
 
@@ -151,6 +152,7 @@ class ThemeEngine:
         pagination: Pagination,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
+        **kwargs: Any,
     ) -> str:
         """Render the index/home page."""
         return await self.render(
@@ -160,6 +162,7 @@ class ThemeEngine:
             posts=posts,
             pagination=pagination,
             notes=notes or [],
+            **kwargs,
         )
 
     async def render_post(
@@ -168,6 +171,7 @@ class ThemeEngine:
         post: Post,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
+        **kwargs: Any,
     ) -> str:
         """Render a single post page."""
         template_name = post.template or "post.html"
@@ -179,6 +183,7 @@ class ThemeEngine:
             theme_override=resolved_theme,
             post=post,
             notes=notes or [],
+            **kwargs,
         )
 
     async def render_page(
@@ -187,6 +192,7 @@ class ThemeEngine:
         page: Page,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
+        **kwargs: Any,
     ) -> str:
         """Render a static page."""
         template_name = page.template or "page.html"
@@ -198,6 +204,7 @@ class ThemeEngine:
             theme_override=resolved_theme,
             page=page,
             notes=notes or [],
+            **kwargs,
         )
 
     async def render_404(self, config: Config, theme_override: str | None = None) -> str:

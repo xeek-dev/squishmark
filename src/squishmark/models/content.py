@@ -14,6 +14,8 @@ class FrontMatter(BaseModel):
     tags: list[str] = Field(default_factory=list)
     description: str = ""
     draft: bool = False
+    featured: bool = False
+    featured_order: int | None = None  # Explicit ordering (lower = first)
     template: str | None = None  # Custom template override
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-content author override (used by posts)
@@ -33,6 +35,8 @@ class Post(BaseModel):
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
     draft: bool = False
+    featured: bool = False
+    featured_order: int | None = None  # Explicit ordering (lower = first)
     template: str | None = None
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-post author override
@@ -67,6 +71,7 @@ class SiteConfig(BaseModel):
     author: str = ""
     url: str = ""
     favicon: str | None = None  # Custom favicon URL, e.g., "/static/user/custom-icon.png"
+    featured_max: int = 5  # Maximum number of featured posts returned
 
 
 class ThemeConfig(BaseModel):
