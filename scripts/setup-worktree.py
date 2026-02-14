@@ -84,7 +84,7 @@ def is_installed_from(path: Path) -> bool:
     for line in result.stdout.splitlines():
         if line.startswith("Editable project location:"):
             location = Path(line.split(":", 1)[1].strip()).resolve()
-            return str(location).startswith(str(path.resolve()))
+            return location == path.resolve()
     return False
 
 
@@ -102,7 +102,12 @@ def copy_content(worktree_path: Path) -> None:
         return
 
     print("Copying content/ into worktree...")
-    shutil.copytree(src, dest)
+    try:
+        shutil.copytree(src, dest)
+    except (OSError, shutil.Error) as exc:
+        print(f"Warning: Failed to copy content/: {exc}")
+        print("  You can manually copy it later if needed.")
+        return
     print(f"Copied {sum(1 for _ in dest.rglob('*') if _.is_file())} files to {dest}")
 
 
