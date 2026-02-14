@@ -172,6 +172,8 @@ class MarkdownService:
             html=html,
             template=frontmatter.template,
             theme=frontmatter.theme,
+            visibility=frontmatter.visibility,
+            nav_order=frontmatter.nav_order,
         )
 
     def _extract_slug(self, path: str, strip_date: bool = True) -> str:
