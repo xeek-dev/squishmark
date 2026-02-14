@@ -2,16 +2,20 @@
 """Manage git worktrees in .worktrees/ directory.
 
 Usage:
-    setup-worktree.py <branch-name>            Create worktree for branch
-    setup-worktree.py --list                   List worktree directory names
-    setup-worktree.py --cleanup NAME           Remove a worktree
-    setup-worktree.py --cleanup NAME --force   Remove without confirmation
+    setup-worktree.py <branch-name>                       Create worktree for branch
+    setup-worktree.py <branch-name> --install             Also pip install -e from worktree
+    setup-worktree.py <branch-name> --with-content        Also copy content/ directory
+    setup-worktree.py <branch-name> --integration         Shorthand for --install --with-content
+    setup-worktree.py --list                              List worktree directory names
+    setup-worktree.py --cleanup NAME                      Remove a worktree
+    setup-worktree.py --cleanup NAME --force              Remove without confirmation
 """
 
 from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -55,7 +59,64 @@ def slugify(branch_name: str) -> str:
     return slug
 
 
-def create_worktree(branch_name: str) -> None:
+def install_editable(path: Path) -> None:
+    """Run pip install -e from the given path so imports resolve to its code."""
+    print(f"Installing editable package from {path}...")
+    try:
+        run(
+            [sys.executable, "-m", "pip", "install", "-e", f"{path}[dev]"],
+            capture=False,
+        )
+        print("Editable install complete.")
+    except subprocess.CalledProcessError:
+        print("Warning: pip install failed. You may need to install manually:")
+        print(f'  pip install -e "{path}[dev]"')
+
+
+def is_installed_from(path: Path) -> bool:
+    """Check if squishmark is currently editable-installed from the given path."""
+    result = run(
+        [sys.executable, "-m", "pip", "show", "squishmark"],
+        check=False,
+    )
+    if result.returncode != 0:
+        return False
+    for line in result.stdout.splitlines():
+        if line.startswith("Editable project location:"):
+            location = Path(line.split(":", 1)[1].strip()).resolve()
+            return location == path.resolve()
+    return False
+
+
+def copy_content(worktree_path: Path) -> None:
+    """Copy the content/ directory into the worktree if it exists."""
+    src = PROJECT_ROOT / "content"
+    dest = worktree_path / "content"
+
+    if dest.exists():
+        print("Content directory already exists in worktree, skipping copy.")
+        return
+
+    if not src.exists():
+        print("No content/ directory found in main repo, skipping copy.")
+        return
+
+    print("Copying content/ into worktree...")
+    try:
+        shutil.copytree(src, dest)
+    except (OSError, shutil.Error) as exc:
+        print(f"Warning: Failed to copy content/: {exc}")
+        print("  You can manually copy it later if needed.")
+        return
+    print(f"Copied {sum(1 for _ in dest.rglob('*') if _.is_file())} files to {dest}")
+
+
+def create_worktree(
+    branch_name: str,
+    *,
+    install: bool = False,
+    with_content: bool = False,
+) -> None:
     """Create a worktree in .worktrees/ for the given branch."""
     slug = slugify(branch_name)
     worktree_path = WORKTREES_DIR / slug
@@ -90,6 +151,15 @@ def create_worktree(branch_name: str) -> None:
     except subprocess.CalledProcessError:
         print("Error: Failed to create worktree.")
         sys.exit(1)
+
+    # Post-creation setup
+    if with_content:
+        print()
+        copy_content(worktree_path)
+
+    if install:
+        print()
+        install_editable(worktree_path)
 
     print()
     print("=" * 60)
@@ -146,6 +216,9 @@ def cleanup_worktree(name: str, *, force: bool = False) -> None:
     print(f"Worktree: {worktree_path}")
     print(f"Branch:   {branch}")
 
+    # Check if editable install points at this worktree before removing it
+    needs_reinstall = is_installed_from(worktree_path)
+
     # Confirmation unless --force
     if not force:
         print()
@@ -180,6 +253,11 @@ def cleanup_worktree(name: str, *, force: bool = False) -> None:
         check=False,
     )
 
+    # Restore editable install to main repo if it pointed at the removed worktree
+    if needs_reinstall:
+        print("\nRestoring editable install to main repo...")
+        install_editable(PROJECT_ROOT)
+
     print(f"\nCleaned up worktree '{name}'.")
 
 
@@ -190,9 +268,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-  %(prog)s feat/42-dark-mode       Create worktree for branch
-  %(prog)s --list                  List active worktrees
-  %(prog)s --cleanup 42-dark-mode  Remove worktree '42-dark-mode'
+  %(prog)s feat/42-dark-mode              Create worktree for branch
+  %(prog)s feat/42-dark-mode --install    Also pip install -e from worktree
+  %(prog)s feat/42-dark-mode --integration  Install + copy content/
+  %(prog)s --list                         List active worktrees
+  %(prog)s --cleanup 42-dark-mode         Remove worktree '42-dark-mode'
 """,
     )
 
@@ -216,6 +296,21 @@ Examples:
         action="store_true",
         help="Skip confirmation prompt during cleanup",
     )
+    parser.add_argument(
+        "--install",
+        action="store_true",
+        help="Run pip install -e from the worktree after creation",
+    )
+    parser.add_argument(
+        "--with-content",
+        action="store_true",
+        help="Copy content/ directory into the worktree",
+    )
+    parser.add_argument(
+        "--integration",
+        action="store_true",
+        help="Shorthand for --install --with-content",
+    )
 
     return parser
 
@@ -230,7 +325,9 @@ def main() -> None:
     elif args.cleanup:
         cleanup_worktree(args.cleanup, force=args.force)
     elif args.branch:
-        create_worktree(args.branch)
+        install = args.install or args.integration
+        with_content = args.with_content or args.integration
+        create_worktree(args.branch, install=install, with_content=with_content)
     else:
         parser.print_help()
         sys.exit(1)

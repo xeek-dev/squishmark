@@ -377,10 +377,13 @@ python scripts/run-checks.py --docker           # also run docker build (slow)
 Creates isolated worktrees in `.worktrees/` for parallel development. Branch names follow the project's `type/issue-description` convention; the type prefix is stripped to form the directory name (e.g., `feat/42-dark-mode` becomes `.worktrees/42-dark-mode`).
 
 ```bash
-python scripts/setup-worktree.py feat/42-dark-mode   # create worktree + branch
-python scripts/setup-worktree.py --list               # list active worktrees
-python scripts/setup-worktree.py --cleanup 42-dark-mode        # remove worktree + branch
-python scripts/setup-worktree.py --cleanup 42-dark-mode --force  # skip confirmation
+python scripts/setup-worktree.py feat/42-dark-mode                # create worktree + branch
+python scripts/setup-worktree.py feat/42-dark-mode --install      # also pip install -e
+python scripts/setup-worktree.py feat/42-dark-mode --with-content # also copy content/
+python scripts/setup-worktree.py feat/42-dark-mode --integration  # --install + --with-content
+python scripts/setup-worktree.py --list                           # list active worktrees
+python scripts/setup-worktree.py --cleanup 42-dark-mode           # remove worktree + branch
+python scripts/setup-worktree.py --cleanup 42-dark-mode --force   # skip confirmation
 ```
 
 #### `github-issue-updater.py` — Issue metadata updater
