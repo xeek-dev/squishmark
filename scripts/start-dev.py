@@ -367,6 +367,7 @@ def main() -> int:
 
     # Set environment variables for local development
     env = os.environ.copy()
+    env.setdefault("DEBUG", "true")
     env.setdefault("GITHUB_CONTENT_REPO", f"file://{PROJECT_ROOT / 'content'}")
     env.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{PROJECT_ROOT / 'data' / 'squishmark.db'}")
 

@@ -131,15 +131,8 @@ class LiveReloadService:
 
 
 # Script tag injected before </body> in HTML responses during debug mode.
-_LIVERELOAD_SCRIPT = """<script>
-(function() {
-  var ws = new WebSocket("ws://" + location.host + "/dev/livereload");
-  ws.onmessage = function() { location.reload(); };
-  ws.onclose = function() {
-    setTimeout(function() { location.reload(); }, 2000);
-  };
-})();
-</script>"""
+_SCRIPT_PATH = Path(__file__).parent / "livereload.js"
+_LIVERELOAD_SCRIPT = "<script>" + _SCRIPT_PATH.read_text() + "</script>"
 
 
 class LiveReloadMiddleware:
