@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -50,10 +50,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await get_theme_engine(github_service)
     logger.info("Theme engine initialized")
 
+    # Start live reload watcher in debug mode
+    if settings.debug:
+        from squishmark.services.livereload import get_livereload_service
+
+        livereload = get_livereload_service()
+        await livereload.start()
+
     yield
 
     # Shutdown
     logger.info("Shutting down SquishMark")
+
+    if settings.debug:
+        from squishmark.services.livereload import get_livereload_service, reset_livereload_service
+
+        livereload = get_livereload_service()
+        await livereload.stop()
+        reset_livereload_service()
+
     await shutdown_github_service()
     reset_theme_engine()
     await close_db()
@@ -263,6 +278,18 @@ def create_app() -> FastAPI:
             return FileResponse(fallback, headers={"Cache-Control": "public, max-age=86400"})
 
         raise HTTPException(status_code=404, detail="Static file not found")
+
+    # LiveReload WebSocket endpoint and middleware (debug mode only)
+    if settings.debug:
+        from squishmark.services.livereload import LiveReloadMiddleware, get_livereload_service
+
+        @app.websocket("/dev/livereload")
+        async def livereload_ws(websocket: WebSocket) -> None:
+            """WebSocket endpoint for theme live reload notifications."""
+            livereload = get_livereload_service()
+            await livereload.handle_websocket(websocket)
+
+        app.add_middleware(LiveReloadMiddleware)
 
     # Include routers
     app.include_router(auth.router)

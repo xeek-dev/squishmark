@@ -45,10 +45,11 @@ lint = [
     "pyright>=1.1.400",
 ]
 
-# Full dev = test + lint (for local development)
+# Full dev = test + lint + livereload (for local development)
 dev = [
     "squishmark[test]",
     "squishmark[lint]",
+    "watchfiles>=1.0.0",
 ]
 
 [build-system]
