@@ -222,3 +222,9 @@ theme:
   <aside>...</aside>
 {% endif %}
 ```
+
+## Live Reload
+
+When running `python scripts/start-dev.py`, debug mode is enabled automatically. This activates live reload — a small script is injected before `</body>` that opens a WebSocket to `/dev/livereload`. Any change to files in `themes/` or the content repo's `theme/` directory triggers a full page reload in the browser.
+
+No setup required — just save a template or CSS file and the browser refreshes.

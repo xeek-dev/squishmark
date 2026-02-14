@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from squishmark.config import Settings
+from squishmark.config import Settings, parse_file_url
 from squishmark.services.cache import Cache, get_cache
 
 
@@ -60,14 +60,7 @@ class GitHubService:
 
     def _get_local_path(self) -> Path:
         """Get the local content path from file:// URL."""
-        url = self.settings.github_content_repo
-        if url.startswith("file://"):
-            path = url[7:]
-            # Handle Windows paths like file:///D:/path
-            if len(path) > 2 and path[0] == "/" and path[2] == ":":
-                path = path[1:]
-            return Path(path)
-        raise ValueError(f"Not a file:// URL: {url}")
+        return parse_file_url(self.settings.github_content_repo)
 
     async def _fetch_local_file(self, path: str) -> GitHubFile | None:
         """Fetch a file from the local filesystem."""

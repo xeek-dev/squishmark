@@ -362,6 +362,8 @@ python scripts/start-dev.py --host 0.0.0.0     # bind to all interfaces
 python scripts/start-dev.py --no-reload         # disable auto-reload
 ```
 
+> **Stale port gotcha:** Background start (`-b`) can silently fail if a stale process holds the port. The old process keeps serving while the new one exits. Always verify after restart: `--stop <name>` then `lsof -ti:<port> | xargs kill` before starting fresh.
+
 #### `run-checks.py` — Local CI checks
 
 Runs the same checks as CI: **ruff format**, **ruff check**, **pytest**, and **pyright**. By default runs all checks and reports a summary.
