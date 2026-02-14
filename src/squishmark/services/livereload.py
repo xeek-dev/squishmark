@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import WebSocket, WebSocketDisconnect
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from squishmark.config import get_settings
+from squishmark.config import get_settings, parse_file_url
 
 logger = logging.getLogger("squishmark.livereload")
 
@@ -61,7 +61,7 @@ class LiveReloadService:
 
         # Watch content repo's theme/ directory (local dev only)
         if settings.is_local_content:
-            content_path = Path(settings.github_content_repo[7:])  # Strip file://
+            content_path = parse_file_url(settings.github_content_repo)
             theme_dir = content_path / "theme"
             if theme_dir.exists():
                 paths.append(theme_dir)

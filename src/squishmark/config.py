@@ -80,6 +80,23 @@ class Settings(BaseSettings):
         return _default_themes_path()
 
 
+def parse_file_url(url: str) -> Path:
+    """Parse a ``file://`` URL into a :class:`~pathlib.Path`.
+
+    Handles both Unix (``file:///home/...``) and Windows
+    (``file:///D:/...``) paths.
+
+    Raises :class:`ValueError` if *url* is not a ``file://`` URL.
+    """
+    if not url.startswith("file://"):
+        raise ValueError(f"Not a file:// URL: {url}")
+    path = url[7:]
+    # Handle Windows paths like file:///D:/path
+    if len(path) > 2 and path[0] == "/" and path[2] == ":":
+        path = path[1:]
+    return Path(path)
+
+
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
