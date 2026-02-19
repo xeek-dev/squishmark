@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from squishmark.routers.posts import _get_all_posts, _is_admin
+from squishmark.routers.posts import _is_admin
+from squishmark.services.content import get_all_posts
 
 
 @pytest.fixture
@@ -75,11 +76,11 @@ class TestIsAdmin:
 
 
 class TestGetAllPostsDraftFiltering:
-    """Tests for draft filtering in _get_all_posts."""
+    """Tests for draft filtering in get_all_posts."""
 
     @pytest.mark.asyncio
     async def test_get_all_posts_excludes_drafts(self):
-        """_get_all_posts should exclude draft posts by default."""
+        """get_all_posts should exclude draft posts by default."""
         from squishmark.services.markdown import MarkdownService
 
         mock_github = AsyncMock()
@@ -93,14 +94,14 @@ class TestGetAllPostsDraftFiltering:
         ]
         md = MarkdownService()
 
-        posts = await _get_all_posts(mock_github, md, include_drafts=False)
+        posts = await get_all_posts(mock_github, md, include_drafts=False)
 
         assert len(posts) == 1
         assert posts[0].title == "Published"
 
     @pytest.mark.asyncio
     async def test_get_all_posts_includes_drafts_when_requested(self):
-        """_get_all_posts should include drafts when include_drafts=True."""
+        """get_all_posts should include drafts when include_drafts=True."""
         from squishmark.services.markdown import MarkdownService
 
         mock_github = AsyncMock()
@@ -114,7 +115,7 @@ class TestGetAllPostsDraftFiltering:
         ]
         md = MarkdownService()
 
-        posts = await _get_all_posts(mock_github, md, include_drafts=True)
+        posts = await get_all_posts(mock_github, md, include_drafts=True)
 
         assert len(posts) == 2
         titles = {p.title for p in posts}

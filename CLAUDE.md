@@ -273,6 +273,8 @@ title: My Post Title
 date: 2026-01-15
 tags: [python, blogging]
 draft: false
+featured: true        # Optional: include in featured_posts template context
+featured_order: 1     # Optional: sort order (lower = first, nulls last)
 ---
 
 Post content in markdown...
@@ -305,6 +307,7 @@ site:
   author: "Your Name"
   url: "https://example.com"
   favicon: "/static/user/custom-icon.png"  # Optional: override auto-detected favicon
+  featured_max: 5                           # Optional: max featured posts (default: 5)
 
 theme:
   name: default

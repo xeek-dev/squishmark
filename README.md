@@ -117,6 +117,8 @@ Create markdown files in your content repo's `posts/` directory:
 title: My First Post
 date: 2026-01-25
 tags: [hello, world]
+featured: true        # Optional: include in featured_posts context
+featured_order: 1     # Optional: sort order (lower = first)
 ---
 
 # Hello World
@@ -152,6 +154,7 @@ site:
   author: "Your Name"
   url: "https://yourdomain.com"
   favicon: "/static/user/custom-icon.png"  # Optional
+  featured_max: 5                           # Optional: max featured posts (default: 5)
 
 theme:
   name: default

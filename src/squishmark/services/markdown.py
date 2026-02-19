@@ -142,6 +142,8 @@ class MarkdownService:
             content=markdown_content,
             html=html,
             draft=frontmatter.draft,
+            featured=frontmatter.featured,
+            featured_order=frontmatter.featured_order,
             template=frontmatter.template,
             theme=frontmatter.theme,
             author=frontmatter.author,
@@ -170,6 +172,8 @@ class MarkdownService:
             title=frontmatter.title,
             content=markdown_content,
             html=html,
+            featured=frontmatter.featured,
+            featured_order=frontmatter.featured_order,
             template=frontmatter.template,
             theme=frontmatter.theme,
         )

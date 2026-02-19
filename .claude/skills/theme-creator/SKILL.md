@@ -35,6 +35,7 @@ themes/{name}/
 | `theme` | `ThemeConfig` | Theme configuration from `config.yml` |
 | `theme_name` | `str` | Active theme name (e.g. `"terminal"`) |
 | `favicon_url` | `str \| None` | Resolved favicon URL, if any |
+| `featured_posts` | `list[Post]` | Featured posts, sorted and limited by `site.featured_max` (always present, may be empty) |
 
 ### Per-Template Context
 
@@ -57,6 +58,7 @@ themes/{name}/
 | `author` | `str` | Site author name |
 | `url` | `str` | Site URL |
 | `favicon` | `str \| None` | Custom favicon path override |
+| `featured_max` | `int` | Max number of featured posts returned (default: 5) |
 
 ### Post
 
@@ -70,6 +72,8 @@ themes/{name}/
 | `content` | `str` | Raw markdown content |
 | `html` | `str` | Rendered HTML content |
 | `draft` | `bool` | Draft flag |
+| `featured` | `bool` | Whether the post is featured |
+| `featured_order` | `int \| None` | Sort order within featured posts (lower = first, nulls last) |
 | `template` | `str \| None` | Custom template override |
 | `theme` | `str \| None` | Per-post theme override |
 | `author` | `str \| None` | Post author (overrides site author) |

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from squishmark.models.content import Config
+from squishmark.services.content import get_all_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine
@@ -44,8 +45,12 @@ async def get_page(
     # TODO: Get notes for this page from database
     notes: list = []
 
+    # Featured posts for template context
+    all_posts = await get_all_posts(github_service, markdown_service)
+    featured = get_featured_posts(all_posts, config.site)
+
     # Render
     theme_engine = await get_theme_engine(github_service)
-    html = await theme_engine.render_page(config, page, notes)
+    html = await theme_engine.render_page(config, page, notes, featured_posts=featured)
 
     return HTMLResponse(content=html)
