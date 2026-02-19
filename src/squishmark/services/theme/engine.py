@@ -152,7 +152,7 @@ class ThemeEngine:
         pagination: Pagination,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
-        **kwargs: Any,
+        featured_posts: list[Post] | None = None,
     ) -> str:
         """Render the index/home page."""
         return await self.render(
@@ -162,7 +162,7 @@ class ThemeEngine:
             posts=posts,
             pagination=pagination,
             notes=notes or [],
-            **kwargs,
+            featured_posts=featured_posts or [],
         )
 
     async def render_post(
@@ -171,7 +171,7 @@ class ThemeEngine:
         post: Post,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
-        **kwargs: Any,
+        featured_posts: list[Post] | None = None,
     ) -> str:
         """Render a single post page."""
         template_name = post.template or "post.html"
@@ -183,7 +183,7 @@ class ThemeEngine:
             theme_override=resolved_theme,
             post=post,
             notes=notes or [],
-            **kwargs,
+            featured_posts=featured_posts or [],
         )
 
     async def render_page(
@@ -192,7 +192,7 @@ class ThemeEngine:
         page: Page,
         notes: list[Any] | None = None,
         theme_override: str | None = None,
-        **kwargs: Any,
+        featured_posts: list[Post] | None = None,
     ) -> str:
         """Render a static page."""
         template_name = page.template or "page.html"
@@ -204,7 +204,7 @@ class ThemeEngine:
             theme_override=resolved_theme,
             page=page,
             notes=notes or [],
-            **kwargs,
+            featured_posts=featured_posts or [],
         )
 
     async def render_404(self, config: Config, theme_override: str | None = None) -> str:

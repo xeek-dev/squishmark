@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from squishmark.models.content import Config
-from squishmark.routers.posts import _get_all_posts, get_featured_posts
+from squishmark.services.content import get_all_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine
@@ -46,7 +46,7 @@ async def get_page(
     notes: list = []
 
     # Featured posts for template context
-    all_posts = await _get_all_posts(github_service, markdown_service)
+    all_posts = await get_all_posts(github_service, markdown_service)
     featured = get_featured_posts(all_posts, config.site)
 
     # Render

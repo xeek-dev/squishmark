@@ -54,6 +54,8 @@ class Page(BaseModel):
     title: str
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
+    featured: bool = False
+    featured_order: int | None = None  # Explicit ordering (lower = first)
     template: str | None = None
     theme: str | None = None  # Per-page theme override
 
@@ -71,7 +73,7 @@ class SiteConfig(BaseModel):
     author: str = ""
     url: str = ""
     favicon: str | None = None  # Custom favicon URL, e.g., "/static/user/custom-icon.png"
-    featured_max: int = 5  # Maximum number of featured posts returned
+    featured_max: int = Field(default=5, ge=0)  # Maximum number of featured posts returned
 
 
 class ThemeConfig(BaseModel):

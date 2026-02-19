@@ -4,9 +4,10 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 
 from squishmark.config import get_settings
-from squishmark.models.content import Config, Pagination, Post, SiteConfig
-from squishmark.services.github import GitHubService, get_github_service
-from squishmark.services.markdown import MarkdownService, get_markdown_service
+from squishmark.models.content import Config, Pagination
+from squishmark.services.content import get_all_posts, get_featured_posts
+from squishmark.services.github import get_github_service
+from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -21,54 +22,6 @@ def _is_admin(request: Request) -> bool:
     if user is None:
         return False
     return user.get("login") in settings.admin_users_list
-
-
-async def _get_all_posts(
-    github_service: GitHubService,
-    markdown_service: MarkdownService,
-    include_drafts: bool = False,
-) -> list[Post]:
-    """Fetch and parse all posts from the content repository."""
-    post_files = await github_service.list_directory("posts")
-
-    posts: list[Post] = []
-    for path in post_files:
-        if not path.endswith(".md"):
-            continue
-
-        file = await github_service.get_file(path)
-        if file is None:
-            continue
-
-        post = markdown_service.parse_post(path, file.content)
-
-        # Skip drafts unless requested
-        if post.draft and not include_drafts:
-            continue
-
-        posts.append(post)
-
-    # Sort by date (newest first), posts without dates go last
-    posts.sort(key=lambda p: (p.date is not None, p.date), reverse=True)
-
-    return posts
-
-
-def get_featured_posts(posts: list[Post], site_config: SiteConfig) -> list[Post]:
-    """Filter and sort featured posts from a list of posts.
-
-    Sort order: featured_order ascending (nulls last), then date descending.
-    Limited to site_config.featured_max entries.
-    """
-    featured = [p for p in posts if p.featured]
-    featured.sort(
-        key=lambda p: (
-            0 if p.featured_order is not None else 1,
-            p.featured_order if p.featured_order is not None else 0,
-            -(p.date.toordinal() if p.date else 0),
-        ),
-    )
-    return featured[: site_config.featured_max]
 
 
 @router.get("", response_class=HTMLResponse)
@@ -88,7 +41,7 @@ async def list_posts(
 
     # Get all posts (admins can see drafts)
     include_drafts = _is_admin(request)
-    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+    all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     # Paginate
     per_page = config.posts.per_page
@@ -136,7 +89,7 @@ async def get_post(
 
     # Get all posts and find the matching one (admins can see drafts)
     include_drafts = _is_admin(request)
-    all_posts = await _get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+    all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
 
