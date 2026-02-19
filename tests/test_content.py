@@ -39,3 +39,19 @@ class TestGetFeaturedPosts:
         result = get_featured_posts(posts, SiteConfig())
         slugs = [p.slug for p in result]
         assert slugs == ["newer", "middle", "older"]
+
+    def test_non_featured_excluded(self):
+        """Posts with featured=False are excluded from results."""
+        posts = [
+            _make_post("yes", featured=True),
+            _make_post("no", featured=False),
+        ]
+        result = get_featured_posts(posts, SiteConfig())
+        assert [p.slug for p in result] == ["yes"]
+
+    def test_featured_max_limits_results(self):
+        """featured_max caps the number of returned posts."""
+        posts = [_make_post(f"post-{i}", featured_order=i) for i in range(5)]
+        result = get_featured_posts(posts, SiteConfig(featured_max=2))
+        assert len(result) == 2
+        assert result[0].slug == "post-0"
