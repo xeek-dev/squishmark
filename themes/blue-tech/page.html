@@ -2,6 +2,13 @@
 
 {% block title %}{{ page.title }} - {{ site.title }}{% endblock %}
 
+{% block og_title %}{{ page.title }}{% endblock %}
+{% block og_description %}{{ page.description or site.description }}{% endblock %}
+{% block og_url %}<meta property="og:url" content="{{ site.url }}{{ page.url }}">{% endblock %}
+{% block og_image %}{% if page.image %}<meta property="og:image" content="{{ page.image }}">{% endif %}{% endblock %}
+{% block twitter_title %}{{ page.title }}{% endblock %}
+{% block twitter_description %}{{ page.description or site.description }}{% endblock %}
+
 {% block content %}
 <article class="page">
     <header class="page-header">
