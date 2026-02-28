@@ -6,8 +6,8 @@ from xml.etree.ElementTree import fromstring
 
 import pytest
 
-from squishmark.routers.feed import _build_atom_feed, _rfc3339
 from squishmark.models.content import Config, Post
+from squishmark.routers.feed import _build_atom_feed, _rfc3339
 
 ATOM_NS = "http://www.w3.org/2005/Atom"
 
@@ -19,14 +19,16 @@ def _ns(tag: str) -> str:
 
 @pytest.fixture
 def sample_config() -> Config:
-    return Config.from_dict({
-        "site": {
-            "title": "Test Blog",
-            "description": "A test blog",
-            "author": "Test Author",
-            "url": "https://example.com",
-        },
-    })
+    return Config.from_dict(
+        {
+            "site": {
+                "title": "Test Blog",
+                "description": "A test blog",
+                "author": "Test Author",
+                "url": "https://example.com",
+            },
+        }
+    )
 
 
 @pytest.fixture
@@ -101,7 +103,7 @@ class TestBuildAtomFeed:
         xml_bytes = _build_atom_feed(sample_config, sample_posts)
         root = fromstring(xml_bytes)
         links = root.findall(_ns("link"))
-        self_link = [l for l in links if l.attrib.get("rel") == "self"][0]
+        self_link = [link for link in links if link.attrib.get("rel") == "self"][0]
         assert self_link.attrib["href"] == "https://example.com/feed.xml"
         assert self_link.attrib["type"] == "application/atom+xml"
 
@@ -133,8 +135,6 @@ class TestAtomFeedEndpoint:
     @pytest.mark.asyncio
     async def test_draft_posts_excluded(self):
         """Draft posts should not appear in the feed."""
-        from squishmark.services.markdown import MarkdownService
-
         mock_github = AsyncMock()
         mock_github.get_config.return_value = {
             "site": {"title": "Test", "url": "https://example.com"},
@@ -173,12 +173,9 @@ class TestAtomFeedEndpoint:
             "site": {"title": "Test", "url": "https://example.com"},
         }
         # Create 25 post files
-        mock_github.list_directory.return_value = [
-            f"posts/2026-01-{i:02d}-post-{i}.md" for i in range(1, 26)
-        ]
+        mock_github.list_directory.return_value = [f"posts/2026-01-{i:02d}-post-{i}.md" for i in range(1, 26)]
         mock_github.get_file.side_effect = [
-            MagicMock(content=f"---\ntitle: Post {i}\ndate: 2026-01-{i:02d}\n---\nContent {i}")
-            for i in range(1, 26)
+            MagicMock(content=f"---\ntitle: Post {i}\ndate: 2026-01-{i:02d}\n---\nContent {i}") for i in range(1, 26)
         ]
 
         with (
