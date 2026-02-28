@@ -58,16 +58,39 @@ def _write_registry(servers: list[dict]) -> None:
     REGISTRY_PATH.write_text(json.dumps({"servers": servers}, indent=2) + "\n")
 
 
-def _is_pid_alive(pid: int) -> bool:
-    """Check if a process with the given PID is still running."""
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        # Process exists but we don't have permission to signal it
+if sys.platform == "win32":
+    import ctypes
+    import ctypes.wintypes
+
+    _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    _STILL_ACTIVE = 259
+
+    def _is_pid_alive(pid: int) -> bool:
+        """Check if a process with the given PID is still running (Windows)."""
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return False
+        try:
+            exit_code = ctypes.wintypes.DWORD()
+            if kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                return exit_code.value == _STILL_ACTIVE
+            return False
+        finally:
+            kernel32.CloseHandle(handle)
+
+else:
+
+    def _is_pid_alive(pid: int) -> bool:
+        """Check if a process with the given PID is still running (POSIX)."""
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            # Process exists but we don't have permission to signal it
+            return True
         return True
-    return True
 
 
 def _kill_registered_pid(pid: int, servers: list[dict] | None = None) -> bool:
@@ -82,9 +105,17 @@ def _kill_registered_pid(pid: int, servers: list[dict] | None = None) -> bool:
         print(f"Error: PID {pid} is not in the server registry. Refusing to kill.")
         return False
     try:
-        os.kill(pid, signal.SIGTERM)
-        return True
-    except (ProcessLookupError, PermissionError):
+        if sys.platform == "win32":
+            # Use taskkill /T to kill the entire process tree (uvicorn + workers)
+            result = subprocess.run(
+                ["taskkill", "/PID", str(pid), "/T", "/F"],
+                capture_output=True,
+            )
+            return result.returncode == 0
+        else:
+            os.kill(pid, signal.SIGTERM)
+            return True
+    except (ProcessLookupError, PermissionError, OSError):
         return False
 
 
@@ -368,8 +399,10 @@ def main() -> int:
     # Set environment variables for local development
     env = os.environ.copy()
     env.setdefault("DEBUG", "true")
-    env.setdefault("GITHUB_CONTENT_REPO", f"file://{PROJECT_ROOT / 'content'}")
-    env.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{PROJECT_ROOT / 'data' / 'squishmark.db'}")
+    content_path = PROJECT_ROOT / "content"
+    db_path = PROJECT_ROOT / "data" / "squishmark.db"
+    env.setdefault("GITHUB_CONTENT_REPO", content_path.as_uri())
+    env.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{db_path.as_posix()}")
 
     # Ensure data directory exists
     (PROJECT_ROOT / "data").mkdir(exist_ok=True)
@@ -402,14 +435,24 @@ def main() -> int:
         print("Running in background mode")
     print()
 
+    # On Windows, put the child in its own process group so we can signal it
+    # independently. Background servers also get CREATE_NO_WINDOW to detach
+    # from the console.
+    popen_kwargs: dict = {"env": env}
+    if sys.platform == "win32":
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP
+        if background:
+            flags |= subprocess.CREATE_NO_WINDOW
+        popen_kwargs["creationflags"] = flags
+
     if background:
-        process = subprocess.Popen(cmd, env=env)
+        process = subprocess.Popen(cmd, **popen_kwargs)
         _register_server(name, process.pid, port, branch)
         print(f"Server '{name}' started in background (PID: {process.pid})")
         return 0
     else:
         # Use Popen so we register the actual uvicorn child PID
-        process = subprocess.Popen(cmd, env=env)
+        process = subprocess.Popen(cmd, **popen_kwargs)
         _register_server(name, process.pid, port, branch)
         try:
             return process.wait()
