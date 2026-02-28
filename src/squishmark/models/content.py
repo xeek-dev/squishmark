@@ -54,6 +54,8 @@ class Post(BaseModel):
         """Estimate reading time based on word count (~238 WPM)."""
         # Strip markdown/HTML artifacts for a rough word count
         text = re.sub(r"<[^>]+>", "", self.html) if self.html else self.content
+        if not text.strip():
+            return ""
         word_count = len(text.split())
         minutes = max(1, round(word_count / 238))
         return f"{minutes} min read"

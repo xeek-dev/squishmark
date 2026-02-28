@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 
 from squishmark.models.content import Config, Post
+from squishmark.services.cache import get_cache
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 
@@ -72,9 +73,19 @@ def _build_atom_feed(config: Config, posts: list[Post]) -> bytes:
     return b'<?xml version="1.0" encoding="utf-8"?>\n' + tostring(feed, encoding="unicode").encode("utf-8")
 
 
+FEED_CACHE_KEY = "feed:atom"
+
+
 @router.get("/feed.xml")
 async def atom_feed() -> Response:
     """Serve the Atom 1.0 feed."""
+    cache = get_cache()
+
+    # Return cached feed if available
+    cached_xml = await cache.get(FEED_CACHE_KEY)
+    if cached_xml is not None:
+        return Response(content=cached_xml, media_type="application/atom+xml; charset=utf-8")
+
     github_service = get_github_service()
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
@@ -100,4 +111,5 @@ async def atom_feed() -> Response:
     posts = posts[:20]
 
     xml_bytes = _build_atom_feed(config, posts)
+    await cache.set(FEED_CACHE_KEY, xml_bytes)
     return Response(content=xml_bytes, media_type="application/atom+xml; charset=utf-8")

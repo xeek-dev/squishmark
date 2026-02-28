@@ -136,7 +136,7 @@ class MarkdownService:
         # Auto-generate description from content if not set in frontmatter
         description = frontmatter.description
         if not description:
-            description = self._generate_description(markdown_content)
+            description = self._generate_description(markdown_content) or frontmatter.title
 
         return Post(
             slug=slug,
@@ -176,7 +176,7 @@ class MarkdownService:
         # Auto-generate description from content if not set in frontmatter
         description = frontmatter.description
         if not description:
-            description = self._generate_description(markdown_content)
+            description = self._generate_description(markdown_content) or frontmatter.title
 
         return Page(
             slug=slug,
@@ -205,9 +205,11 @@ class MarkdownService:
         text = " ".join(text.split()).strip()
         if len(text) <= max_length:
             return text
-        # Truncate at word boundary
-        truncated = text[:max_length].rsplit(" ", 1)[0]
-        return truncated + "..."
+        # Truncate at word boundary (fall back to hard truncate if no spaces)
+        chunk = text[:max_length]
+        if " " in chunk:
+            chunk = chunk.rsplit(" ", 1)[0]
+        return chunk + "..."
 
     def _extract_slug(self, path: str, strip_date: bool = True) -> str:
         """Extract slug from a file path."""
