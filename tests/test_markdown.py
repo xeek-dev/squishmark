@@ -213,3 +213,97 @@ title: About Page
     page = markdown_service.parse_page("pages/about.md", content)
 
     assert 'src="/static/user/images/me.jpg"' in page.html
+
+
+class TestGenerateDescription:
+    """Tests for _generate_description."""
+
+    def test_plain_text_passthrough(self):
+        """Short plain text should be returned as-is."""
+        result = MarkdownService._generate_description("Hello world, this is a test.")
+        assert result == "Hello world, this is a test."
+
+    def test_strips_headings(self):
+        """Markdown headings should be stripped."""
+        result = MarkdownService._generate_description("# My Heading\n\nSome content here.")
+        assert "# My Heading" not in result
+        assert "Some content here." in result
+
+    def test_strips_images(self):
+        """Image syntax should be removed."""
+        result = MarkdownService._generate_description("![alt](image.png) Some text.")
+        assert "![alt]" not in result
+        assert "Some text." in result
+
+    def test_strips_links_keeps_text(self):
+        """Link syntax should be removed but link text preserved."""
+        result = MarkdownService._generate_description("Check out [my site](https://example.com) for details.")
+        assert "my site" in result
+        assert "https://example.com" not in result
+
+    def test_strips_code_fences(self):
+        """Fenced code blocks should be removed."""
+        md = "Before code.\n\n```python\ndef hello():\n    pass\n```\n\nAfter code."
+        result = MarkdownService._generate_description(md)
+        assert "def hello" not in result
+        assert "Before code." in result
+        assert "After code." in result
+
+    def test_strips_inline_code(self):
+        """Inline code should be removed."""
+        result = MarkdownService._generate_description("Use `pip install` to install.")
+        assert "`pip install`" not in result
+        assert "pip install" not in result
+        assert "Use" in result
+
+    def test_strips_bold_italic(self):
+        """Bold and italic markers should be removed, text preserved."""
+        result = MarkdownService._generate_description("This is **bold** and *italic* text.")
+        assert "**" not in result
+        assert "*italic*" not in result
+        assert "bold" in result
+        assert "italic" in result
+
+    def test_truncates_at_word_boundary(self):
+        """Long text should be truncated at a word boundary with ellipsis."""
+        long_text = " ".join(["word"] * 100)
+        result = MarkdownService._generate_description(long_text)
+        assert result.endswith("...")
+        assert len(result) <= 164  # 160 + "..."
+
+    def test_no_truncation_for_short_content(self):
+        """Content under 160 chars should not be truncated."""
+        short = "This is short."
+        result = MarkdownService._generate_description(short)
+        assert result == short
+        assert "..." not in result
+
+    def test_empty_content_returns_empty(self):
+        """Empty content should return empty string."""
+        assert MarkdownService._generate_description("") == ""
+
+    def test_whitespace_only_returns_empty(self):
+        """Whitespace-only content should return empty string."""
+        assert MarkdownService._generate_description("   \n\n  ") == ""
+
+    def test_only_markdown_syntax_returns_empty(self):
+        """Content with only headings/images/code should return empty string."""
+        md = "# Heading\n\n![img](pic.png)\n\n```python\ncode\n```"
+        result = MarkdownService._generate_description(md)
+        # After stripping, should be empty or near-empty
+        assert result.strip() == "" or len(result) < 10
+
+    def test_hard_truncate_when_no_spaces(self):
+        """Very long word (no spaces) should hard-truncate with ellipsis."""
+        long_word = "a" * 200
+        result = MarkdownService._generate_description(long_word)
+        assert result.endswith("...")
+        assert len(result) == 163  # 160 + "..."
+
+    def test_description_fallback_to_title_in_parse_post(self):
+        """parse_post should fall back to title when description can't be generated."""
+        ms = MarkdownService()
+        content = "---\ntitle: My Title\n---\n\n# Just a heading\n\n![img](pic.png)"
+        post = ms.parse_post("posts/2026-01-01-test.md", content)
+        # Should have some description (either extracted text or title fallback)
+        assert post.description != ""

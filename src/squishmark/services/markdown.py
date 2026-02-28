@@ -133,12 +133,17 @@ class MarkdownService:
         if file_date is None:
             file_date = self._extract_date_from_path(path)
 
+        # Auto-generate description from content if not set in frontmatter
+        description = frontmatter.description
+        if not description:
+            description = self._generate_description(markdown_content) or frontmatter.title
+
         return Post(
             slug=slug,
             title=frontmatter.title,
             date=file_date,
             tags=frontmatter.tags,
-            description=frontmatter.description,
+            description=description,
             content=markdown_content,
             html=html,
             draft=frontmatter.draft,
@@ -147,6 +152,7 @@ class MarkdownService:
             template=frontmatter.template,
             theme=frontmatter.theme,
             author=frontmatter.author,
+            image=frontmatter.image,
         )
 
     def parse_page(self, path: str, content: str) -> Page:
@@ -167,16 +173,43 @@ class MarkdownService:
         # Extract slug from path (e.g., "pages/about.md" -> "about")
         slug = self._extract_slug(path, strip_date=False)
 
+        # Auto-generate description from content if not set in frontmatter
+        description = frontmatter.description
+        if not description:
+            description = self._generate_description(markdown_content) or frontmatter.title
+
         return Page(
             slug=slug,
             title=frontmatter.title,
+            description=description,
             content=markdown_content,
             html=html,
             featured=frontmatter.featured,
             featured_order=frontmatter.featured_order,
             template=frontmatter.template,
             theme=frontmatter.theme,
+            image=frontmatter.image,
         )
+
+    @staticmethod
+    def _generate_description(markdown_content: str, max_length: int = 160) -> str:
+        """Generate a plain-text description from the first ~160 chars of markdown content."""
+        # Strip headings, images, links, bold/italic markers, and code fences
+        text = re.sub(r"^#{1,6}\s+", "", markdown_content, flags=re.MULTILINE)
+        text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
+        text = re.sub(r"\[([^\]]+)\]\(.*?\)", r"\1", text)
+        text = re.sub(r"```[\s\S]*?```", "", text)
+        text = re.sub(r"`[^`]+`", "", text)
+        text = re.sub(r"[*_]{1,2}([^*_]+)[*_]{1,2}", r"\1", text)
+        # Collapse whitespace
+        text = " ".join(text.split()).strip()
+        if len(text) <= max_length:
+            return text
+        # Truncate at word boundary (fall back to hard truncate if no spaces)
+        chunk = text[:max_length]
+        if " " in chunk:
+            chunk = chunk.rsplit(" ", 1)[0]
+        return chunk + "..."
 
     def _extract_slug(self, path: str, strip_date: bool = True) -> str:
         """Extract slug from a file path."""
