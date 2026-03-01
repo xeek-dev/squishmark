@@ -167,6 +167,15 @@ class ThemeEngine:
         if "nav_pages" not in context and template_name != "admin/admin.html":
             context["nav_pages"] = await self.get_nav_pages(config)
 
+        # Auto-derive canonical_url from context objects when not explicitly set
+        if "canonical_url" not in context:
+            post = context.get("post")
+            page = context.get("page")
+            if post and hasattr(post, "url"):
+                context["canonical_url"] = self.build_canonical_url(config, post.url)
+            elif page and hasattr(page, "url"):
+                context["canonical_url"] = self.build_canonical_url(config, page.url)
+
         # Build the full context — featured_posts is always available for themes
         full_context: dict[str, Any] = {
             "site": config.site,
@@ -180,6 +189,18 @@ class ThemeEngine:
 
         return template.render(**full_context)
 
+    @staticmethod
+    def build_canonical_url(config: Config, path: str) -> str | None:
+        """Build an absolute canonical URL from site.url and a path.
+
+        Returns ``None`` when ``site.url`` is not configured so templates
+        can conditionally render the tag.
+        """
+        base = config.site.url.rstrip("/") if config.site.url else ""
+        if not base:
+            return None
+        return f"{base}{path}"
+
     async def render_index(
         self,
         config: Config,
@@ -190,6 +211,7 @@ class ThemeEngine:
         featured_posts: list[Post] | None = None,
     ) -> str:
         """Render the index/home page."""
+        path = "/posts" if pagination.page <= 1 else f"/posts?page={pagination.page}"
         return await self.render(
             "index.html",
             config,
@@ -198,6 +220,7 @@ class ThemeEngine:
             pagination=pagination,
             notes=notes or [],
             featured_posts=featured_posts or [],
+            canonical_url=self.build_canonical_url(config, path),
         )
 
     async def render_post(

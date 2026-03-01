@@ -15,11 +15,14 @@
     <link rel="icon" href="{{ favicon_url }}">
     {% endif %}
     <link rel="alternate" type="application/atom+xml" title="{{ site.title }}" href="/feed.xml">
+    {% if canonical_url %}
+    <link rel="canonical" href="{{ canonical_url }}">
+    {% endif %}
     <!-- Open Graph -->
     <meta property="og:title" content="{% block og_title %}{{ site.title }}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{{ site.description }}{% endblock %}">
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    {% block og_url %}{% endblock %}
+    {% block og_url %}{% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}">{% endif %}{% endblock %}
     {% block og_image %}{% endblock %}
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
