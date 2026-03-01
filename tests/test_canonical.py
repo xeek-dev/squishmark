@@ -59,3 +59,7 @@ class TestBuildCanonicalUrl:
     def test_index_url_pattern(self, config_with_url: Config):
         result = ThemeEngine.build_canonical_url(config_with_url, "/posts")
         assert result == "https://example.com/posts"
+
+    def test_paginated_index_url_pattern(self, config_with_url: Config):
+        result = ThemeEngine.build_canonical_url(config_with_url, "/posts?page=2")
+        assert result == "https://example.com/posts?page=2"

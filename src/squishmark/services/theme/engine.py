@@ -211,6 +211,7 @@ class ThemeEngine:
         featured_posts: list[Post] | None = None,
     ) -> str:
         """Render the index/home page."""
+        path = "/posts" if pagination.page <= 1 else f"/posts?page={pagination.page}"
         return await self.render(
             "index.html",
             config,
@@ -219,7 +220,7 @@ class ThemeEngine:
             pagination=pagination,
             notes=notes or [],
             featured_posts=featured_posts or [],
-            canonical_url=self.build_canonical_url(config, "/posts"),
+            canonical_url=self.build_canonical_url(config, path),
         )
 
     async def render_post(
