@@ -37,6 +37,7 @@
       "Bash(playwright-cli open:*)",
       "Bash(playwright-cli close:*)",
       "Bash(playwright-cli:*)",
+      "Bash(pwd)",
       "Bash(pytest *)",
       "Bash(ruff *)",
       "Bash(pyright *)"
