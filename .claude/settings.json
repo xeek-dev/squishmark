@@ -20,7 +20,31 @@
       "Bash(gh run watch *)",
       "Bash(gh api repos/*/milestones*)",
       "Bash(gh api repos/*/pulls/*/comments*)",
-      "Bash(gh api repos/*/pulls/comments/*/replies*)"
+      "Bash(gh api repos/*/pulls/comments/*/replies*)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git commit*)",
+      "Bash(git branch *)",
+      "Bash(git push*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status*)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(git stash*)",
+      "WebSearch",
+      "WebFetch",
+      "Bash(playwright-cli open:*)",
+      "Bash(playwright-cli close:*)",
+      "Bash(playwright-cli:*)",
+      "Bash(pwd)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(pyright *)"
+    ],
+    "deny": [
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)"
     ]
   },
   "hooks": {
