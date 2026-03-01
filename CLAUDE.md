@@ -10,6 +10,7 @@ SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pag
 
 - **Do not prefix every Bash command with `cd /path/to/repo &&`.** The working directory persists between Bash calls. Only change directory when you actually need to be somewhere different.
 - Before your first shell command in a session, run `pwd` to confirm cwd if unsure — then just run commands directly.
+- **Git commit messages:** Use multiple `-m` flags instead of `$()` heredoc substitution, which triggers a command-substitution security prompt. Example: `git commit -m "title" -m "body" -m "Co-Authored-By: ..."`
 
 ## Skills
 
