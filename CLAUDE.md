@@ -6,6 +6,11 @@ This document provides context for AI assistants (and humans) working on the Squ
 
 SquishMark is a lightweight, GitHub-powered blogging engine. Content (posts, pages) lives in a separate GitHub repository and is fetched at runtime. Themes use Jinja2 templates, making them accessible to web developers without Python knowledge.
 
+## Shell Conventions
+
+- **Do not prefix every Bash command with `cd /path/to/repo &&`.** The working directory persists between Bash calls. Only change directory when you actually need to be somewhere different.
+- Before your first shell command in a session, run `pwd` to confirm cwd if unsure — then just run commands directly.
+
 ## Skills
 
 **INSTRUCTION:** If your task involves Python, Docker, browser testing, GitHub operations, or theme creation, invoke the relevant skill using `Skill(skill-name)`.
