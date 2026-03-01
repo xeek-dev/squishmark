@@ -180,6 +180,18 @@ class ThemeEngine:
 
         return template.render(**full_context)
 
+    @staticmethod
+    def build_canonical_url(config: Config, path: str) -> str | None:
+        """Build an absolute canonical URL from site.url and a path.
+
+        Returns ``None`` when ``site.url`` is not configured so templates
+        can conditionally render the tag.
+        """
+        base = config.site.url.rstrip("/") if config.site.url else ""
+        if not base:
+            return None
+        return f"{base}{path}"
+
     async def render_index(
         self,
         config: Config,
@@ -198,6 +210,7 @@ class ThemeEngine:
             pagination=pagination,
             notes=notes or [],
             featured_posts=featured_posts or [],
+            canonical_url=self.build_canonical_url(config, "/posts"),
         )
 
     async def render_post(
@@ -219,6 +232,7 @@ class ThemeEngine:
             post=post,
             notes=notes or [],
             featured_posts=featured_posts or [],
+            canonical_url=self.build_canonical_url(config, post.url),
         )
 
     async def render_page(
@@ -240,6 +254,7 @@ class ThemeEngine:
             page=page,
             notes=notes or [],
             featured_posts=featured_posts or [],
+            canonical_url=self.build_canonical_url(config, page.url),
         )
 
     async def render_404(self, config: Config, theme_override: str | None = None) -> str:

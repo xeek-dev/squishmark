@@ -7,7 +7,6 @@
 {% block og_title %}{{ post.title }}{% endblock %}
 {% block og_description %}{{ post.description or site.description }}{% endblock %}
 {% block og_type %}article{% endblock %}
-{% block og_url %}<meta property="og:url" content="{{ site.url }}{{ post.url }}">{% endblock %}
 {% block og_image %}{% if post.image %}<meta property="og:image" content="{{ post.image }}">{% endif %}{% endblock %}
 {% block twitter_title %}{{ post.title }}{% endblock %}
 {% block twitter_description %}{{ post.description or site.description }}{% endblock %}
