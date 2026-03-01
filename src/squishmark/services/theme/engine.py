@@ -167,6 +167,15 @@ class ThemeEngine:
         if "nav_pages" not in context and template_name != "admin/admin.html":
             context["nav_pages"] = await self.get_nav_pages(config)
 
+        # Auto-derive canonical_url from context objects when not explicitly set
+        if "canonical_url" not in context:
+            post = context.get("post")
+            page = context.get("page")
+            if post and hasattr(post, "url"):
+                context["canonical_url"] = self.build_canonical_url(config, post.url)
+            elif page and hasattr(page, "url"):
+                context["canonical_url"] = self.build_canonical_url(config, page.url)
+
         # Build the full context — featured_posts is always available for themes
         full_context: dict[str, Any] = {
             "site": config.site,
@@ -232,7 +241,6 @@ class ThemeEngine:
             post=post,
             notes=notes or [],
             featured_posts=featured_posts or [],
-            canonical_url=self.build_canonical_url(config, post.url),
         )
 
     async def render_page(
@@ -254,7 +262,6 @@ class ThemeEngine:
             page=page,
             notes=notes or [],
             featured_posts=featured_posts or [],
-            canonical_url=self.build_canonical_url(config, page.url),
         )
 
     async def render_404(self, config: Config, theme_override: str | None = None) -> str:
