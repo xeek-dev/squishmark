@@ -2,7 +2,7 @@
 
 import datetime
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,8 @@ class FrontMatter(BaseModel):
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-content author override (used by posts)
     image: str | None = None  # Featured image URL (used for og:image)
+    visibility: Literal["public", "unlisted", "hidden"] = "public"
+    nav_order: int | None = None  # Explicit ordering for navbar
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -74,6 +76,8 @@ class Page(BaseModel):
     template: str | None = None
     theme: str | None = None  # Per-page theme override
     image: str | None = None  # Featured image URL (used for og:image)
+    visibility: Literal["public", "unlisted", "hidden"] = "public"
+    nav_order: int | None = None  # Explicit ordering for navbar
 
     @property
     def url(self) -> str:
@@ -100,6 +104,7 @@ class ThemeConfig(BaseModel):
     background: str | None = None
     nav_image: str | None = None
     hero_image: str | None = None
+    nav_max_pages: int | None = None  # Max pages shown in navbar
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from jinja2 import Environment, TemplateNotFound
 
 from squishmark.models.content import Config, Page, Pagination, Post
+from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme.favicon import FaviconDetector
 from squishmark.services.theme.filters import register_filters
 from squishmark.services.theme.loader import AsyncHybridLoader
@@ -78,6 +79,36 @@ class ThemeEngine:
 
         return count
 
+    async def get_nav_pages(self, config: Config) -> list[Page]:
+        """Fetch pages with public visibility for the navbar.
+
+        Pages are sorted by ``nav_order`` (ascending, nulls last), then
+        alphabetically by title.  The list is truncated to
+        ``config.theme.nav_max_pages`` when set.
+        """
+        page_files = await self.github_service.list_directory("pages")
+        markdown_service = get_markdown_service(config)
+
+        pages: list[Page] = []
+        for path in page_files:
+            if not path.endswith(".md"):
+                continue
+            file = await self.github_service.get_file(path)
+            if file is None:
+                continue
+            page = markdown_service.parse_page(path, file.content)
+            if page.visibility == "public":
+                pages.append(page)
+
+        # Sort: pages with nav_order first (ascending), then alphabetical by title
+        pages.sort(key=lambda p: (p.nav_order is None, p.nav_order or 0, p.title))
+
+        # Truncate if nav_max_pages is configured
+        if config.theme.nav_max_pages is not None:
+            pages = pages[: config.theme.nav_max_pages]
+
+        return pages
+
     @staticmethod
     def resolve_pygments_css_url(theme_name: str, config: Config) -> str:
         """Return the URL for pygments CSS, choosing static or dynamic.
@@ -131,6 +162,10 @@ class ThemeEngine:
         favicon_url = config.site.favicon
         if not favicon_url:
             favicon_url = await self.favicon_detector.detect()
+
+        # Build nav pages for the navbar (skip for admin template)
+        if "nav_pages" not in context and template_name != "admin/admin.html":
+            context["nav_pages"] = await self.get_nav_pages(config)
 
         # Build the full context — featured_posts is always available for themes
         full_context: dict[str, Any] = {
