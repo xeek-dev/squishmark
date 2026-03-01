@@ -2,7 +2,7 @@
 
 import datetime
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +21,7 @@ class FrontMatter(BaseModel):
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-content author override (used by posts)
     image: str | None = None  # Featured image URL (used for og:image)
-    visibility: str = "public"  # public, unlisted, or hidden
+    visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
 
     # Allow extra fields for extensibility
@@ -76,7 +76,7 @@ class Page(BaseModel):
     template: str | None = None
     theme: str | None = None  # Per-page theme override
     image: str | None = None  # Featured image URL (used for og:image)
-    visibility: str = "public"  # public, unlisted, or hidden
+    visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
 
     @property
