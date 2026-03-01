@@ -21,6 +21,7 @@
       "Bash(gh api repos/*/milestones*)",
       "Bash(gh api repos/*/pulls/*/comments*)",
       "Bash(gh api repos/*/pulls/comments/*/replies*)",
+      "Bash(git add *)",
       "Bash(git checkout *)",
       "Bash(git commit *)",
       "Bash(git branch *)",
