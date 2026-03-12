@@ -53,7 +53,7 @@
                 {% for page in nav_pages %}
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
-                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+                <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" aria-pressed="false">
                     <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
                         <circle cx="12" cy="12" r="5"></circle>
                         <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -102,13 +102,11 @@
 
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            if (theme === 'dark') {
-                iconSun.style.display = 'block';
-                iconMoon.style.display = 'none';
-            } else {
-                iconSun.style.display = 'none';
-                iconMoon.style.display = 'block';
-            }
+            var isDark = theme === 'dark';
+            iconSun.style.display = isDark ? 'block' : 'none';
+            iconMoon.style.display = isDark ? 'none' : 'block';
+            toggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
         }
 
         applyTheme(getTheme());
