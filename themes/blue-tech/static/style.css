@@ -474,31 +474,18 @@ img {
 .post-content h3, .page-content h3 { font-size: 1.5rem; }
 .post-content h4, .page-content h4 { font-size: 1.25rem; }
 
-/* Hide anchor links by default, show on hover */
-.post-content .headerlink,
-.page-content .headerlink {
-    opacity: 0;
-    margin-left: 0.5rem;
-    color: var(--color-text-muted);
+/* Heading anchor links */
+.post-content .heading-anchor,
+.page-content .heading-anchor {
+    color: inherit;
     text-decoration: none;
-    transition: opacity var(--transition);
 }
 
-.post-content h1:hover .headerlink,
-.post-content h2:hover .headerlink,
-.post-content h3:hover .headerlink,
-.post-content h4:hover .headerlink,
-.page-content h1:hover .headerlink,
-.page-content h2:hover .headerlink,
-.page-content h3:hover .headerlink,
-.page-content h4:hover .headerlink {
-    opacity: 0.5;
-}
-
-.post-content .headerlink:hover,
-.page-content .headerlink:hover {
-    opacity: 1;
+.post-content .heading-anchor:hover,
+.page-content .heading-anchor:hover {
     color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
 }
 
 .post-content p,
