@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 # When the user's configured pygments_style matches, the theme's hand-tuned
 # static CSS is served. When it differs, dynamic CSS is generated instead.
 THEME_PYGMENTS_DEFAULTS: dict[str, str] = {
-    "default": "monokai",
+    "default": "github-dark",
     "blue-tech": "monokai",
     "terminal": "monokai",
 }

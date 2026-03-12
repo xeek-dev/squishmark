@@ -102,7 +102,7 @@ class ThemeConfig(BaseModel):
     """Theme configuration from config.yml."""
 
     name: str = "default"
-    pygments_style: str = "monokai"
+    pygments_style: str = "github-dark"
     background: str | None = None
     nav_image: str | None = None
     hero_image: str | None = None

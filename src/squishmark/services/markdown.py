@@ -30,7 +30,7 @@ class MarkdownService:
 
     FRONTMATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
-    def __init__(self, pygments_style: str = "monokai") -> None:
+    def __init__(self, pygments_style: str = "github-dark") -> None:
         self.pygments_style = pygments_style
         self._md: markdown.Markdown | None = None
 
@@ -250,7 +250,7 @@ def get_markdown_service(config: Config | None = None) -> MarkdownService:
     """Get the global markdown service instance."""
     global _markdown_service
     if _markdown_service is None:
-        style = config.theme.pygments_style if config else "monokai"
+        style = config.theme.pygments_style if config else "github-dark"
         _markdown_service = MarkdownService(pygments_style=style)
     return _markdown_service
 
