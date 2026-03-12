@@ -95,8 +95,10 @@
         var iconMoon = document.getElementById('icon-moon');
 
         function getTheme() {
-            var saved = localStorage.getItem('squishmark-theme');
-            if (saved) return saved;
+            try {
+                var saved = localStorage.getItem('squishmark-theme');
+                if (saved === 'light' || saved === 'dark') return saved;
+            } catch(e) {}
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
 
@@ -114,7 +116,7 @@
         toggle.addEventListener('click', function() {
             var current = document.documentElement.getAttribute('data-theme') || getTheme();
             var next = current === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('squishmark-theme', next);
+            try { localStorage.setItem('squishmark-theme', next); } catch(e) {}
             applyTheme(next);
         });
     })();
