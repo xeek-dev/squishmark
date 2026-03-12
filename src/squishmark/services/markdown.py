@@ -2,9 +2,12 @@
 
 import datetime
 import re
+import xml.etree.ElementTree as etree
 from typing import Any
 
 import markdown
+import markdown.treeprocessors
+from markdown.extensions import Extension
 from markdown.extensions.codehilite import CodeHiliteExtension
 from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.toc import TocExtension
@@ -12,6 +15,40 @@ from pygments.formatters import HtmlFormatter
 
 from squishmark.models.content import Config, FrontMatter, Page, Post
 from squishmark.services.url_rewriter import rewrite_image_urls
+
+
+class HeadingAnchorTreeprocessor(markdown.treeprocessors.Treeprocessor):
+    """Wraps heading text in a self-referencing anchor link."""
+
+    def run(self, root: etree.Element) -> None:
+        for heading in root.iter():
+            if heading.tag not in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+                continue
+            heading_id = heading.get("id")
+            if not heading_id:
+                continue
+            # Skip headings that already contain a link to avoid nested <a> tags
+            if any(child.tag == "a" for child in heading.iter() if child is not heading):
+                continue
+
+            # Collect all children (text + inline elements) into a new anchor
+            anchor = etree.Element("a")
+            anchor.set("href", f"#{heading_id}")
+            anchor.set("class", "heading-anchor")
+            anchor.text = heading.text
+            for child in list(heading):
+                anchor.append(child)
+
+            # Replace heading contents with the anchor
+            heading.text = None
+            for child in list(heading):
+                heading.remove(child)
+            heading.append(anchor)
+
+
+class HeadingAnchorExtension(Extension):
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        md.treeprocessors.register(HeadingAnchorTreeprocessor(md), "heading_anchor", 1)
 
 
 class LabeledFormatter(HtmlFormatter):
@@ -47,7 +84,8 @@ class MarkdownService:
                         guess_lang=False,
                         pygments_formatter=LabeledFormatter,
                     ),
-                    TocExtension(permalink="#"),
+                    TocExtension(permalink=False),
+                    HeadingAnchorExtension(),
                     "smarty",  # Smart quotes
                     "nl2br",  # Newlines to <br>
                 ],

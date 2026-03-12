@@ -477,6 +477,18 @@ a:hover {
     text-decoration: none;
 }
 
+.post-content .heading-anchor,
+.page-content .heading-anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-content .heading-anchor:hover,
+.page-content .heading-anchor:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+}
+
 .post-content ul,
 .post-content ol,
 .page-content ul,
