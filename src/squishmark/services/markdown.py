@@ -27,6 +27,9 @@ class HeadingAnchorTreeprocessor(markdown.treeprocessors.Treeprocessor):
             heading_id = heading.get("id")
             if not heading_id:
                 continue
+            # Skip headings that already contain a link to avoid nested <a> tags
+            if any(child.tag == "a" for child in heading.iter() if child is not heading):
+                continue
 
             # Collect all children (text + inline elements) into a new anchor
             anchor = etree.Element("a")

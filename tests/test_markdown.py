@@ -166,6 +166,19 @@ def test_heading_text_is_anchor_link(markdown_service):
     assert "headerlink" not in html, f"Old headerlink should be gone, got: {html}"
     assert "#</a>" not in html, f"Bare # marker should not appear, got: {html}"
     assert "\u00b6" not in html  # should NOT use pilcrow
+    # Verify heading text is actually inside the anchor, not just present somewhere
+    assert '<a class="heading-anchor" href="#hello-world">Hello World</a>' in html, (
+        f"Expected heading text wrapped in anchor, got: {html}"
+    )
+
+
+def test_heading_with_link_is_not_wrapped(markdown_service):
+    """Headings that already contain a link should not get a wrapping anchor."""
+    html = markdown_service.render_markdown("## [Docs](https://example.com)")
+
+    assert "heading-anchor" not in html, f"Should not wrap linked heading, got: {html}"
+    # The existing link should still be present and valid
+    assert 'href="https://example.com"' in html
 
 
 def test_parse_post_rewrites_images(markdown_service):

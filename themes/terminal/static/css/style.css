@@ -420,18 +420,6 @@ img {
 :is(.post-content, .page-content) h3 { font-size: 1.5rem; }
 :is(.post-content, .page-content) h4 { font-size: 1.25rem; }
 
-/* Heading anchor links */
-:is(.post-content, .page-content) .heading-anchor {
-    color: inherit;
-    text-decoration: none;
-}
-
-:is(.post-content, .page-content) .heading-anchor:hover {
-    color: var(--color-blue);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-}
-
 :is(.post-content, .page-content) p {
     margin-bottom: 1.5rem;
 }
@@ -444,6 +432,18 @@ img {
 
 :is(.post-content, .page-content) a:hover {
     color: var(--color-green);
+}
+
+/* Heading anchor links — after general link rules to win the cascade */
+:is(.post-content, .page-content) .heading-anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+:is(.post-content, .page-content) .heading-anchor:hover {
+    color: var(--color-blue);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
 }
 
 :is(.post-content, .page-content) :is(ul, ol) {
