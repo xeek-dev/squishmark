@@ -34,7 +34,7 @@
 </head>
 <body>
     <!-- Anti-flash: apply saved theme before first paint -->
-    <script>(function(){var t=localStorage.getItem('squishmark-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();</script>
+    <script>(function(){try{var t=localStorage.getItem('squishmark-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 
     <header class="site-header">
         <nav class="nav-container">
