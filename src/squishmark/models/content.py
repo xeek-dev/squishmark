@@ -89,7 +89,7 @@ class SiteConfig(BaseModel):
     """Site-wide configuration from config.yml."""
 
     title: str = "My Blog"
-    tagline: str | None = None  # Short subtitle shown under site title in nav
+    tagline: str | None = None  # Short subtitle shown inline next to site title in nav (with separator)
     logo: str | None = None  # Logo image URL, replaces text title if set
     description: str = ""
     author: str = ""
