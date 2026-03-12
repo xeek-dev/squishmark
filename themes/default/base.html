@@ -25,19 +25,50 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="{% block twitter_title %}{{ site.title }}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{{ site.description }}{% endblock %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/{{ theme_name }}/style.css">
     <link rel="stylesheet" href="{{ pygments_css_url }}">
     {% block head %}{% endblock %}
 </head>
 <body>
+    <!-- Anti-flash: apply saved theme before first paint -->
+    <script>(function(){try{var t=localStorage.getItem('squishmark-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+
     <header class="site-header">
         <nav class="nav-container">
-            <a href="/" class="site-title">{{ site.title }}</a>
+            <a href="/" class="site-title">
+                {% if site.logo %}
+                <img src="{{ site.logo }}" alt="{{ site.title }}" class="site-logo">
+                {% else %}
+                <span class="site-title-text">
+                    <span class="site-name">{{ site.title }}</span>
+                    {% if site.tagline %}<span class="site-tagline">{{ site.tagline }}</span>{% endif %}
+                </span>
+                {% endif %}
+            </a>
             <div class="nav-links">
                 <a href="/posts">Posts</a>
                 {% for page in nav_pages %}
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
+                <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" aria-pressed="false">
+                    <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
             </div>
         </nav>
     </header>
@@ -49,10 +80,46 @@
     <footer class="site-footer">
         <div class="footer-content">
             {% if site.author %}
-            <p>&copy; {{ site.author }}</p>
+            <span class="footer-copyright">&copy; {{ site.author }}</span>
+            {% else %}
+            <span></span>
             {% endif %}
-            <p>Powered by <a href="https://github.com/xeek-dev/squishmark">SquishMark</a></p>
+            <span>Powered by <a href="https://github.com/xeek-dev/squishmark">SquishMark</a></span>
         </div>
     </footer>
+
+    <script>
+    (function() {
+        var toggle = document.getElementById('theme-toggle');
+        var iconSun = document.getElementById('icon-sun');
+        var iconMoon = document.getElementById('icon-moon');
+
+        function getTheme() {
+            try {
+                var saved = localStorage.getItem('squishmark-theme');
+                if (saved === 'light' || saved === 'dark') return saved;
+            } catch(e) {}
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            var isDark = theme === 'dark';
+            iconSun.style.display = isDark ? 'block' : 'none';
+            iconMoon.style.display = isDark ? 'none' : 'block';
+            toggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+            toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+        }
+
+        applyTheme(getTheme());
+
+        toggle.addEventListener('click', function() {
+            var current = document.documentElement.getAttribute('data-theme') || getTheme();
+            var next = current === 'dark' ? 'light' : 'dark';
+            try { localStorage.setItem('squishmark-theme', next); } catch(e) {}
+            applyTheme(next);
+        });
+    })();
+    </script>
 </body>
 </html>

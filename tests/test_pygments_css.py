@@ -22,7 +22,7 @@ class TestResolvePygmentsCssUrl:
 
     def test_default_theme_matching_style_returns_static(self):
         """When user style matches theme default, serve static CSS."""
-        url = ThemeEngine.resolve_pygments_css_url("default", self._config_with_style("monokai"))
+        url = ThemeEngine.resolve_pygments_css_url("default", self._config_with_style("github-dark"))
         assert url == "/static/default/pygments.css"
 
     def test_blue_tech_matching_style_returns_static(self):

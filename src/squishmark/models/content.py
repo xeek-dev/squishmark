@@ -89,6 +89,8 @@ class SiteConfig(BaseModel):
     """Site-wide configuration from config.yml."""
 
     title: str = "My Blog"
+    tagline: str | None = None  # Short subtitle shown inline next to site title in nav (with separator)
+    logo: str | None = None  # Logo image URL, replaces text title if set
     description: str = ""
     author: str = ""
     url: str = ""
@@ -100,7 +102,7 @@ class ThemeConfig(BaseModel):
     """Theme configuration from config.yml."""
 
     name: str = "default"
-    pygments_style: str = "monokai"
+    pygments_style: str = "github-dark"
     background: str | None = None
     nav_image: str | None = None
     hero_image: str | None = None
