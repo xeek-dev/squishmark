@@ -25,7 +25,17 @@ uvicorn squishmark.main:app --reload
 
 ## Development Scripts
 
-Three scripts in `scripts/` streamline local development:
+Two user-facing scripts in `scripts/` and two agent-facing scripts in skill directories:
+
+### Environment Check
+
+Run the readiness check before starting work:
+
+```bash
+python .claude/skills/dev-setup/scripts/check-env.py
+```
+
+### User-Facing Scripts (`scripts/`)
 
 ### `start-dev.py` — Dev server with multi-server management
 
@@ -63,29 +73,29 @@ python scripts/run-checks.py --fail-fast        # stop on first failure
 python scripts/run-checks.py --docker           # also run docker build (slow)
 ```
 
-### `setup-worktree.py` — Git worktree management
+### Agent-Facing Scripts (in skill directories)
 
-Creates isolated worktrees in `.worktrees/` for parallel development. Branch names follow the project's `type/issue-description` convention; the type prefix is stripped to form the directory name (e.g., `feat/42-dark-mode` becomes `.worktrees/42-dark-mode`).
+#### `setup-worktree.py` — Git worktree management (in `git` skill)
+
+Creates isolated worktrees in `.worktrees/` for parallel development.
 
 ```bash
-python scripts/setup-worktree.py feat/42-dark-mode                # create worktree + branch
-python scripts/setup-worktree.py feat/42-dark-mode --install      # also pip install -e
-python scripts/setup-worktree.py feat/42-dark-mode --with-content # also copy content/
-python scripts/setup-worktree.py feat/42-dark-mode --integration  # --install + --with-content
-python scripts/setup-worktree.py --list                           # list active worktrees
-python scripts/setup-worktree.py --cleanup 42-dark-mode           # remove worktree + branch
-python scripts/setup-worktree.py --cleanup 42-dark-mode --force   # skip confirmation
+python .claude/skills/git/scripts/setup-worktree.py feat/42-dark-mode                # create worktree + branch
+python .claude/skills/git/scripts/setup-worktree.py feat/42-dark-mode --install      # also pip install -e
+python .claude/skills/git/scripts/setup-worktree.py feat/42-dark-mode --with-content # also copy content/
+python .claude/skills/git/scripts/setup-worktree.py feat/42-dark-mode --integration  # --install + --with-content
+python .claude/skills/git/scripts/setup-worktree.py --list                           # list active worktrees
+python .claude/skills/git/scripts/setup-worktree.py --cleanup 42-dark-mode           # remove worktree + branch
 ```
 
-### `github-issue-updater.py` — Issue metadata updater
+#### `github-issue-updater.py` — Issue metadata updater (in `github` skill)
 
-Sets issue type (task/bug/feature), adds labels, and assigns milestones in a single command. Issue types require GraphQL mutations which this script handles automatically.
+Sets issue type (task/bug/feature), adds labels, and assigns milestones in a single command.
 
 ```bash
-python scripts/github-issue-updater.py 42 --type task
-python scripts/github-issue-updater.py 42 --add-label "engine,themes"
-python scripts/github-issue-updater.py 42 --milestone "SquishMark 1.0"
-python scripts/github-issue-updater.py 42 --type task --add-label engine --milestone "SquishMark 1.0"
+python .claude/skills/github/scripts/github-issue-updater.py 42 --type task
+python .claude/skills/github/scripts/github-issue-updater.py 42 --add-label "engine,themes"
+python .claude/skills/github/scripts/github-issue-updater.py 42 --milestone "SquishMark 1.0"
 ```
 
 ## Configuration
