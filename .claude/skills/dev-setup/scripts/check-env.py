@@ -16,7 +16,7 @@ def check(label: str, condition: bool, fix: str) -> bool:
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[3]  # .claude/skills/dev-setup/scripts -> repo root
+    root = Path(__file__).resolve().parents[4]  # .claude/skills/dev-setup/scripts/check-env.py -> repo root
     os.chdir(root)
 
     print("Checking SquishMark dev environment...\n")
