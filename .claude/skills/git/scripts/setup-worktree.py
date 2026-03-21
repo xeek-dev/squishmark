@@ -20,7 +20,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # .claude/skills/git/scripts/file.py -> repo root
 WORKTREES_DIR = PROJECT_ROOT / ".worktrees"
 
 
