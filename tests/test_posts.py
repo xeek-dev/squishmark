@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from squishmark.routers.posts import _is_admin
+from squishmark.dependencies import is_admin
 from squishmark.services.content import get_all_posts
 
 
@@ -17,62 +17,62 @@ def mock_request():
 
 
 class TestIsAdmin:
-    """Tests for the _is_admin helper."""
+    """Tests for the is_admin helper."""
 
     def test_anonymous_user_is_not_admin(self, mock_request):
         """Anonymous visitors should not be detected as admin."""
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = False
             mock_settings.return_value.dev_skip_auth = False
             mock_settings.return_value.admin_users_list = ["admin-user"]
 
-            assert _is_admin(mock_request) is False
+            assert is_admin(mock_request) is False
 
     def test_authenticated_admin_is_admin(self, mock_request):
         """Authenticated admin users should be detected."""
         mock_request.session = {"user": {"login": "admin-user"}}
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = False
             mock_settings.return_value.dev_skip_auth = False
             mock_settings.return_value.admin_users_list = ["admin-user"]
 
-            assert _is_admin(mock_request) is True
+            assert is_admin(mock_request) is True
 
     def test_authenticated_non_admin_is_not_admin(self, mock_request):
         """Authenticated non-admin users should not be detected as admin."""
         mock_request.session = {"user": {"login": "regular-user"}}
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = False
             mock_settings.return_value.dev_skip_auth = False
             mock_settings.return_value.admin_users_list = ["admin-user"]
 
-            assert _is_admin(mock_request) is False
+            assert is_admin(mock_request) is False
 
     def test_dev_skip_auth_is_admin(self, mock_request):
         """Dev mode with skip auth should be detected as admin."""
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = True
             mock_settings.return_value.dev_skip_auth = True
 
-            assert _is_admin(mock_request) is True
+            assert is_admin(mock_request) is True
 
     def test_debug_without_skip_auth_is_not_admin(self, mock_request):
         """Debug mode alone (without dev_skip_auth) should not grant admin."""
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = True
             mock_settings.return_value.dev_skip_auth = False
             mock_settings.return_value.admin_users_list = []
 
-            assert _is_admin(mock_request) is False
+            assert is_admin(mock_request) is False
 
     def test_no_session_attribute(self):
         """Request without session attribute should not be admin."""
         request = MagicMock(spec=[])  # No attributes at all
-        with patch("squishmark.routers.posts.get_settings") as mock_settings:
+        with patch("squishmark.dependencies.get_settings") as mock_settings:
             mock_settings.return_value.debug = False
             mock_settings.return_value.dev_skip_auth = False
 
-            assert _is_admin(request) is False
+            assert is_admin(request) is False
 
 
 class TestGetAllPostsDraftFiltering:

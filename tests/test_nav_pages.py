@@ -81,14 +81,16 @@ class TestHiddenPage404:
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_theme_engine"),
+            patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
         ):
             mock_github = AsyncMock()
             mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=hidden_content)
+            mock_notes_cls.return_value = AsyncMock()
 
             with pytest.raises(HTTPException) as exc_info:
-                await get_page(mock_request, "secret")
+                await get_page(mock_request, "secret", db=AsyncMock())
 
             assert exc_info.value.status_code == 404
 
@@ -102,18 +104,20 @@ class TestHiddenPage404:
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
+            patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
         ):
             mock_github = AsyncMock()
             mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=unlisted_content)
+            mock_notes_cls.return_value = AsyncMock()
 
             mock_engine = AsyncMock()
             mock_get_engine.return_value = mock_engine
             mock_engine.render_page.return_value = "<html>Unlisted</html>"
 
             mock_request = MagicMock()
-            response = await get_page(mock_request, "unlisted")
+            response = await get_page(mock_request, "unlisted", db=AsyncMock())
 
             assert response.status_code == 200
 

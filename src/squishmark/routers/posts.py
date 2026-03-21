@@ -1,27 +1,19 @@
 """Routes for blog posts."""
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from squishmark.config import get_settings
+from squishmark.dependencies import is_admin
 from squishmark.models.content import Config, Pagination
+from squishmark.models.db import get_db_session
 from squishmark.services.content import get_all_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
+from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
-
-def _is_admin(request: Request) -> bool:
-    """Check if the current user is an admin without requiring auth."""
-    settings = get_settings()
-    if settings.debug and settings.dev_skip_auth:
-        return True
-    user = request.session.get("user") if hasattr(request, "session") else None
-    if user is None:
-        return False
-    return user.get("login") in settings.admin_users_list
 
 
 @router.get("", response_class=HTMLResponse)
@@ -40,7 +32,7 @@ async def list_posts(
     markdown_service = get_markdown_service(config)
 
     # Get all posts (admins can see drafts)
-    include_drafts = _is_admin(request)
+    include_drafts = is_admin(request)
     all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     # Paginate
@@ -76,6 +68,7 @@ async def list_posts(
 async def get_post(
     request: Request,
     slug: str,
+    db: AsyncSession = Depends(get_db_session),
 ) -> HTMLResponse:
     """Get a single post by slug."""
     github_service = get_github_service()
@@ -88,7 +81,7 @@ async def get_post(
     markdown_service = get_markdown_service(config)
 
     # Get all posts and find the matching one (admins can see drafts)
-    include_drafts = _is_admin(request)
+    include_drafts = is_admin(request)
     all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
@@ -96,8 +89,9 @@ async def get_post(
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    # TODO: Get notes for this post from database
-    notes: list = []
+    # Fetch notes (private notes only visible to admins)
+    notes_service = NotesService(db)
+    notes = await notes_service.get_for_path(f"/posts/{slug}", include_private=include_drafts)
 
     # Featured posts for template context
     featured = get_featured_posts(all_posts, config.site)

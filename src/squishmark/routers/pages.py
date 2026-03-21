@@ -1,12 +1,16 @@
 """Routes for static pages."""
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from squishmark.dependencies import is_admin
 from squishmark.models.content import Config
+from squishmark.models.db import get_db_session
 from squishmark.services.content import get_all_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
+from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(tags=["pages"])
@@ -16,6 +20,7 @@ router = APIRouter(tags=["pages"])
 async def get_page(
     request: Request,
     slug: str,
+    db: AsyncSession = Depends(get_db_session),
 ) -> HTMLResponse:
     """
     Get a static page by slug.
@@ -46,8 +51,10 @@ async def get_page(
     if page.visibility == "hidden":
         raise HTTPException(status_code=404, detail="Page not found")
 
-    # TODO: Get notes for this page from database
-    notes: list = []
+    # Fetch notes (private notes only visible to admins)
+    admin = is_admin(request)
+    notes_service = NotesService(db)
+    notes = await notes_service.get_for_path(f"/{slug}", include_private=admin)
 
     # Featured posts for template context
     all_posts = await get_all_posts(github_service, markdown_service)
