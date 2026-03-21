@@ -182,7 +182,42 @@ template: custom.html  # Use custom.html instead of post.html
 ---
 ```
 
+## Content Repository Structure
+
+Users create a content repo with this structure. Theme authors need to understand this to know what data is available:
+
+```
+my-content-repo/
+├── posts/
+│   ├── 2026-01-01-hello-world.md
+│   └── 2026-01-15-another-post.md
+├── pages/
+│   └── about.md
+├── static/                   # User static files (favicon, images)
+│   └── favicon.ico           # Auto-detected and served at /favicon.ico
+├── theme/                    # Optional custom theme
+│   └── ...
+└── config.yml
+```
+
+### Frontmatter Format
+
+```yaml
+---
+title: My Post Title
+date: 2026-01-15
+tags: [python, blogging]
+draft: false
+featured: true        # Optional: include in featured_posts template context
+featured_order: 1     # Optional: sort order (lower = first, nulls last)
+---
+
+Post content in markdown...
+```
+
 ## Pygments CSS
+
+Pygments renders code blocks server-side — HTML comes pre-highlighted with no client-side JavaScript. Supports 500+ languages.
 
 Generate syntax highlighting CSS for your theme:
 
@@ -190,7 +225,7 @@ Generate syntax highlighting CSS for your theme:
 pygmentize -S <style> -f html > themes/{name}/static/pygments.css
 ```
 
-Common styles: `monokai`, `dracula`, `github-dark`, `one-dark`, `gruvbox-dark`, `nord`.
+Common styles: `monokai`, `dracula`, `github-dark`, `one-dark`, `gruvbox-dark`, `nord`. Theme CSS controls the colors.
 
 ## ThemeConfig Extensibility
 

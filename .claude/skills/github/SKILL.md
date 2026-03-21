@@ -245,23 +245,7 @@ Your comment text here.
 *— Claude*
 ```
 
-### Conventional Commits
-
-Commit messages and PR titles must use [Conventional Commits](https://www.conventionalcommits.org/) format:
-
-```
-type(scope): description
-```
-
-Types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `ci`
-
-### Branch Naming
-
-```
-type/issue-description
-```
-
-Examples: `feat/42-dark-mode`, `fix/15-header-overflow`, `docs/20-github-skill`
+For git conventions (conventional commits, branch naming), see the `git` skill.
 
 ## Auth Troubleshooting
 
