@@ -1,6 +1,6 @@
-"""Shared content helpers for fetching and filtering posts."""
+"""Shared content helpers for fetching and filtering posts and pages."""
 
-from squishmark.models.content import Post, SiteConfig
+from squishmark.models.content import Page, Post, SiteConfig
 from squishmark.services.github import GitHubService
 from squishmark.services.markdown import MarkdownService
 
@@ -51,3 +51,31 @@ def get_featured_posts(posts: list[Post], site_config: SiteConfig) -> list[Post]
         ),
     )
     return featured[: site_config.featured_max]
+
+
+async def get_all_pages(
+    github_service: GitHubService,
+    markdown_service: MarkdownService,
+    include_hidden: bool = False,
+) -> list[Page]:
+    """Fetch and parse all pages from the content repository."""
+    page_files = await github_service.list_directory("pages")
+
+    pages: list[Page] = []
+    for path in page_files:
+        if not path.endswith(".md"):
+            continue
+
+        file = await github_service.get_file(path)
+        if file is None:
+            continue
+
+        page = markdown_service.parse_page(path, file.content)
+
+        # Skip hidden pages unless requested
+        if page.visibility == "hidden" and not include_hidden:
+            continue
+
+        pages.append(page)
+
+    return pages
