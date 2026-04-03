@@ -1,5 +1,6 @@
 """SEO routes: sitemap.xml and robots.txt."""
 
+import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from fastapi import APIRouter
@@ -18,39 +19,30 @@ SITEMAP_CACHE_KEY = "seo:sitemap"
 ROBOTS_CACHE_KEY = "seo:robots"
 
 
+def _add_url(urlset: Element, loc: str, lastmod: datetime.date | None = None) -> None:
+    """Append a <url> entry to the sitemap urlset."""
+    url_el = SubElement(urlset, "url")
+    SubElement(url_el, "loc").text = loc
+    if lastmod:
+        SubElement(url_el, "lastmod").text = lastmod.isoformat()
+
+
 def _build_sitemap(config: Config, posts: list[Post], pages: list[Page]) -> bytes:
     """Build a sitemap.xml from config, posts, and pages."""
     site_url = config.site.url.rstrip("/") if config.site.url else ""
+    newest_post_date = posts[0].date if posts else None
 
     urlset = Element("urlset", xmlns=SITEMAP_NS)
 
-    # Homepage
-    url_el = SubElement(urlset, "url")
-    SubElement(url_el, "loc").text = f"{site_url}/"
-    if posts and posts[0].date:
-        SubElement(url_el, "lastmod").text = posts[0].date.isoformat()
+    _add_url(urlset, f"{site_url}/", newest_post_date)
+    _add_url(urlset, f"{site_url}/posts", newest_post_date)
 
-    # Post index
-    url_el = SubElement(urlset, "url")
-    SubElement(url_el, "loc").text = f"{site_url}/posts"
-    if posts and posts[0].date:
-        SubElement(url_el, "lastmod").text = posts[0].date.isoformat()
-
-    # Individual posts
     for post in posts:
-        url_el = SubElement(urlset, "url")
-        SubElement(url_el, "loc").text = f"{site_url}{post.url}"
-        if post.date:
-            SubElement(url_el, "lastmod").text = post.date.isoformat()
+        _add_url(urlset, f"{site_url}{post.url}", post.date)
 
-    # Public pages only (not unlisted or hidden)
     for page in pages:
-        if page.visibility != "public":
-            continue
-        url_el = SubElement(urlset, "url")
-        SubElement(url_el, "loc").text = f"{site_url}{page.url}"
-        if page.date:
-            SubElement(url_el, "lastmod").text = page.date.isoformat()
+        if page.visibility == "public":
+            _add_url(urlset, f"{site_url}{page.url}", page.date)
 
     return b'<?xml version="1.0" encoding="utf-8"?>\n' + tostring(urlset, encoding="unicode").encode("utf-8")
 
