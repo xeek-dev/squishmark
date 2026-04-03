@@ -96,8 +96,9 @@ class TestBuildSitemap:
     def test_post_index_entry(self, sample_config, sample_posts, sample_pages):
         xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages)
         root = fromstring(xml_bytes)
-        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
-        assert "https://example.com/posts" in locs
+        urls = root.findall(_ns("url"))
+        post_index = [u for u in urls if u.find(_ns("loc")).text == "https://example.com/posts"][0]
+        assert post_index.find(_ns("lastmod")).text == "2026-02-15"
 
     def test_posts_included_with_lastmod(self, sample_config, sample_posts, sample_pages):
         xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages)

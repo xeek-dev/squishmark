@@ -33,6 +33,8 @@ def _build_sitemap(config: Config, posts: list[Post], pages: list[Page]) -> byte
     # Post index
     url_el = SubElement(urlset, "url")
     SubElement(url_el, "loc").text = f"{site_url}/posts"
+    if posts and posts[0].date:
+        SubElement(url_el, "lastmod").text = posts[0].date.isoformat()
 
     # Individual posts
     for post in posts:
