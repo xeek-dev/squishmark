@@ -49,6 +49,8 @@ def _build_sitemap(config: Config, posts: list[Post], pages: list[Page]) -> byte
             continue
         url_el = SubElement(urlset, "url")
         SubElement(url_el, "loc").text = f"{site_url}{page.url}"
+        if page.date:
+            SubElement(url_el, "lastmod").text = page.date.isoformat()
 
     return b'<?xml version="1.0" encoding="utf-8"?>\n' + tostring(urlset, encoding="unicode").encode("utf-8")
 

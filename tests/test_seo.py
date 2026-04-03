@@ -63,7 +63,7 @@ def sample_posts() -> list[Post]:
 @pytest.fixture
 def sample_pages() -> list[Page]:
     return [
-        Page(slug="about", title="About", visibility="public"),
+        Page(slug="about", title="About", visibility="public", date=datetime.date(2026, 1, 20)),
         Page(slug="secret", title="Secret", visibility="unlisted"),
         Page(slug="hidden-page", title="Hidden", visibility="hidden"),
     ]
@@ -113,11 +113,20 @@ class TestBuildSitemap:
         post_two = post_urls["https://example.com/posts/post-two"]
         assert post_two.find(_ns("lastmod")).text == "2026-02-10"
 
-    def test_public_pages_included(self, sample_config, sample_posts, sample_pages):
+    def test_public_pages_included_with_lastmod(self, sample_config, sample_posts, sample_pages):
         xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages)
         root = fromstring(xml_bytes)
-        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
-        assert "https://example.com/about" in locs
+        urls = root.findall(_ns("url"))
+        about = [u for u in urls if u.find(_ns("loc")).text == "https://example.com/about"][0]
+        assert about.find(_ns("lastmod")).text == "2026-01-20"
+
+    def test_page_without_date_has_no_lastmod(self, sample_config, sample_posts):
+        page = Page(slug="no-date", title="No Date", visibility="public")
+        xml_bytes = _build_sitemap(sample_config, sample_posts, [page])
+        root = fromstring(xml_bytes)
+        urls = root.findall(_ns("url"))
+        page_url = [u for u in urls if u.find(_ns("loc")).text == "https://example.com/no-date"][0]
+        assert page_url.find(_ns("lastmod")) is None
 
     def test_unlisted_pages_excluded(self, sample_config, sample_posts, sample_pages):
         xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages)

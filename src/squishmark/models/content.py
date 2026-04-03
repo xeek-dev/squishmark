@@ -68,6 +68,7 @@ class Page(BaseModel):
 
     slug: str
     title: str
+    date: datetime.date | None = None
     description: str = ""
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
