@@ -8,6 +8,7 @@ from fastapi.responses import Response
 
 from squishmark.models.content import Config, Post
 from squishmark.services.cache import get_cache
+from squishmark.services.content import get_all_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 
@@ -91,24 +92,8 @@ async def atom_feed() -> Response:
     config = Config.from_dict(config_data)
     markdown_service = get_markdown_service(config)
 
-    # Fetch all published posts
-    post_files = await github_service.list_directory("posts")
-    posts: list[Post] = []
-    for path in post_files:
-        if not path.endswith(".md"):
-            continue
-        file = await github_service.get_file(path)
-        if file is None:
-            continue
-        post = markdown_service.parse_post(path, file.content)
-        if not post.draft:
-            posts.append(post)
-
-    # Newest first
-    posts.sort(key=lambda p: (p.date is not None, p.date), reverse=True)
-
-    # Limit to 20 most recent
-    posts = posts[:20]
+    posts = await get_all_posts(github_service, markdown_service)
+    posts = posts[:20]  # Limit to 20 most recent
 
     xml_bytes = _build_atom_feed(config, posts)
     await cache.set(FEED_CACHE_KEY, xml_bytes)

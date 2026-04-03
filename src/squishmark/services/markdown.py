@@ -219,6 +219,7 @@ class MarkdownService:
         return Page(
             slug=slug,
             title=frontmatter.title,
+            date=frontmatter.date,
             description=description,
             content=markdown_content,
             html=html,
