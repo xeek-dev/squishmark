@@ -4,6 +4,7 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi.responses import HTMLResponse
 from httpx import ASGITransport, AsyncClient
 
 from squishmark.main import is_bot_user_agent
@@ -66,8 +67,14 @@ async def _build_app():
     return stack
 
 
-async def _assert_track_called(headers: dict, path: str, expected: bool):
-    """Hit the app with given headers; check whether track_page_view was scheduled."""
+async def _assert_track_called(headers: dict, path: str, expected: bool, add_html_route: bool = False):
+    """Hit the app with given headers; check whether track_page_view was scheduled.
+
+    When ``add_html_route`` is True, register a stub ``/_test/html`` route that
+    returns a real ``text/html`` 200 response — the only way to exercise the
+    bot UA gate, since every existing path is filtered earlier by Content-Type
+    or the path-prefix list.
+    """
     stack = await _build_app()
     tracker = AsyncMock()
     with (
@@ -82,6 +89,12 @@ async def _assert_track_called(headers: dict, path: str, expected: bool):
         from squishmark.main import create_app
 
         app = create_app()
+        if add_html_route:
+
+            @app.get("/_test/html", response_class=HTMLResponse)
+            async def _test_html():
+                return HTMLResponse("<html><body>test</body></html>")
+
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             await client.get(path, headers=headers)
@@ -112,14 +125,22 @@ async def test_health_endpoint_not_tracked():
 
 
 @pytest.mark.asyncio
+async def test_real_browser_html_request_is_tracked():
+    """Sanity check: a real browser hitting an HTML route does get tracked."""
+    await _assert_track_called(
+        headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/120"},
+        path="/_test/html",
+        expected=True,
+        add_html_route=True,
+    )
+
+
+@pytest.mark.asyncio
 async def test_bot_request_to_html_page_not_tracked():
-    """A Googlebot hit to / must not be tracked even if the response is HTML."""
-    # We don't need a real HTML endpoint — /robots.txt returns text/plain which
-    # already short-circuits. Use the /health JSON endpoint with a bot UA to
-    # confirm bot UAs are filtered (they'd be filtered by Content-Type too,
-    # but this test guards the UA gate specifically).
+    """The UA gate must block bots even on a real text/html 200 response."""
     await _assert_track_called(
         headers={"user-agent": "Googlebot/2.1"},
-        path="/health",
+        path="/_test/html",
         expected=False,
+        add_html_route=True,
     )
