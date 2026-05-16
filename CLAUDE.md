@@ -25,7 +25,7 @@ When planning implementation work, follow this workflow:
    - Prompt about GitHub issue tracking:
      - "Should we use an existing GitHub issue, create a new one, or skip issue tracking?"
      - If existing: ask for issue number
-     - If new: create issue with appropriate title/description
+     - If new: file via the `github` skill's full creation flow — **title + body + labels + milestone + type**. Don't ship a label-only issue.
    - Prompt about branch creation:
      - "Should we create a new branch for this work?"
      - Use **Conventional Commits style prefixes** matching the anticipated merge commit
