@@ -1,11 +1,12 @@
 """Admin routes for notes, analytics, and cache management."""
 
+import json
 import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
@@ -122,39 +123,69 @@ async def _render_note_partial(template_name: str, **context: Any) -> str:
     return theme_engine.render_partial(template_name, theme_override=theme_name, **context)
 
 
+def _is_form_request(request: Request) -> bool:
+    content_type = request.headers.get("content-type", "")
+    return content_type.startswith(("application/x-www-form-urlencoded", "multipart/form-data"))
+
+
+async def _load_json_body(request: Request) -> dict:
+    """Decode a JSON body, raising 422 on malformed JSON to match FastAPI defaults."""
+    try:
+        return await request.json()
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid JSON: {exc.msg}") from exc
+
+
 async def parse_note_create(request: Request) -> NoteCreate:
     """Parse a ``NoteCreate`` payload from either form data or JSON.
 
     HTMX submits standard HTML forms as ``application/x-www-form-urlencoded``.
-    Non-HTMX API callers continue to send JSON.
+    Non-HTMX API callers continue to send JSON. Validation errors are returned
+    as 422 (matching FastAPI's default body-binding behavior) regardless of
+    which path produced them.
     """
-    content_type = request.headers.get("content-type", "")
-    if content_type.startswith(("application/x-www-form-urlencoded", "multipart/form-data")):
+    if _is_form_request(request):
         form = await request.form()
-        return NoteCreate(
-            path=str(form.get("path", "")),
-            text=str(form.get("text", "")),
-            is_public="is_public" in form,
-        )
-    return NoteCreate.model_validate(await request.json())
+        # Pass through what was actually sent: absent fields stay absent so
+        # Pydantic enforces required-ness instead of silently coercing to "".
+        data: dict[str, Any] = {"is_public": "is_public" in form}
+        if "path" in form:
+            data["path"] = str(form["path"])
+        if "text" in form:
+            data["text"] = str(form["text"])
+    else:
+        data = await _load_json_body(request)
+    try:
+        return NoteCreate.model_validate(data)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
 
 async def parse_note_update(request: Request) -> NoteUpdate:
     """Parse a ``NoteUpdate`` payload from either form data or JSON.
 
-    For form submissions, ``is_public`` is always set explicitly (True if the
-    checkbox is present, False otherwise) — never None — so unchecking the
-    checkbox actually persists ``is_public=False`` rather than being treated
-    as "no change".
+    Form semantics:
+    - ``is_public`` is always set explicitly (True if the checkbox is present,
+      False otherwise) — never None — so unchecking the checkbox actually
+      persists ``is_public=False`` rather than being treated as "no change".
+    - ``text`` is left absent (``None``, meaning "no change") when the form
+      doesn't send it. The HTMX edit form always submits ``text`` because the
+      field is ``required``, so this only affects programmatic form callers
+      that intentionally omit the field.
+
+    Validation errors are returned as 422 from both paths.
     """
-    content_type = request.headers.get("content-type", "")
-    if content_type.startswith(("application/x-www-form-urlencoded", "multipart/form-data")):
+    if _is_form_request(request):
         form = await request.form()
-        return NoteUpdate(
-            text=str(form.get("text", "")),
-            is_public="is_public" in form,
-        )
-    return NoteUpdate.model_validate(await request.json())
+        data: dict[str, Any] = {"is_public": "is_public" in form}
+        if "text" in form:
+            data["text"] = str(form["text"])
+    else:
+        data = await _load_json_body(request)
+    try:
+        return NoteUpdate.model_validate(data)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
 
 # Admin dashboard

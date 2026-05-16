@@ -1,5 +1,6 @@
 """Tests for the admin notes CRUD endpoints (JSON + HTMX dual responses)."""
 
+import json
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -315,6 +316,119 @@ async def test_get_current_admin_htmx_attaches_redirect_header():
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.headers == {"HX-Redirect": "/auth/login"}
+
+
+@pytest.mark.asyncio
+async def test_create_note_invalid_json_returns_422():
+    """POST with malformed JSON body returns 422 (not 500)."""
+    from squishmark.routers.admin import create_note
+
+    request = MagicMock()
+    request.headers = {"content-type": "application/json"}
+    request.json = AsyncMock(side_effect=json.JSONDecodeError("Expecting value", "x", 0))
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_note(request=request, admin="test-admin", session=AsyncMock())
+
+    assert exc_info.value.status_code == 422
+    assert "Invalid JSON" in str(exc_info.value.detail)
+
+
+@pytest.mark.asyncio
+async def test_create_note_json_missing_required_returns_422():
+    """POST JSON missing required field returns 422 (not 500)."""
+    from squishmark.routers.admin import create_note
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_note(
+            request=_request(json_body={"path": "/x"}),  # missing 'text'
+            admin="test-admin",
+            session=AsyncMock(),
+        )
+
+    assert exc_info.value.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_create_note_htmx_form_missing_path_returns_422():
+    """POST form missing 'path' returns 422 instead of silently coercing to ''."""
+    from squishmark.routers.admin import create_note
+
+    with pytest.raises(HTTPException) as exc_info:
+        await create_note(
+            request=_request(
+                hx=True,
+                content_type="application/x-www-form-urlencoded",
+                form_body={"text": "no path"},  # missing 'path'
+            ),
+            admin="test-admin",
+            session=AsyncMock(),
+        )
+
+    assert exc_info.value.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_update_note_htmx_form_missing_text_leaves_text_unchanged():
+    """PUT form without 'text' field passes text=None so the stored value is preserved."""
+    from squishmark.routers.admin import update_note
+
+    mock_service = AsyncMock()
+    mock_service.update_note.return_value = _fake_note(text="unchanged", is_public=True)
+
+    with (
+        patch("squishmark.routers.admin.NotesService", return_value=mock_service),
+        patch("squishmark.routers.admin._render_note_partial", new=AsyncMock(return_value="<div></div>")),
+    ):
+        await update_note(
+            request=_request(
+                hx=True,
+                content_type="application/x-www-form-urlencoded",
+                form_body={"is_public": "true"},  # no 'text' field at all
+            ),
+            admin="test-admin",
+            session=AsyncMock(),
+            note_id=1,
+        )
+
+    mock_service.update_note.assert_called_once_with(note_id=1, text=None, is_public=True)
+
+
+@pytest.mark.asyncio
+async def test_render_partial_restores_current_theme():
+    """ThemeEngine.render_partial must restore the previous current_theme after rendering."""
+    from unittest.mock import MagicMock as MM
+
+    from squishmark.services.theme.engine import ThemeEngine
+
+    engine = ThemeEngine.__new__(ThemeEngine)
+    engine.loader = MM()
+    engine.loader.current_theme = "blue-tech"
+    engine.env = MM()
+    engine.env.get_template.return_value.render.return_value = "<div></div>"
+
+    engine.render_partial("admin/_note_item.html", theme_override="terminal")
+
+    assert engine.loader.current_theme == "blue-tech"
+
+
+@pytest.mark.asyncio
+async def test_render_partial_restores_theme_on_render_exception():
+    """The previous current_theme must be restored even if rendering raises."""
+    from unittest.mock import MagicMock as MM
+
+    from squishmark.services.theme.engine import ThemeEngine
+
+    engine = ThemeEngine.__new__(ThemeEngine)
+    engine.loader = MM()
+    engine.loader.current_theme = "default"
+    engine.env = MM()
+    engine.env.get_template.return_value.render.side_effect = RuntimeError("template crash")
+
+    with pytest.raises(RuntimeError, match="template crash"):
+        engine.render_partial("admin/_note_item.html", theme_override="terminal")
+
+    assert engine.loader.current_theme == "default"
 
 
 @pytest.mark.asyncio
