@@ -78,6 +78,18 @@ gh api repos/{owner}/{repo}/pulls/<num>/comments/<comment_id>/replies \
 
 The bot reviews once per request. New commits don't auto-trigger a re-review — re-request the reviewer for a fresh pass.
 
+### Resolve threads before merging
+
+`main` requires conversation resolution. Replying to a Copilot thread does **not** mark it resolved — that's a separate action. Without resolving, `gh pr merge` fails with `mergeStateStatus: BLOCKED` even with all checks green and no required approvals.
+
+```bash
+gh api graphql -f query='{repository(owner:"xeek-dev",name:"squishmark"){pullRequest(number:<num>){reviewThreads(first:50){nodes{id isResolved}}}}}' \
+  --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved==false) | .id' \
+| while read -r ID; do
+    gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -f id="$ID"
+  done
+```
+
 ## Merge
 
 ```bash
