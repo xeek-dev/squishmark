@@ -64,7 +64,7 @@ gh issue list --search "label:bug sort:updated-desc"
 
 ## Pull Requests
 
-See `references/pull-requests.md` for create, review, comment, and merge commands.
+See `references/pull-requests.md` for create, review, comment, merge, and Copilot review commands.
 
 ## Conventions
 

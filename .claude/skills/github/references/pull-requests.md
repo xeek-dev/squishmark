@@ -36,6 +36,48 @@ EOF
 gh pr review 42 --approve --body "LGTM"
 ```
 
+## Copilot Code Review
+
+The Copilot reviewer is a GitHub App, **not** a workflow run or check — `gh run list` and `gh pr checks` won't show it. The signals live on the issue/PR timeline and reviews APIs.
+
+### Request
+
+```bash
+echo '{"reviewers": ["copilot-pull-request-reviewer[bot]"]}' \
+  | gh api repos/{owner}/{repo}/pulls/<num>/requested_reviewers -X POST --input -
+```
+
+The brackets in the login matter. `gh pr edit --add-reviewer copilot-pull-request-reviewer` returns 422; `reviewers: ["Copilot"]` is silently dropped.
+
+### Wait
+
+Two signals, in order:
+
+1. **`copilot_work_started`** — timeline event posted within seconds of the request, performed by app `copilot-pull-request-reviewer`. Confirms the bot picked up the request.
+   ```bash
+   gh api repos/{owner}/{repo}/issues/<num>/timeline --paginate \
+     --jq '.[] | select(.event=="copilot_work_started") | .created_at'
+   ```
+2. **Review submitted** — appears in `pulls/<num>/reviews` (typically <2 min later). After the review lands, allow ~60s before fetching inline comments — they lag the review.
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/<num>/reviews \
+     --jq '.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")'
+   gh api repos/{owner}/{repo}/pulls/<num>/comments \
+     --jq '.[] | {id, path, line, body}'
+   ```
+
+### Reply to inline comments
+
+```bash
+gh api repos/{owner}/{repo}/pulls/<num>/comments/<comment_id>/replies \
+  -X POST -f body="...
+*— Claude*"
+```
+
+### Re-review
+
+The bot reviews once per request. New commits don't auto-trigger a re-review — re-request the reviewer for a fresh pass.
+
 ## Merge
 
 ```bash
