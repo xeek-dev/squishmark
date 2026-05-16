@@ -74,6 +74,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await close_db()
 
 
+# Common bot/crawler User-Agent substrings. Matched case-insensitively. Covers
+# Googlebot, Bingbot, Baidu/Yandex/Naver/Apple/Petal, social-card fetchers
+# (Twitterbot, facebookexternalhit, Slackbot, Discordbot, etc.), and headless
+# scripted clients (curl, wget, python-requests, httpx).
+BOT_USER_AGENT_PATTERN = re.compile(
+    r"bot|crawler|spider|slurp|facebookexternalhit|curl|wget|python-requests|httpx",
+    re.IGNORECASE,
+)
+
+
+def is_bot_user_agent(user_agent: str | None) -> bool:
+    """Return True if the User-Agent looks like a bot, crawler, or scripted client."""
+    if not user_agent:
+        # Treat missing UA as a bot — real browsers always send one.
+        return True
+    return bool(BOT_USER_AGENT_PATTERN.search(user_agent))
+
+
 async def track_page_view(request: Request) -> None:
     """Track a page view asynchronously (fire and forget)."""
     try:
@@ -167,22 +185,32 @@ def create_app() -> FastAPI:
     # Middleware to track page views (non-blocking)
     @app.middleware("http")
     async def analytics_middleware(request: Request, call_next):
-        """Track page views for non-static, non-admin requests."""
+        """Track page views for non-static, non-admin, non-bot HTML requests."""
         response = await call_next(request)
 
-        # Only track successful HTML responses
+        if response.status_code != 200:
+            return response
+
+        # Only HTML pages count as page views — excludes /robots.txt,
+        # /sitemap.xml, /feed.xml, /favicon.ico, /pygments.css, etc.
+        if not response.headers.get("content-type", "").startswith("text/html"):
+            return response
+
         path = request.url.path
         if (
-            response.status_code == 200
-            and not path.startswith("/static")
-            and not path.startswith("/admin")
-            and not path.startswith("/health")
-            and not path.startswith("/auth")
-            and not path.startswith("/webhooks")
+            path.startswith("/static")
+            or path.startswith("/admin")
+            or path.startswith("/health")
+            or path.startswith("/auth")
+            or path.startswith("/webhooks")
         ):
-            # Fire and forget - don't await
-            asyncio.create_task(track_page_view(request))
+            return response
 
+        if is_bot_user_agent(request.headers.get("user-agent")):
+            return response
+
+        # Fire and forget - don't await
+        asyncio.create_task(track_page_view(request))
         return response
 
     # Health check endpoint
