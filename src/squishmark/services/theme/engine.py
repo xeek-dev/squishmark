@@ -282,6 +282,30 @@ class ThemeEngine:
         """Render the admin dashboard."""
         return await self.render("admin/admin.html", config, theme_override=theme_override, **context)
 
+    def render_partial(
+        self,
+        template_name: str,
+        theme_override: str | None = None,
+        **context: Any,
+    ) -> str:
+        """Render a small HTML fragment without the heavy default context.
+
+        For HTMX swaps where we only need a self-contained snippet (no nav,
+        no favicon, no GitHub fetches). The partial must not depend on
+        site/theme/canonical context.
+
+        The previous ``current_theme`` is restored after rendering so concurrent
+        requests don't see each other's theme leak through this shared loader.
+        """
+        previous_theme = self.loader.current_theme
+        try:
+            if theme_override:
+                self.loader.current_theme = theme_override
+            template = self.env.get_template(template_name)
+            return template.render(**context)
+        finally:
+            self.loader.current_theme = previous_theme
+
 
 # Global theme engine instance
 _theme_engine: ThemeEngine | None = None

@@ -97,25 +97,7 @@
             </form>
             <div id="notes-list">
                 {% for note in notes %}
-                <div class="note-item" id="note-{{ note.id }}">
-                    <div class="note-header">
-                        <span class="note-path">{{ note.path }}</span>
-                        <span class="note-status {% if note.is_public %}public{% else %}private{% endif %}">
-                            {{ "Public" if note.is_public else "Private" }}
-                        </span>
-                    </div>
-                    <p class="note-text">{{ note.text }}</p>
-                    <div class="note-meta">
-                        <span>By {{ note.author }} on {{ note.created_at[:10] }}</span>
-                        <button class="btn btn-danger btn-sm"
-                                hx-delete="/admin/notes/{{ note.id }}"
-                                hx-target="#note-{{ note.id }}"
-                                hx-swap="outerHTML"
-                                hx-confirm="Delete this note?">
-                            Delete
-                        </button>
-                    </div>
-                </div>
+                {% include "admin/_note_item.html" %}
                 {% else %}
                 <p class="no-data">No notes yet</p>
                 {% endfor %}
