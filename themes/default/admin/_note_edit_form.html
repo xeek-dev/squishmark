@@ -1,0 +1,26 @@
+<div class="note-item note-item-editing" id="note-{{ note.id }}">
+    <form class="note-edit-form"
+          hx-put="/admin/notes/{{ note.id }}"
+          hx-target="#note-{{ note.id }}"
+          hx-swap="outerHTML">
+        <div class="form-group">
+            <label for="note-{{ note.id }}-text">Note Text</label>
+            <textarea id="note-{{ note.id }}-text" name="text" rows="3" required>{{ note.text }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_public" value="true" {% if note.is_public %}checked{% endif %}>
+                Make this note public
+            </label>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-secondary btn-sm"
+                    hx-get="/admin/notes/{{ note.id }}/view"
+                    hx-target="#note-{{ note.id }}"
+                    hx-swap="outerHTML">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
