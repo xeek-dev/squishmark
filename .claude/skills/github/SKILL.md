@@ -34,32 +34,25 @@ Use the `gh` CLI for all GitHub operations. Run individual `gh` commands via the
 
 ### Creation Flow
 
-1. **Search for duplicates** before creating:
-   ```bash
-   gh issue list --search "keyword" --state all
-   ```
+A complete issue has **title + body + labels + milestone + type**. Don't ship partial issues.
 
-2. **Create the issue:**
+1. Search for duplicates: `gh issue list --search "keyword" --state all`
+2. Create with title, body, labels in one call:
    ```bash
-   gh issue create --title "Add dark mode" --body "$(cat <<'EOF'
-   ## Description
-   Add dark mode support.
-
-   ## Acceptance Criteria
-   - Toggle in settings
-   - Persists across sessions
+   gh issue create --title "..." --label "engine,enhancement" --body "$(cat <<'EOF'
+   ...
    EOF
-   )" --label "enhancement"
+   )"
    ```
-
-3. **Set issue type** — see `references/graphql.md` for GraphQL mutations, or use the helper script:
+3. Set milestone (default `SquishMark 1.0`; only ask if multiple are active):
+   `gh issue edit <num> --milestone "SquishMark 1.0"`
+4. Set type (`Feature`/`Bug`/`Task`):
    ```bash
-   python .claude/skills/github/scripts/github-issue-updater.py 42 --type task
+   python .claude/skills/github/scripts/github-issue-updater.py <num> --type feature
    ```
+   Or via GraphQL — see `references/graphql.md`.
 
-4. **Apply labels:** `gh issue edit 42 --add-label "engine,enhancement"` — see `references/labels.md`
-
-5. **Prompt about milestone** — ask the user. See `references/milestones.md`
+See `references/labels.md` and `references/milestones.md` for available values.
 
 ### Edit and Search
 
@@ -71,7 +64,7 @@ gh issue list --search "label:bug sort:updated-desc"
 
 ## Pull Requests
 
-See `references/pull-requests.md` for create, review, comment, and merge commands.
+See `references/pull-requests.md` for create, review, comment, merge, and Copilot review commands.
 
 ## Conventions
 
