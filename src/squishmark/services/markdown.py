@@ -138,13 +138,17 @@ class MarkdownService:
 
         Returns:
             Tuple of (rendered HTML, TOC HTML fragment). TOC is the ``<div class="toc">``
-            block emitted by python-markdown's ``TocExtension``; empty string if the
-            document has no headings to index.
+            block emitted by python-markdown's ``TocExtension``. Returns an empty
+            string when the document has no headings — python-markdown otherwise
+            emits a non-empty wrapper around an empty ``<ul>``, which would defeat
+            ``{% if post.toc %}`` checks in templates.
         """
         md = self._get_markdown_instance()
         md.reset()
         html = md.convert(content)
         toc = getattr(md, "toc", "") or ""
+        if "<li>" not in toc:
+            toc = ""
         return html, toc
 
     def get_pygments_css(self) -> str:

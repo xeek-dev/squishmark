@@ -194,11 +194,14 @@ def test_render_markdown_returns_toc_for_multi_heading_content(markdown_service)
 
 
 def test_render_markdown_returns_empty_toc_for_headingless_content(markdown_service):
-    """A document with no headings yields an empty TOC."""
+    """A document with no headings yields an empty TOC string.
+
+    python-markdown emits a non-empty `<div class="toc"><ul></ul></div>` wrapper
+    when there are no headings; render_markdown normalizes that to "" so themes
+    can rely on a simple `{% if post.toc %}` check.
+    """
     _html, toc = markdown_service.render_markdown("Just a paragraph with no headings.")
-    # python-markdown emits an empty wrapper div when there's nothing to index;
-    # that's acceptable as long as there are no <li> entries.
-    assert "<li>" not in toc
+    assert toc == ""
 
 
 def test_parse_post_populates_toc(markdown_service):

@@ -396,13 +396,15 @@ img {
     text-transform: lowercase;
 }
 
+/* python-markdown wraps the TOC list in <div class="toc">, so descendant
+   chains start from `.post-toc > .toc` to reach the top-level <ul>. */
 .post-toc ul {
     margin: 0;
     padding-left: 1rem;
     list-style: none;
 }
 
-.post-toc > ul {
+.post-toc > .toc > ul {
     padding-left: 0;
 }
 
@@ -411,7 +413,7 @@ img {
     position: relative;
 }
 
-.post-toc > ul > li::before {
+.post-toc > .toc > ul > li::before {
     content: "›";
     color: #3b82f6;
     margin-right: 0.4rem;
