@@ -24,7 +24,7 @@ def is_admin(request: Request) -> bool:
     return user.get("login") in settings.admin_users_list
 
 
-def _is_htmx(request: Request) -> bool:
+def is_htmx(request: Request) -> bool:
     """Return True when the request was made by HTMX."""
     return request.headers.get("HX-Request") == "true"
 
@@ -46,7 +46,7 @@ async def get_current_admin(request: Request) -> str:
         logger.warning("Auth bypassed - returning dev-admin user")
         return "dev-admin"
 
-    htmx_headers = {"HX-Redirect": "/auth/login"} if _is_htmx(request) else None
+    htmx_headers = {"HX-Redirect": "/auth/login"} if is_htmx(request) else None
 
     # Check for user in session (set by OAuth callback)
     user = request.session.get("user") if hasattr(request, "session") else None

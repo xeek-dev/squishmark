@@ -383,7 +383,7 @@ async def test_get_current_admin_htmx_attaches_redirect_header():
     request.session = {}
     request.headers = {"HX-Request": "true"}
 
-    with patch("squishmark.routers.admin.get_settings") as mock_settings:
+    with patch("squishmark.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False, admin_users_list=[])
         with pytest.raises(HTTPException) as exc_info:
             await get_current_admin(request)
@@ -514,7 +514,7 @@ async def test_get_current_admin_non_htmx_omits_redirect_header():
     request.session = {}
     request.headers = {}
 
-    with patch("squishmark.routers.admin.get_settings") as mock_settings:
+    with patch("squishmark.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False, admin_users_list=[])
         with pytest.raises(HTTPException) as exc_info:
             await get_current_admin(request)

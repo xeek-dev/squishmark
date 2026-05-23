@@ -10,7 +10,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
-from squishmark.dependencies import AdminUser, get_current_admin
+from squishmark.dependencies import AdminUser, get_current_admin, is_htmx
 from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
@@ -26,11 +26,6 @@ __all__ = ["router", "get_current_admin", "AdminUser"]
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-def is_htmx(request: Request) -> bool:
-    """Return True when the request was made by HTMX."""
-    return request.headers.get("HX-Request") == "true"
 
 
 # Pydantic models for request/response
