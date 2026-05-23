@@ -193,6 +193,16 @@ def test_render_markdown_returns_toc_for_multi_heading_content(markdown_service)
     assert "subsection" in toc
 
 
+def test_render_markdown_toc_wrapper_class_is_stable(markdown_service):
+    """python-markdown wraps the TOC list in `<div class="toc">`. Several theme
+    CSS selectors depend on that class name (e.g. terminal's `.post-toc > .toc > ul`).
+    If python-markdown ever changes the wrapper class, those selectors silently
+    stop matching; this test pins the contract so a regression fails loudly.
+    """
+    _html, toc = markdown_service.render_markdown("## Heading\n\nBody.")
+    assert 'class="toc"' in toc
+
+
 def test_render_markdown_returns_empty_toc_for_headingless_content(markdown_service):
     """A document with no headings yields an empty TOC string.
 

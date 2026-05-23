@@ -74,10 +74,10 @@ class MarkdownService:
         """Build a fresh ``markdown.Markdown`` instance with the project's extensions.
 
         A new instance is built per render because ``md.toc`` / ``md.toc_tokens``
-        are instance-level side effects of ``convert()``. Sharing one instance
-        across requests would race when called concurrently (FastAPI runs sync
-        handlers in a threadpool) — render A's html could pair with render B's
-        TOC. Build cost is sub-millisecond, negligible at our request volume.
+        are instance-level side effects of ``convert()``. Reusing one instance
+        would force callers to read those attributes between renders with no
+        intervening ``convert()`` — a fragile coupling — and an unrelated future
+        caller could easily snapshot the wrong TOC. Build cost is sub-millisecond.
         """
         return markdown.Markdown(
             extensions=[

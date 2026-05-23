@@ -437,8 +437,8 @@ a:hover {
 .post-toc {
     margin: 1.5rem 0 2rem;
     padding: 1rem 1.25rem;
-    background: var(--color-bg-elevated, rgba(0, 0, 0, 0.03));
-    border-left: 3px solid var(--color-accent, #0066cc);
+    background: var(--color-bg-subtle);
+    border-left: 3px solid var(--color-accent);
     border-radius: 4px;
     font-size: 0.95rem;
 }
