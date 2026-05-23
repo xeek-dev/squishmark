@@ -235,6 +235,42 @@ There.
     assert "body" in post.toc
 
 
+def test_parse_post_toc_null_frontmatter_does_not_crash(markdown_service):
+    """A malformed ``toc:`` value (null, empty, garbage) must not crash post loading.
+
+    Pydantic's strict bool would otherwise raise ValidationError out of
+    FrontMatter(**data), bubbling up as a 500 from the post route. The
+    BeforeValidator on FrontMatter.toc coerces invalid values to the default.
+    """
+    for raw_value in ["null", "", "maybe", "[1, 2]", "{a: b}"]:
+        content = f"---\ntitle: Test\ntoc: {raw_value}\n---\n\n## Heading\n\nBody.\n"
+        post = markdown_service.parse_post("posts/2026-01-25-test.md", content)
+        # Should not raise; toc should fall back to default True (rendered).
+        assert post.toc != ""
+
+
+def test_frontmatter_toc_accepts_yes_no_strings():
+    """Strings like 'yes' / 'no' / 'on' / 'off' map to bool as expected.
+
+    Uses ``model_validate`` rather than the constructor because the inputs
+    are intentionally not statically typed as ``bool`` — that's the whole
+    point: YAML parses these as strings and we coerce them.
+    """
+    from squishmark.models.content import FrontMatter
+
+    assert FrontMatter.model_validate({"toc": "yes"}).toc is True
+    assert FrontMatter.model_validate({"toc": "no"}).toc is False
+    assert FrontMatter.model_validate({"toc": "OFF"}).toc is False
+    assert FrontMatter.model_validate({"toc": "True"}).toc is True
+
+
+def test_frontmatter_toc_null_defaults_to_true():
+    """Explicit None defaults to True, matching the field default."""
+    from squishmark.models.content import FrontMatter
+
+    assert FrontMatter.model_validate({"toc": None}).toc is True
+
+
 def test_parse_post_toc_disabled_via_frontmatter(markdown_service):
     """Frontmatter `toc: false` suppresses post.toc even when headings exist."""
     content = """---
