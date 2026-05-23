@@ -39,6 +39,8 @@ def _request(
     header_token: str | None = None,
     form_body: dict | None = None,
     content_type: str = "application/json",
+    method: str = "POST",
+    path: str = "/admin/notes",
 ) -> MagicMock:
     """Build a mock Request with a session dict and optional token sources."""
     request = MagicMock()
@@ -48,6 +50,8 @@ def _request(
         headers[HEADER_NAME] = header_token
     request.headers = headers
     request.form = AsyncMock(return_value=form_body or {})
+    request.method = method
+    request.url.path = path
     return request
 
 
@@ -124,6 +128,35 @@ async def test_verify_csrf_token_error_message_is_generic():
             await verify_csrf_token(request_no_submission, admin="x")
 
     assert exc_a.value.detail == exc_b.value.detail
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_logs_rejection_reason(caplog):
+    """Server-side log records the specific failure mode so operators can debug.
+
+    The user response is generic ('CSRF validation failed') to avoid info
+    disclosure, so the log is the only place this detail lives.
+    """
+    import logging
+
+    caplog.set_level(logging.WARNING, logger="squishmark.services.csrf")
+    request = _request(
+        session={SESSION_KEY: "good"},
+        header_token="wrong",
+        method="POST",
+        path="/admin/notes",
+    )
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        with pytest.raises(HTTPException):
+            await verify_csrf_token(request, admin="alice")
+
+    msg = caplog.text
+    assert "CSRF rejected" in msg
+    assert "reason=token-mismatch" in msg
+    assert "method=POST" in msg
+    assert "path=/admin/notes" in msg
+    assert "admin=alice" in msg
 
 
 @pytest.mark.asyncio

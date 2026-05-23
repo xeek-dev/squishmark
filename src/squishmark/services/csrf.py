@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 
 from squishmark.config import get_settings
-from squishmark.dependencies import get_current_admin
+from squishmark.dependencies import get_current_admin, is_htmx
 
 logger = logging.getLogger(__name__)
 
@@ -68,16 +68,30 @@ async def verify_csrf_token(
     Skipped when ``debug`` and ``dev_skip_auth`` are both set, matching the
     auth-bypass behavior in ``get_current_admin``.
     """
-    del admin  # auth side-effect only — value not used here
     settings = get_settings()
     if settings.debug and settings.dev_skip_auth:
         logger.warning("CSRF bypassed - dev_skip_auth is enabled")
         return
 
-    # Single error message regardless of which check fails — distinguishing
+    # Single user-facing error regardless of which check fails — distinguishing
     # "no session token" from "wrong submitted token" would tell an attacker
-    # whether they got a session to bind to.
+    # whether they got a session to bind to. Server-side log records the
+    # specific reason so operators can diagnose without that side-channel.
     expected = request.session.get(SESSION_KEY) if hasattr(request, "session") else None
     submitted = await _extract_submitted_token(request)
     if not expected or not submitted or not secrets.compare_digest(submitted, expected):
+        if not expected:
+            reason = "no-session-token"
+        elif not submitted:
+            reason = "no-submitted-token"
+        else:
+            reason = "token-mismatch"
+        logger.warning(
+            "CSRF rejected: reason=%s method=%s path=%s admin=%s htmx=%s",
+            reason,
+            request.method,
+            request.url.path,
+            admin,
+            is_htmx(request),
+        )
         raise HTTPException(status_code=403, detail="CSRF validation failed")
