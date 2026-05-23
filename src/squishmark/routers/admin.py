@@ -14,6 +14,7 @@ from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
 from squishmark.services.cache import get_cache
+from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
@@ -214,6 +215,7 @@ async def admin_dashboard(
     cache = get_cache()
 
     # Render admin template
+    csrf_token = get_or_create_csrf_token(request)
     theme_engine = await get_theme_engine(github_service)
     try:
         html = await theme_engine.render_admin(
@@ -222,6 +224,7 @@ async def admin_dashboard(
             analytics=analytics,
             notes=[_to_note_response(n) for n in notes],
             cache_size=cache.size,
+            csrf_token=csrf_token,
         )
     except Exception:
         # Fallback if admin template doesn't exist
@@ -273,7 +276,12 @@ async def list_notes(
     return [_to_note_response(n) for n in notes]
 
 
-@router.post("/notes", status_code=201, response_model=None)
+@router.post(
+    "/notes",
+    status_code=201,
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def create_note(
     request: Request,
     admin: AdminUser,
@@ -295,7 +303,11 @@ async def create_note(
     return response
 
 
-@router.put("/notes/{note_id}", response_model=None)
+@router.put(
+    "/notes/{note_id}",
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def update_note(
     request: Request,
     admin: AdminUser,
@@ -320,7 +332,11 @@ async def update_note(
     return response
 
 
-@router.delete("/notes/{note_id}", response_model=None)
+@router.delete(
+    "/notes/{note_id}",
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def delete_note(
     request: Request,
     admin: AdminUser,
@@ -371,7 +387,7 @@ async def view_note(
 
 
 # Cache management
-@router.post("/cache/refresh")
+@router.post("/cache/refresh", dependencies=[Depends(verify_csrf_token)])
 async def refresh_cache(
     admin: AdminUser,
 ) -> CacheRefreshResponse:

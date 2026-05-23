@@ -1,0 +1,156 @@
+"""Tests for CSRF token generation and verification."""
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from fastapi import HTTPException
+
+from squishmark.services.csrf import (
+    FORM_FIELD,
+    HEADER_NAME,
+    SESSION_KEY,
+    get_or_create_csrf_token,
+    verify_csrf_token,
+)
+
+
+def _request(
+    *,
+    session: dict | None = None,
+    header_token: str | None = None,
+    form_body: dict | None = None,
+    content_type: str = "application/json",
+) -> MagicMock:
+    """Build a mock Request with a session dict and optional token sources."""
+    request = MagicMock()
+    request.session = session if session is not None else {}
+    headers = {"content-type": content_type}
+    if header_token is not None:
+        headers[HEADER_NAME] = header_token
+    request.headers = headers
+    request.form = AsyncMock(return_value=form_body or {})
+    return request
+
+
+def test_get_or_create_csrf_token_mints_when_absent():
+    request = _request()
+    token = get_or_create_csrf_token(request)
+
+    assert token
+    assert len(token) > 20
+    assert request.session[SESSION_KEY] == token
+
+
+def test_get_or_create_csrf_token_returns_existing():
+    request = _request(session={SESSION_KEY: "preexisting-token"})
+
+    token = get_or_create_csrf_token(request)
+
+    assert token == "preexisting-token"
+
+
+def test_get_or_create_csrf_token_is_idempotent():
+    """Calling twice on the same request returns the same token."""
+    request = _request()
+
+    first = get_or_create_csrf_token(request)
+    second = get_or_create_csrf_token(request)
+
+    assert first == second
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_accepts_matching_header():
+    request = _request(
+        session={SESSION_KEY: "good-token"},
+        header_token="good-token",
+    )
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        await verify_csrf_token(request)  # should not raise
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_rejects_missing_session_token():
+    request = _request(session={}, header_token="anything")
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        with pytest.raises(HTTPException) as exc:
+            await verify_csrf_token(request)
+
+    assert exc.value.status_code == 403
+    assert "missing" in str(exc.value.detail).lower()
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_rejects_missing_submitted_token():
+    request = _request(session={SESSION_KEY: "good-token"})  # no header, no form
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        with pytest.raises(HTTPException) as exc:
+            await verify_csrf_token(request)
+
+    assert exc.value.status_code == 403
+    assert "invalid" in str(exc.value.detail).lower()
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_rejects_wrong_header():
+    request = _request(
+        session={SESSION_KEY: "good-token"},
+        header_token="wrong-token",
+    )
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        with pytest.raises(HTTPException) as exc:
+            await verify_csrf_token(request)
+
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_accepts_form_field_fallback():
+    """For form submissions without the header, the csrf_token form field is honored."""
+    request = _request(
+        session={SESSION_KEY: "good-token"},
+        form_body={FORM_FIELD: "good-token"},
+        content_type="application/x-www-form-urlencoded",
+    )
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        await verify_csrf_token(request)  # should not raise
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_header_takes_precedence_over_form():
+    """A valid header passes even if the form field is wrong."""
+    request = _request(
+        session={SESSION_KEY: "good-token"},
+        header_token="good-token",
+        form_body={FORM_FIELD: "wrong"},
+        content_type="application/x-www-form-urlencoded",
+    )
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        await verify_csrf_token(request)  # header wins, no raise
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_bypassed_in_dev_skip_auth():
+    """When debug and dev_skip_auth are both set, CSRF check is skipped."""
+    request = _request()  # no session, no token — would normally fail
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=True, dev_skip_auth=True)
+        await verify_csrf_token(request)  # should not raise
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_not_bypassed_in_prod_mode():
+    """dev_skip_auth without debug doesn't bypass."""
+    request = _request()
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=True)
+        with pytest.raises(HTTPException) as exc:
+            await verify_csrf_token(request)
+
+    assert exc.value.status_code == 403

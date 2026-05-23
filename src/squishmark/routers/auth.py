@@ -116,6 +116,8 @@ async def oauth_callback(
         "name": user_data.get("name"),
         "avatar_url": user_data.get("avatar_url"),
     }
+    # Rotate CSRF token on login so a stale pre-auth token can't be replayed.
+    request.session.pop("csrf_token", None)
 
     # Redirect to admin
     return RedirectResponse(url="/admin", status_code=302)
