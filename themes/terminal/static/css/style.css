@@ -429,9 +429,12 @@ img {
     text-decoration: underline;
 }
 
-/* Below this, there isn't enough horizontal space for the TOC card
-   beside an 800px article column. */
-@media (max-width: 1139px) {
+/* Below this width, the TOC card would extend past the right viewport edge.
+   Math: TOC left = 50vw + 400 + 24, plus width 220 + 2 × padding (17.6) ≈ 255;
+   right edge = vw/2 + 679. Solving for right ≤ vw gives vw ≥ ~1359px.
+   Body has overflow-x: hidden so an overflowing card would be silently clipped
+   rather than producing a horizontal scrollbar. */
+@media (max-width: 1359px) {
     .post-toc {
         display: none;
     }

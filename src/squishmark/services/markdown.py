@@ -69,29 +69,33 @@ class MarkdownService:
 
     def __init__(self, pygments_style: str = "github-dark") -> None:
         self.pygments_style = pygments_style
-        self._md: markdown.Markdown | None = None
 
-    def _get_markdown_instance(self) -> markdown.Markdown:
-        """Get or create the markdown instance with extensions."""
-        if self._md is None:
-            self._md = markdown.Markdown(
-                extensions=[
-                    "extra",  # Tables, footnotes, attr_list, etc.
-                    FencedCodeExtension(),
-                    CodeHiliteExtension(
-                        css_class="highlight",
-                        linenums=False,
-                        guess_lang=False,
-                        pygments_formatter=LabeledFormatter,
-                    ),
-                    TocExtension(permalink=False),
-                    HeadingAnchorExtension(),
-                    "smarty",  # Smart quotes
-                    "nl2br",  # Newlines to <br>
-                ],
-                output_format="html",
-            )
-        return self._md
+    def _build_markdown_instance(self) -> markdown.Markdown:
+        """Build a fresh ``markdown.Markdown`` instance with the project's extensions.
+
+        A new instance is built per render because ``md.toc`` / ``md.toc_tokens``
+        are instance-level side effects of ``convert()``. Sharing one instance
+        across requests would race when called concurrently (FastAPI runs sync
+        handlers in a threadpool) — render A's html could pair with render B's
+        TOC. Build cost is sub-millisecond, negligible at our request volume.
+        """
+        return markdown.Markdown(
+            extensions=[
+                "extra",  # Tables, footnotes, attr_list, etc.
+                FencedCodeExtension(),
+                CodeHiliteExtension(
+                    css_class="highlight",
+                    linenums=False,
+                    guess_lang=False,
+                    pygments_formatter=LabeledFormatter,
+                ),
+                TocExtension(permalink=False),
+                HeadingAnchorExtension(),
+                "smarty",  # Smart quotes
+                "nl2br",  # Newlines to <br>
+            ],
+            output_format="html",
+        )
 
     def parse_frontmatter(self, content: str) -> tuple[FrontMatter, str]:
         """
@@ -143,12 +147,14 @@ class MarkdownService:
             emits a non-empty wrapper around an empty ``<ul>``, which would defeat
             ``{% if post.toc %}`` checks in templates.
         """
-        md = self._get_markdown_instance()
-        md.reset()
+        md = self._build_markdown_instance()
         html = md.convert(content)
-        toc = getattr(md, "toc", "") or ""
-        if "<li>" not in toc:
-            toc = ""
+        # ``toc_tokens`` is python-markdown's official structured TOC API and
+        # is reliably empty for headingless content, unlike ``toc`` which
+        # always contains an outer wrapper div. ``getattr`` because both
+        # attributes are added dynamically by ``TocExtension`` (Pyright can't see them).
+        toc_tokens = getattr(md, "toc_tokens", None)
+        toc = getattr(md, "toc", "") if toc_tokens else ""
         return html, toc
 
     def get_pygments_css(self) -> str:
@@ -214,6 +220,8 @@ class MarkdownService:
             Parsed Page object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
+        # Pages don't carry a TOC by design — discard render_markdown's toc
+        # output so Page never gains a TOC field by accident.
         html, _toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 

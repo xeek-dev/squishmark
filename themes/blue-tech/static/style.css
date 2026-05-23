@@ -465,6 +465,11 @@ img {
     user-select: none;
 }
 
+/* Safari/WebKit ignore `list-style: none` on summary; need the vendor pseudo. */
+.post-toc > summary::-webkit-details-marker {
+    display: none;
+}
+
 .post-toc > summary::before {
     content: "▸ ";
     display: inline-block;
