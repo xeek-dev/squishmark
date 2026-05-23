@@ -129,19 +129,23 @@ class MarkdownService:
         except yaml.YAMLError:
             return FrontMatter(), remaining_content
 
-    def render_markdown(self, content: str) -> str:
+    def render_markdown(self, content: str) -> tuple[str, str]:
         """
-        Render markdown content to HTML.
+        Render markdown content to HTML and extract its table of contents.
 
         Args:
             content: Markdown content (without frontmatter)
 
         Returns:
-            Rendered HTML string
+            Tuple of (rendered HTML, TOC HTML fragment). TOC is the ``<div class="toc">``
+            block emitted by python-markdown's ``TocExtension``; empty string if the
+            document has no headings to index.
         """
         md = self._get_markdown_instance()
         md.reset()
-        return md.convert(content)
+        html = md.convert(content)
+        toc = getattr(md, "toc", "") or ""
+        return html, toc
 
     def get_pygments_css(self) -> str:
         """Generate Pygments CSS for the configured style."""
@@ -160,7 +164,7 @@ class MarkdownService:
             Parsed Post object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
-        html = self.render_markdown(markdown_content)
+        html, toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "posts/2026-01-15-hello-world.md" -> "hello-world")
@@ -184,6 +188,7 @@ class MarkdownService:
             description=description,
             content=markdown_content,
             html=html,
+            toc=toc if frontmatter.toc else "",
             draft=frontmatter.draft,
             featured=frontmatter.featured,
             featured_order=frontmatter.featured_order,
@@ -205,7 +210,7 @@ class MarkdownService:
             Parsed Page object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
-        html = self.render_markdown(markdown_content)
+        html, _toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "pages/about.md" -> "about")

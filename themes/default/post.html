@@ -44,6 +44,13 @@
     </aside>
     {% endif %}
 
+    {% if post.toc %}
+    <aside class="post-toc" aria-label="Table of contents">
+        <h2 class="post-toc-title">Contents</h2>
+        {{ post.toc | safe }}
+    </aside>
+    {% endif %}
+
     <div class="post-content">
         {{ post.html | safe }}
     </div>

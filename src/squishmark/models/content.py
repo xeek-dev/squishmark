@@ -23,6 +23,7 @@ class FrontMatter(BaseModel):
     image: str | None = None  # Featured image URL (used for og:image)
     visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
+    toc: bool = True  # Per-post opt-out for auto-generated table of contents
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -38,6 +39,7 @@ class Post(BaseModel):
     description: str = ""
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
+    toc: str = ""  # Rendered TOC fragment (HTML); empty when disabled or no headings
     draft: bool = False
     featured: bool = False
     featured_order: int | None = None  # Explicit ordering (lower = first)

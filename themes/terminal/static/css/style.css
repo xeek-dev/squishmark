@@ -364,6 +364,77 @@ img {
     padding: 3rem 1.5rem 4rem;
 }
 
+/* Floating right-side table of contents.
+   Anchored to the article column (not the viewport edge) so it never overlaps
+   the 800px content lane. Needs viewport >= ~1140px to have room beside the
+   article; hidden below that breakpoint. */
+.post-toc {
+    position: fixed;
+    top: 6rem;
+    /* 50% = viewport center; +400px = right edge of 800px article; +1.5rem buffer */
+    left: calc(50% + 400px + 1.5rem);
+    width: 220px;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    z-index: 2;
+    padding: 1rem 1.1rem;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    border-radius: 4px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.post-toc-label {
+    color: #4ade80;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    letter-spacing: 0.03em;
+    font-size: 0.75rem;
+    text-transform: lowercase;
+}
+
+.post-toc ul {
+    margin: 0;
+    padding-left: 1rem;
+    list-style: none;
+}
+
+.post-toc > ul {
+    padding-left: 0;
+}
+
+.post-toc li {
+    margin: 0.15rem 0;
+    position: relative;
+}
+
+.post-toc > ul > li::before {
+    content: "›";
+    color: #3b82f6;
+    margin-right: 0.4rem;
+}
+
+.post-toc a {
+    color: var(--color-text, #e2e8f0);
+    text-decoration: none;
+}
+
+.post-toc a:hover {
+    color: #4ade80;
+    text-decoration: underline;
+}
+
+/* Below this, there isn't enough horizontal space for the TOC card
+   beside an 800px article column. */
+@media (max-width: 1139px) {
+    .post-toc {
+        display: none;
+    }
+}
+
 .post-header, .page-header {
     text-align: center;
     margin-bottom: 3rem;
