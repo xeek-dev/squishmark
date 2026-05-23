@@ -10,10 +10,12 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
+from squishmark.dependencies import AdminUser, is_htmx
 from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
 from squishmark.services.cache import get_cache
+from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
@@ -21,11 +23,6 @@ from squishmark.services.theme import get_theme_engine, reset_theme_engine
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-def is_htmx(request: Request) -> bool:
-    """Return True when the request was made by HTMX."""
-    return request.headers.get("HX-Request") == "true"
 
 
 # Pydantic models for request/response
@@ -65,39 +62,12 @@ class CacheRefreshResponse(BaseModel):
     duration_ms: float
 
 
-# Dependency for getting the current admin user
-async def get_current_admin(request: Request) -> str:
-    """
-    Get the current admin user from session.
+class CSRFTokenResponse(BaseModel):
+    """Response body for the CSRF token endpoint."""
 
-    Raises HTTPException 401 if not authenticated.
-    Raises HTTPException 403 if not an admin.
-
-    For HTMX requests, attaches an ``HX-Redirect`` header so the browser
-    is redirected to the login page without any client JavaScript.
-    """
-    settings = get_settings()
-
-    # Dev mode auth bypass (requires both flags)
-    if settings.debug and settings.dev_skip_auth:
-        logger.warning("Auth bypassed - returning dev-admin user")
-        return "dev-admin"
-
-    htmx_headers = {"HX-Redirect": "/auth/login"} if is_htmx(request) else None
-
-    # Check for user in session (set by OAuth callback)
-    user = request.session.get("user") if hasattr(request, "session") else None
-
-    if user is None:
-        raise HTTPException(status_code=401, detail="Not authenticated", headers=htmx_headers)
-
-    if user["login"] not in settings.admin_users_list:
-        raise HTTPException(status_code=403, detail="Not authorized", headers=htmx_headers)
-
-    return user["login"]
+    csrf_token: str
 
 
-AdminUser = Annotated[str, Depends(get_current_admin)]
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 
 
@@ -214,6 +184,7 @@ async def admin_dashboard(
     cache = get_cache()
 
     # Render admin template
+    csrf_token = get_or_create_csrf_token(request)
     theme_engine = await get_theme_engine(github_service)
     try:
         html = await theme_engine.render_admin(
@@ -222,6 +193,7 @@ async def admin_dashboard(
             analytics=analytics,
             notes=[_to_note_response(n) for n in notes],
             cache_size=cache.size,
+            csrf_token=csrf_token,
         )
     except Exception:
         # Fallback if admin template doesn't exist
@@ -246,6 +218,14 @@ async def admin_dashboard(
         html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
 
     return HTMLResponse(content=html)
+
+
+# CSRF token endpoint (for JSON API callers that can't scrape the meta tag)
+@router.get("/csrf")
+async def get_csrf(request: Request, admin: AdminUser) -> CSRFTokenResponse:
+    """Return the current CSRF token for use in subsequent mutation requests."""
+    del admin  # auth side-effect only
+    return CSRFTokenResponse(csrf_token=get_or_create_csrf_token(request))
 
 
 # Analytics endpoints
@@ -273,7 +253,12 @@ async def list_notes(
     return [_to_note_response(n) for n in notes]
 
 
-@router.post("/notes", status_code=201, response_model=None)
+@router.post(
+    "/notes",
+    status_code=201,
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def create_note(
     request: Request,
     admin: AdminUser,
@@ -295,7 +280,11 @@ async def create_note(
     return response
 
 
-@router.put("/notes/{note_id}", response_model=None)
+@router.put(
+    "/notes/{note_id}",
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def update_note(
     request: Request,
     admin: AdminUser,
@@ -320,7 +309,11 @@ async def update_note(
     return response
 
 
-@router.delete("/notes/{note_id}", response_model=None)
+@router.delete(
+    "/notes/{note_id}",
+    response_model=None,
+    dependencies=[Depends(verify_csrf_token)],
+)
 async def delete_note(
     request: Request,
     admin: AdminUser,
@@ -371,7 +364,7 @@ async def view_note(
 
 
 # Cache management
-@router.post("/cache/refresh")
+@router.post("/cache/refresh", dependencies=[Depends(verify_csrf_token)])
 async def refresh_cache(
     admin: AdminUser,
 ) -> CacheRefreshResponse:

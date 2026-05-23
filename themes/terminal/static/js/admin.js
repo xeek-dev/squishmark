@@ -3,6 +3,12 @@ function toggleNoteForm() {
     if (form) form.classList.toggle('hidden');
 }
 
+// Attach CSRF token to every HTMX request.
+document.body.addEventListener('htmx:configRequest', function (event) {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) event.detail.headers['X-CSRF-Token'] = meta.content;
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById('views-data');
     if (!el) return;

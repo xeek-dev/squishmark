@@ -301,15 +301,95 @@ async def test_edit_form_not_found_raises_404():
 
 
 @pytest.mark.asyncio
+async def test_get_csrf_returns_session_token():
+    """GET /admin/csrf returns the current CSRF token for JSON API callers."""
+    from squishmark.routers.admin import get_csrf
+
+    request = MagicMock()
+    request.session = {}
+
+    result = await get_csrf(request=request, admin="test-admin")
+
+    assert result.csrf_token
+    # Returned token matches what's now stored on the session.
+    assert request.session["csrf_token"] == result.csrf_token
+
+
+@pytest.mark.asyncio
+async def test_get_csrf_idempotent_within_session():
+    """Calling GET /admin/csrf twice on the same session returns the same token."""
+    from squishmark.routers.admin import get_csrf
+
+    request = MagicMock()
+    request.session = {}
+
+    first = await get_csrf(request=request, admin="test-admin")
+    second = await get_csrf(request=request, admin="test-admin")
+
+    assert first.csrf_token == second.csrf_token
+
+
+@pytest.mark.asyncio
+async def test_oauth_callback_rotates_csrf_token():
+    """A successful OAuth callback clears any prior CSRF token from the session.
+
+    Exercises ``oauth_callback`` end-to-end with mocked GitHub HTTP calls so a
+    regression that drops the rotation line will fail this test.
+    """
+    from squishmark.routers.auth import oauth_callback
+    from squishmark.services.csrf import SESSION_KEY
+
+    request = MagicMock()
+    request.session = {SESSION_KEY: "stale-pre-auth-token"}
+    request.url_for = MagicMock(return_value="http://localhost:8000/auth/callback")
+
+    fake_settings = MagicMock(
+        debug=False,
+        dev_skip_auth=False,
+        secret_key="0123456789abcdef-rest",  # state validates against secret_key[:16]
+        github_client_id="cid",
+        github_client_secret="csecret",
+    )
+
+    token_response = MagicMock(status_code=200)
+    token_response.json = MagicMock(return_value={"access_token": "gho_test"})
+    user_response = MagicMock(status_code=200)
+    user_response.json = MagicMock(return_value={"login": "alice", "name": "Alice", "avatar_url": "u"})
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=token_response)
+    mock_client.get = AsyncMock(return_value=user_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("squishmark.routers.auth.get_settings", return_value=fake_settings),
+        patch("squishmark.routers.auth.httpx.AsyncClient", return_value=mock_client),
+    ):
+        result = await oauth_callback(request=request, code="abc", state="0123456789abcdef")
+
+    assert result.status_code == 302
+    assert SESSION_KEY not in request.session
+    assert request.session["user"]["login"] == "alice"
+
+    # And a fresh token mints on the next get_or_create call, distinct from the stale one.
+    from squishmark.services.csrf import get_or_create_csrf_token
+
+    new_token = get_or_create_csrf_token(request)
+    assert new_token
+    assert new_token != "stale-pre-auth-token"
+
+
+@pytest.mark.asyncio
 async def test_get_current_admin_htmx_attaches_redirect_header():
     """HTMX requests with no session get an HX-Redirect header on 401."""
-    from squishmark.routers.admin import get_current_admin
+    from squishmark.dependencies import get_current_admin
 
     request = MagicMock()
     request.session = {}
     request.headers = {"HX-Request": "true"}
 
-    with patch("squishmark.routers.admin.get_settings") as mock_settings:
+    with patch("squishmark.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False, admin_users_list=[])
         with pytest.raises(HTTPException) as exc_info:
             await get_current_admin(request)
@@ -434,13 +514,13 @@ async def test_render_partial_restores_theme_on_render_exception():
 @pytest.mark.asyncio
 async def test_get_current_admin_non_htmx_omits_redirect_header():
     """Non-HTMX requests get a plain 401 with no HX-Redirect header."""
-    from squishmark.routers.admin import get_current_admin
+    from squishmark.dependencies import get_current_admin
 
     request = MagicMock()
     request.session = {}
     request.headers = {}
 
-    with patch("squishmark.routers.admin.get_settings") as mock_settings:
+    with patch("squishmark.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False, admin_users_list=[])
         with pytest.raises(HTTPException) as exc_info:
             await get_current_admin(request)

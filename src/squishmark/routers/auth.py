@@ -1,5 +1,6 @@
 """Authentication routes for GitHub OAuth."""
 
+import logging
 from urllib.parse import urlencode
 
 import httpx
@@ -7,6 +8,9 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from squishmark.config import get_settings
+from squishmark.services.csrf import SESSION_KEY as CSRF_SESSION_KEY
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -116,6 +120,9 @@ async def oauth_callback(
         "name": user_data.get("name"),
         "avatar_url": user_data.get("avatar_url"),
     }
+    # Rotate CSRF token on login so a stale pre-auth token can't be replayed.
+    request.session.pop(CSRF_SESSION_KEY, None)
+    logger.info("CSRF token rotated on OAuth login (user=%s)", user_data["login"])
 
     # Redirect to admin
     return RedirectResponse(url="/admin", status_code=302)
