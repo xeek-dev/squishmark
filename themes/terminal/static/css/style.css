@@ -364,6 +364,82 @@ img {
     padding: 3rem 1.5rem 4rem;
 }
 
+/* Floating right-side table of contents.
+   Anchored to the article column (not the viewport edge) so it never overlaps
+   the 800px content lane. Needs viewport >= ~1359px to have room beside the
+   article; hidden below that breakpoint (math derived at the media query below). */
+.post-toc {
+    position: fixed;
+    top: 6rem;
+    /* 50% = viewport center; +400px = right edge of 800px article; +1.5rem buffer */
+    left: calc(50% + 400px + 1.5rem);
+    width: 220px;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    z-index: 2;
+    padding: 1rem 1.1rem;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    border-radius: 4px;
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.post-toc-label {
+    color: #4ade80;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    letter-spacing: 0.03em;
+    font-size: 0.75rem;
+    text-transform: lowercase;
+}
+
+/* python-markdown wraps the TOC list in <div class="toc">, so descendant
+   chains start from `.post-toc > .toc` to reach the top-level <ul>. */
+.post-toc ul {
+    margin: 0;
+    padding-left: 1rem;
+    list-style: none;
+}
+
+.post-toc > .toc > ul {
+    padding-left: 0;
+}
+
+.post-toc li {
+    margin: 0.15rem 0;
+    position: relative;
+}
+
+.post-toc > .toc > ul > li::before {
+    content: "›";
+    color: #3b82f6;
+    margin-right: 0.4rem;
+}
+
+.post-toc a {
+    color: var(--color-text, #e2e8f0);
+    text-decoration: none;
+}
+
+.post-toc a:hover {
+    color: #4ade80;
+    text-decoration: underline;
+}
+
+/* Below this width, the TOC card would extend past the right viewport edge.
+   Math: TOC left = 50vw + 400 + 24, plus width 220 + 2 × padding (17.6) ≈ 255;
+   right edge = vw/2 + 679. Solving for right ≤ vw gives vw ≥ ~1359px.
+   Body has overflow-x: hidden so an overflowing card would be silently clipped
+   rather than producing a horizontal scrollbar. */
+@media (max-width: 1359px) {
+    .post-toc {
+        display: none;
+    }
+}
+
 .post-header, .page-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -413,6 +489,8 @@ img {
     margin-bottom: 1rem;
     line-height: 1.3;
     position: relative;
+    /* Clear the sticky nav (~54px) when a heading is targeted via anchor. */
+    scroll-margin-top: 5rem;
 }
 
 :is(.post-content, .page-content) h1 { font-size: 2rem; }

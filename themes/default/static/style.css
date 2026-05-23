@@ -433,6 +433,43 @@ a:hover {
     margin-top: 0.6rem;
 }
 
+/* Auto-generated table of contents */
+.post-toc {
+    margin: 1.5rem 0 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-bg-subtle);
+    border-left: 3px solid var(--color-accent);
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.post-toc-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin: 0 0 0.5rem;
+}
+
+.post-toc ul {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.post-toc li {
+    margin: 0.15rem 0;
+}
+
+.post-toc a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.post-toc a:hover {
+    text-decoration: underline;
+}
+
 /* Post/page content */
 .post-content,
 .page-content {

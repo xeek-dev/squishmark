@@ -44,6 +44,7 @@ Individual posts and pages can override the theme or template via frontmatter:
 title: My Special Post
 theme: terminal        # Render this post with the terminal theme
 template: custom.html  # Use custom.html instead of post.html
+toc: false             # Suppress auto-generated post.toc for this post
 ---
 ```
 

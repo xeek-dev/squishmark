@@ -4,7 +4,10 @@ import datetime
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_TOC_TRUE_STRINGS = {"true", "yes", "on", "1", "t", "y"}
+_TOC_FALSE_STRINGS = {"false", "no", "off", "0", "f", "n"}
 
 
 class FrontMatter(BaseModel):
@@ -23,9 +26,34 @@ class FrontMatter(BaseModel):
     image: str | None = None  # Featured image URL (used for og:image)
     visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
+    toc: bool = True  # Per-post opt-out for auto-generated table of contents
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
+
+    @field_validator("toc", mode="before")
+    @classmethod
+    def _coerce_toc(cls, v: Any) -> Any:
+        """Coerce null / unrecognized values to the default (True).
+
+        YAML allows ``toc: null``, ``toc:`` (empty), and arbitrary strings.
+        Pydantic's strict bool parser rejects those with ValidationError,
+        which would crash the whole post-loading path (a 500) for a stylistic
+        frontmatter field. Default to showing the TOC and move on.
+        """
+        if v is None:
+            return True
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, (int, float)):
+            return bool(v)
+        if isinstance(v, str):
+            normalized = v.strip().lower()
+            if normalized in _TOC_TRUE_STRINGS:
+                return True
+            if normalized in _TOC_FALSE_STRINGS:
+                return False
+        return True  # unrecognized type/value — fall back to default
 
 
 class Post(BaseModel):
@@ -38,6 +66,7 @@ class Post(BaseModel):
     description: str = ""
     content: str = ""  # Raw markdown
     html: str = ""  # Rendered HTML
+    toc: str = ""  # Rendered TOC fragment (HTML); empty when disabled or no headings
     draft: bool = False
     featured: bool = False
     featured_order: int | None = None  # Explicit ordering (lower = first)

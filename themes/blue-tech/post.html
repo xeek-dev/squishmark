@@ -44,6 +44,13 @@
     </aside>
     {% endif %}
 
+    {% if post.toc %}
+    <details class="post-toc">
+        <summary>Contents</summary>
+        {{ post.toc | safe }}
+    </details>
+    {% endif %}
+
     <div class="post-content">
         {{ post.html | safe }}
     </div>

@@ -47,7 +47,7 @@ def test_render_markdown(markdown_service):
     """Test markdown rendering."""
     content = "# Hello World\n\nThis is **bold** and *italic*."
 
-    html = markdown_service.render_markdown(content)
+    html, _toc = markdown_service.render_markdown(content)
 
     # Verify the HTML output contains expected elements
     # The TOC extension adds id and permalink to headings
@@ -65,7 +65,7 @@ def hello():
     print("Hello, World!")
 ```
 """
-    html = markdown_service.render_markdown(content)
+    html, _toc = markdown_service.render_markdown(content)
 
     assert "highlight" in html
     assert "def" in html
@@ -80,7 +80,7 @@ def test_render_code_block_no_label_for_text(markdown_service):
 Plain text content
 ```
 """
-    html = markdown_service.render_markdown(content)
+    html, _toc = markdown_service.render_markdown(content)
 
     assert "highlight" in html
     assert "filename" not in html
@@ -159,7 +159,7 @@ def test_extract_slug(markdown_service):
 
 def test_heading_text_is_anchor_link(markdown_service):
     """Heading text should be wrapped in a self-referencing anchor link."""
-    html = markdown_service.render_markdown("## Hello World")
+    html, _toc = markdown_service.render_markdown("## Hello World")
 
     assert 'class="heading-anchor"' in html, f"Expected heading-anchor class, got: {html}"
     assert 'href="#hello-world"' in html, f"Expected href to heading id, got: {html}"
@@ -174,11 +174,133 @@ def test_heading_text_is_anchor_link(markdown_service):
 
 def test_heading_with_link_is_not_wrapped(markdown_service):
     """Headings that already contain a link should not get a wrapping anchor."""
-    html = markdown_service.render_markdown("## [Docs](https://example.com)")
+    html, _toc = markdown_service.render_markdown("## [Docs](https://example.com)")
 
     assert "heading-anchor" not in html, f"Should not wrap linked heading, got: {html}"
     # The existing link should still be present and valid
     assert 'href="https://example.com"' in html
+
+
+def test_render_markdown_returns_toc_for_multi_heading_content(markdown_service):
+    """render_markdown should return a non-empty TOC fragment when there are headings."""
+    content = "## First Section\n\nSome text.\n\n## Second Section\n\nMore text.\n\n### Subsection\n\nDetail."
+    html, toc = markdown_service.render_markdown(content)
+
+    assert html  # sanity
+    assert toc
+    assert "first-section" in toc
+    assert "second-section" in toc
+    assert "subsection" in toc
+
+
+def test_render_markdown_toc_wrapper_class_is_stable(markdown_service):
+    """python-markdown wraps the TOC list in `<div class="toc">`. Several theme
+    CSS selectors depend on that class name (e.g. terminal's `.post-toc > .toc > ul`).
+    If python-markdown ever changes the wrapper class, those selectors silently
+    stop matching; this test pins the contract so a regression fails loudly.
+    """
+    _html, toc = markdown_service.render_markdown("## Heading\n\nBody.")
+    assert 'class="toc"' in toc
+
+
+def test_render_markdown_returns_empty_toc_for_headingless_content(markdown_service):
+    """A document with no headings yields an empty TOC string.
+
+    python-markdown emits a non-empty `<div class="toc"><ul></ul></div>` wrapper
+    when there are no headings; render_markdown normalizes that to "" so themes
+    can rely on a simple `{% if post.toc %}` check.
+    """
+    _html, toc = markdown_service.render_markdown("Just a paragraph with no headings.")
+    assert toc == ""
+
+
+def test_parse_post_populates_toc(markdown_service):
+    """parse_post threads the rendered TOC onto post.toc by default."""
+    content = """---
+title: Multi-section Post
+---
+
+## Intro
+
+Hi.
+
+## Body
+
+There.
+"""
+    post = markdown_service.parse_post("posts/2026-01-25-my-post.md", content)
+
+    assert post.toc
+    assert "intro" in post.toc
+    assert "body" in post.toc
+
+
+def test_parse_post_toc_null_frontmatter_does_not_crash(markdown_service):
+    """A malformed ``toc:`` value (null, empty, garbage) must not crash post loading.
+
+    Pydantic's strict bool would otherwise raise ValidationError out of
+    FrontMatter(**data), bubbling up as a 500 from the post route. The
+    BeforeValidator on FrontMatter.toc coerces invalid values to the default.
+    """
+    for raw_value in ["null", "", "maybe", "[1, 2]", "{a: b}"]:
+        content = f"---\ntitle: Test\ntoc: {raw_value}\n---\n\n## Heading\n\nBody.\n"
+        post = markdown_service.parse_post("posts/2026-01-25-test.md", content)
+        # Should not raise; toc should fall back to default True (rendered).
+        assert post.toc != ""
+
+
+def test_frontmatter_toc_accepts_yes_no_strings():
+    """Strings like 'yes' / 'no' / 'on' / 'off' map to bool as expected.
+
+    Uses ``model_validate`` rather than the constructor because the inputs
+    are intentionally not statically typed as ``bool`` — that's the whole
+    point: YAML parses these as strings and we coerce them.
+    """
+    from squishmark.models.content import FrontMatter
+
+    assert FrontMatter.model_validate({"toc": "yes"}).toc is True
+    assert FrontMatter.model_validate({"toc": "no"}).toc is False
+    assert FrontMatter.model_validate({"toc": "OFF"}).toc is False
+    assert FrontMatter.model_validate({"toc": "True"}).toc is True
+
+
+def test_frontmatter_toc_null_defaults_to_true():
+    """Explicit None defaults to True, matching the field default."""
+    from squishmark.models.content import FrontMatter
+
+    assert FrontMatter.model_validate({"toc": None}).toc is True
+
+
+def test_parse_post_toc_disabled_via_frontmatter(markdown_service):
+    """Frontmatter `toc: false` suppresses post.toc even when headings exist."""
+    content = """---
+title: TOC-less Post
+toc: false
+---
+
+## Heading
+
+Body.
+"""
+    post = markdown_service.parse_post("posts/2026-01-25-my-post.md", content)
+
+    assert post.toc == ""
+
+
+def test_parse_page_does_not_set_post_toc(markdown_service):
+    """Pages don't carry a TOC — only posts do (per the issue framing)."""
+    content = """---
+title: About
+---
+
+## Section
+
+Body.
+"""
+    page = markdown_service.parse_page("pages/about.md", content)
+
+    # Page model has no toc field at all.
+    assert not hasattr(page, "toc") or getattr(page, "toc", "") == ""
 
 
 def test_parse_post_rewrites_images(markdown_service):

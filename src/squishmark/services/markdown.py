@@ -69,29 +69,33 @@ class MarkdownService:
 
     def __init__(self, pygments_style: str = "github-dark") -> None:
         self.pygments_style = pygments_style
-        self._md: markdown.Markdown | None = None
 
-    def _get_markdown_instance(self) -> markdown.Markdown:
-        """Get or create the markdown instance with extensions."""
-        if self._md is None:
-            self._md = markdown.Markdown(
-                extensions=[
-                    "extra",  # Tables, footnotes, attr_list, etc.
-                    FencedCodeExtension(),
-                    CodeHiliteExtension(
-                        css_class="highlight",
-                        linenums=False,
-                        guess_lang=False,
-                        pygments_formatter=LabeledFormatter,
-                    ),
-                    TocExtension(permalink=False),
-                    HeadingAnchorExtension(),
-                    "smarty",  # Smart quotes
-                    "nl2br",  # Newlines to <br>
-                ],
-                output_format="html",
-            )
-        return self._md
+    def _build_markdown_instance(self) -> markdown.Markdown:
+        """Build a fresh ``markdown.Markdown`` instance with the project's extensions.
+
+        A new instance is built per render because ``md.toc`` / ``md.toc_tokens``
+        are instance-level side effects of ``convert()``. Reusing one instance
+        would force callers to read those attributes between renders with no
+        intervening ``convert()`` — a fragile coupling — and an unrelated future
+        caller could easily snapshot the wrong TOC. Build cost is sub-millisecond.
+        """
+        return markdown.Markdown(
+            extensions=[
+                "extra",  # Tables, footnotes, attr_list, etc.
+                FencedCodeExtension(),
+                CodeHiliteExtension(
+                    css_class="highlight",
+                    linenums=False,
+                    guess_lang=False,
+                    pygments_formatter=LabeledFormatter,
+                ),
+                TocExtension(permalink=False),
+                HeadingAnchorExtension(),
+                "smarty",  # Smart quotes
+                "nl2br",  # Newlines to <br>
+            ],
+            output_format="html",
+        )
 
     def parse_frontmatter(self, content: str) -> tuple[FrontMatter, str]:
         """
@@ -129,19 +133,29 @@ class MarkdownService:
         except yaml.YAMLError:
             return FrontMatter(), remaining_content
 
-    def render_markdown(self, content: str) -> str:
+    def render_markdown(self, content: str) -> tuple[str, str]:
         """
-        Render markdown content to HTML.
+        Render markdown content to HTML and extract its table of contents.
 
         Args:
             content: Markdown content (without frontmatter)
 
         Returns:
-            Rendered HTML string
+            Tuple of (rendered HTML, TOC HTML fragment). TOC is the ``<div class="toc">``
+            block emitted by python-markdown's ``TocExtension``. Returns an empty
+            string when the document has no headings — python-markdown otherwise
+            emits a non-empty wrapper around an empty ``<ul>``, which would defeat
+            ``{% if post.toc %}`` checks in templates.
         """
-        md = self._get_markdown_instance()
-        md.reset()
-        return md.convert(content)
+        md = self._build_markdown_instance()
+        html = md.convert(content)
+        # ``toc_tokens`` is python-markdown's official structured TOC API and
+        # is reliably empty for headingless content, unlike ``toc`` which
+        # always contains an outer wrapper div. ``getattr`` because both
+        # attributes are added dynamically by ``TocExtension`` (Pyright can't see them).
+        toc_tokens = getattr(md, "toc_tokens", None)
+        toc = getattr(md, "toc", "") if toc_tokens else ""
+        return html, toc
 
     def get_pygments_css(self) -> str:
         """Generate Pygments CSS for the configured style."""
@@ -160,7 +174,7 @@ class MarkdownService:
             Parsed Post object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
-        html = self.render_markdown(markdown_content)
+        html, toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "posts/2026-01-15-hello-world.md" -> "hello-world")
@@ -184,6 +198,7 @@ class MarkdownService:
             description=description,
             content=markdown_content,
             html=html,
+            toc=toc if frontmatter.toc else "",
             draft=frontmatter.draft,
             featured=frontmatter.featured,
             featured_order=frontmatter.featured_order,
@@ -205,7 +220,9 @@ class MarkdownService:
             Parsed Page object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
-        html = self.render_markdown(markdown_content)
+        # Pages don't carry a TOC by design — discard render_markdown's toc
+        # output so Page never gains a TOC field by accident.
+        html, _toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 
         # Extract slug from path (e.g., "pages/about.md" -> "about")

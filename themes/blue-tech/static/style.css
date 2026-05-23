@@ -446,6 +446,73 @@ img {
 }
 
 /* ============================================
+   Auto-generated table of contents
+   ============================================ */
+.post-toc {
+    margin: 1.5rem 0 2rem;
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.post-toc > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-accent, #3b82f6);
+    list-style: none;
+    user-select: none;
+    border-radius: 2px;
+}
+
+.post-toc > summary:focus-visible {
+    outline: 2px solid var(--color-accent, #3b82f6);
+    outline-offset: 3px;
+}
+
+/* Safari/WebKit ignore `list-style: none` on summary; need the vendor pseudo. */
+.post-toc > summary::-webkit-details-marker {
+    display: none;
+}
+
+.post-toc > summary::before {
+    content: "▸ ";
+    display: inline-block;
+    transition: transform 0.15s ease;
+    margin-right: 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .post-toc > summary::before {
+        transition: none;
+    }
+}
+
+.post-toc[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.post-toc ul {
+    margin: 0.75rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.post-toc li {
+    margin: 0.2rem 0;
+}
+
+.post-toc a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.post-toc a:hover {
+    color: var(--color-accent, #3b82f6);
+    text-decoration: underline;
+}
+
+/* ============================================
    Post/Page Content
    ============================================ */
 .post-content, .page-content {
@@ -467,6 +534,8 @@ img {
     margin-bottom: 1rem;
     line-height: 1.3;
     position: relative;
+    /* Clear the sticky nav (~60px) when a heading is targeted via anchor. */
+    scroll-margin-top: 5rem;
 }
 
 .post-content h1, .page-content h1 { font-size: 2rem; }
