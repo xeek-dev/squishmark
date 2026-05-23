@@ -332,15 +332,46 @@ async def test_get_csrf_idempotent_within_session():
 
 @pytest.mark.asyncio
 async def test_oauth_callback_rotates_csrf_token():
-    """Successful OAuth callback clears any prior CSRF token from the session."""
+    """A successful OAuth callback clears any prior CSRF token from the session.
+
+    Exercises ``oauth_callback`` end-to-end with mocked GitHub HTTP calls so a
+    regression that drops the rotation line will fail this test.
+    """
+    from squishmark.routers.auth import oauth_callback
     from squishmark.services.csrf import SESSION_KEY
 
-    # Simulate the rotation step in isolation — the surrounding OAuth flow is HTTP-heavy.
-    session = {SESSION_KEY: "stale-token", "user": {"login": "x"}}
-    session.pop(SESSION_KEY, None)
+    request = MagicMock()
+    request.session = {SESSION_KEY: "stale-pre-auth-token"}
+    request.url_for = MagicMock(return_value="http://localhost:8000/auth/callback")
 
-    assert SESSION_KEY not in session
-    assert session["user"] == {"login": "x"}
+    fake_settings = MagicMock(
+        debug=False,
+        dev_skip_auth=False,
+        secret_key="0123456789abcdef-rest",  # state validates against secret_key[:16]
+        github_client_id="cid",
+        github_client_secret="csecret",
+    )
+
+    token_response = MagicMock(status_code=200)
+    token_response.json = MagicMock(return_value={"access_token": "gho_test"})
+    user_response = MagicMock(status_code=200)
+    user_response.json = MagicMock(return_value={"login": "alice", "name": "Alice", "avatar_url": "u"})
+
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=token_response)
+    mock_client.get = AsyncMock(return_value=user_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with (
+        patch("squishmark.routers.auth.get_settings", return_value=fake_settings),
+        patch("squishmark.routers.auth.httpx.AsyncClient", return_value=mock_client),
+    ):
+        result = await oauth_callback(request=request, code="abc", state="0123456789abcdef")
+
+    assert result.status_code == 302
+    assert SESSION_KEY not in request.session
+    assert request.session["user"]["login"] == "alice"
 
 
 @pytest.mark.asyncio

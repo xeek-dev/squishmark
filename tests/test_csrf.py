@@ -1,10 +1,13 @@
 """Tests for CSRF token generation and verification."""
 
+import inspect
+from typing import get_args
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
 
+from squishmark.dependencies import get_current_admin
 from squishmark.services.csrf import (
     FORM_FIELD,
     HEADER_NAME,
@@ -12,6 +15,22 @@ from squishmark.services.csrf import (
     get_or_create_csrf_token,
     verify_csrf_token,
 )
+
+
+def test_verify_csrf_token_depends_on_get_current_admin():
+    """``verify_csrf_token`` must declare get_current_admin as a dependency.
+
+    This forces FastAPI to resolve auth BEFORE the CSRF check, so unauthenticated
+    HTMX requests get the 401 + HX-Redirect from auth instead of a misleading
+    403 for a CSRF token they couldn't have obtained.
+    """
+    sig = inspect.signature(verify_csrf_token)
+    admin_param = sig.parameters.get("admin")
+    assert admin_param is not None, "verify_csrf_token must accept 'admin' parameter"
+    # Annotation is Annotated[str, Depends(get_current_admin)]
+    depends_objs = [arg for arg in get_args(admin_param.annotation) if hasattr(arg, "dependency")]
+    assert depends_objs, "admin parameter must use Depends(...)"
+    assert depends_objs[0].dependency is get_current_admin
 
 
 def _request(
@@ -67,7 +86,7 @@ async def test_verify_csrf_token_accepts_matching_header():
     )
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
-        await verify_csrf_token(request)  # should not raise
+        await verify_csrf_token(request, admin="test-admin")  # should not raise
 
 
 @pytest.mark.asyncio
@@ -76,7 +95,7 @@ async def test_verify_csrf_token_rejects_missing_session_token():
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
         with pytest.raises(HTTPException) as exc:
-            await verify_csrf_token(request)
+            await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
     assert "missing" in str(exc.value.detail).lower()
@@ -88,7 +107,7 @@ async def test_verify_csrf_token_rejects_missing_submitted_token():
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
         with pytest.raises(HTTPException) as exc:
-            await verify_csrf_token(request)
+            await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
     assert "invalid" in str(exc.value.detail).lower()
@@ -103,7 +122,7 @@ async def test_verify_csrf_token_rejects_wrong_header():
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
         with pytest.raises(HTTPException) as exc:
-            await verify_csrf_token(request)
+            await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
 
@@ -118,7 +137,7 @@ async def test_verify_csrf_token_accepts_form_field_fallback():
     )
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
-        await verify_csrf_token(request)  # should not raise
+        await verify_csrf_token(request, admin="test-admin")  # should not raise
 
 
 @pytest.mark.asyncio
@@ -132,7 +151,7 @@ async def test_verify_csrf_token_header_takes_precedence_over_form():
     )
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
-        await verify_csrf_token(request)  # header wins, no raise
+        await verify_csrf_token(request, admin="test-admin")  # header wins, no raise
 
 
 @pytest.mark.asyncio
@@ -141,7 +160,7 @@ async def test_verify_csrf_token_bypassed_in_dev_skip_auth():
     request = _request()  # no session, no token — would normally fail
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=True, dev_skip_auth=True)
-        await verify_csrf_token(request)  # should not raise
+        await verify_csrf_token(request, admin="test-admin")  # should not raise
 
 
 @pytest.mark.asyncio
@@ -151,6 +170,6 @@ async def test_verify_csrf_token_not_bypassed_in_prod_mode():
     with patch("squishmark.services.csrf.get_settings") as mock_settings:
         mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=True)
         with pytest.raises(HTTPException) as exc:
-            await verify_csrf_token(request)
+            await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
