@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from squishmark.config import get_settings
+from squishmark.services.csrf import SESSION_KEY as CSRF_SESSION_KEY
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -117,7 +118,7 @@ async def oauth_callback(
         "avatar_url": user_data.get("avatar_url"),
     }
     # Rotate CSRF token on login so a stale pre-auth token can't be replayed.
-    request.session.pop("csrf_token", None)
+    request.session.pop(CSRF_SESSION_KEY, None)
 
     # Redirect to admin
     return RedirectResponse(url="/admin", status_code=302)

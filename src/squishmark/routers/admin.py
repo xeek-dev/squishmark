@@ -251,6 +251,14 @@ async def admin_dashboard(
     return HTMLResponse(content=html)
 
 
+# CSRF token endpoint (for JSON API callers that can't scrape the meta tag)
+@router.get("/csrf")
+async def get_csrf(request: Request, admin: AdminUser) -> dict[str, str]:
+    """Return the current CSRF token for use in subsequent mutation requests."""
+    del admin  # auth side-effect only
+    return {"csrf_token": get_or_create_csrf_token(request)}
+
+
 # Analytics endpoints
 @router.get("/analytics")
 async def get_analytics(

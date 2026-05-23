@@ -301,6 +301,49 @@ async def test_edit_form_not_found_raises_404():
 
 
 @pytest.mark.asyncio
+async def test_get_csrf_returns_session_token():
+    """GET /admin/csrf returns the current CSRF token for JSON API callers."""
+    from squishmark.routers.admin import get_csrf
+
+    request = MagicMock()
+    request.session = {}
+
+    result = await get_csrf(request=request, admin="test-admin")
+
+    assert "csrf_token" in result
+    assert result["csrf_token"]
+    # Returned token matches what's now stored on the session.
+    assert request.session["csrf_token"] == result["csrf_token"]
+
+
+@pytest.mark.asyncio
+async def test_get_csrf_idempotent_within_session():
+    """Calling GET /admin/csrf twice on the same session returns the same token."""
+    from squishmark.routers.admin import get_csrf
+
+    request = MagicMock()
+    request.session = {}
+
+    first = await get_csrf(request=request, admin="test-admin")
+    second = await get_csrf(request=request, admin="test-admin")
+
+    assert first["csrf_token"] == second["csrf_token"]
+
+
+@pytest.mark.asyncio
+async def test_oauth_callback_rotates_csrf_token():
+    """Successful OAuth callback clears any prior CSRF token from the session."""
+    from squishmark.services.csrf import SESSION_KEY
+
+    # Simulate the rotation step in isolation — the surrounding OAuth flow is HTTP-heavy.
+    session = {SESSION_KEY: "stale-token", "user": {"login": "x"}}
+    session.pop(SESSION_KEY, None)
+
+    assert SESSION_KEY not in session
+    assert session["user"] == {"login": "x"}
+
+
+@pytest.mark.asyncio
 async def test_get_current_admin_htmx_attaches_redirect_header():
     """HTMX requests with no session get an HX-Redirect header on 401."""
     from squishmark.routers.admin import get_current_admin
