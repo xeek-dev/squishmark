@@ -33,7 +33,14 @@ def get_or_create_csrf_token(request: Request) -> str:
 
 
 async def _extract_submitted_token(request: Request) -> str | None:
-    """Read the submitted CSRF token from header or form body."""
+    """Read the submitted CSRF token from header or form body.
+
+    For form requests we call ``request.form()``; Starlette caches the parsed
+    form on the request instance, so the route handler's subsequent
+    ``request.form()`` call is served from cache and does not re-read the body.
+    If Starlette ever stops caching, both paths still parse independently — but
+    we'd duplicate work, not lose data.
+    """
     header_token = request.headers.get(HEADER_NAME)
     if header_token:
         return header_token
@@ -67,10 +74,10 @@ async def verify_csrf_token(
         logger.warning("CSRF bypassed - dev_skip_auth is enabled")
         return
 
+    # Single error message regardless of which check fails — distinguishing
+    # "no session token" from "wrong submitted token" would tell an attacker
+    # whether they got a session to bind to.
     expected = request.session.get(SESSION_KEY) if hasattr(request, "session") else None
-    if not expected:
-        raise HTTPException(status_code=403, detail="CSRF token missing from session")
-
     submitted = await _extract_submitted_token(request)
-    if not submitted or not secrets.compare_digest(submitted, expected):
-        raise HTTPException(status_code=403, detail="CSRF token invalid")
+    if not expected or not submitted or not secrets.compare_digest(submitted, expected):
+        raise HTTPException(status_code=403, detail="CSRF validation failed")

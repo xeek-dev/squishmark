@@ -310,10 +310,9 @@ async def test_get_csrf_returns_session_token():
 
     result = await get_csrf(request=request, admin="test-admin")
 
-    assert "csrf_token" in result
-    assert result["csrf_token"]
+    assert result.csrf_token
     # Returned token matches what's now stored on the session.
-    assert request.session["csrf_token"] == result["csrf_token"]
+    assert request.session["csrf_token"] == result.csrf_token
 
 
 @pytest.mark.asyncio
@@ -327,7 +326,7 @@ async def test_get_csrf_idempotent_within_session():
     first = await get_csrf(request=request, admin="test-admin")
     second = await get_csrf(request=request, admin="test-admin")
 
-    assert first["csrf_token"] == second["csrf_token"]
+    assert first.csrf_token == second.csrf_token
 
 
 @pytest.mark.asyncio
@@ -373,11 +372,18 @@ async def test_oauth_callback_rotates_csrf_token():
     assert SESSION_KEY not in request.session
     assert request.session["user"]["login"] == "alice"
 
+    # And a fresh token mints on the next get_or_create call, distinct from the stale one.
+    from squishmark.services.csrf import get_or_create_csrf_token
+
+    new_token = get_or_create_csrf_token(request)
+    assert new_token
+    assert new_token != "stale-pre-auth-token"
+
 
 @pytest.mark.asyncio
 async def test_get_current_admin_htmx_attaches_redirect_header():
     """HTMX requests with no session get an HX-Redirect header on 401."""
-    from squishmark.routers.admin import get_current_admin
+    from squishmark.dependencies import get_current_admin
 
     request = MagicMock()
     request.session = {}
@@ -508,7 +514,7 @@ async def test_render_partial_restores_theme_on_render_exception():
 @pytest.mark.asyncio
 async def test_get_current_admin_non_htmx_omits_redirect_header():
     """Non-HTMX requests get a plain 401 with no HX-Redirect header."""
-    from squishmark.routers.admin import get_current_admin
+    from squishmark.dependencies import get_current_admin
 
     request = MagicMock()
     request.session = {}

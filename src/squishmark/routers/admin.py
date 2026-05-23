@@ -10,7 +10,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
-from squishmark.dependencies import AdminUser, get_current_admin, is_htmx
+from squishmark.dependencies import AdminUser, is_htmx
 from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
@@ -19,9 +19,6 @@ from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
-
-# Re-exported here for tests/callers that still import these from this module.
-__all__ = ["router", "get_current_admin", "AdminUser"]
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +60,12 @@ class CacheRefreshResponse(BaseModel):
     cleared: int
     warmed: int
     duration_ms: float
+
+
+class CSRFTokenResponse(BaseModel):
+    """Response body for the CSRF token endpoint."""
+
+    csrf_token: str
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
@@ -219,10 +222,10 @@ async def admin_dashboard(
 
 # CSRF token endpoint (for JSON API callers that can't scrape the meta tag)
 @router.get("/csrf")
-async def get_csrf(request: Request, admin: AdminUser) -> dict[str, str]:
+async def get_csrf(request: Request, admin: AdminUser) -> CSRFTokenResponse:
     """Return the current CSRF token for use in subsequent mutation requests."""
     del admin  # auth side-effect only
-    return {"csrf_token": get_or_create_csrf_token(request)}
+    return CSRFTokenResponse(csrf_token=get_or_create_csrf_token(request))
 
 
 # Analytics endpoints

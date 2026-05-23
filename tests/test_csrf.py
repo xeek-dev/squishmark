@@ -98,7 +98,6 @@ async def test_verify_csrf_token_rejects_missing_session_token():
             await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
-    assert "missing" in str(exc.value.detail).lower()
 
 
 @pytest.mark.asyncio
@@ -110,7 +109,21 @@ async def test_verify_csrf_token_rejects_missing_submitted_token():
             await verify_csrf_token(request, admin="test-admin")
 
     assert exc.value.status_code == 403
-    assert "invalid" in str(exc.value.detail).lower()
+
+
+@pytest.mark.asyncio
+async def test_verify_csrf_token_error_message_is_generic():
+    """The error detail must not leak which check (session vs submitted) failed."""
+    request_no_session = _request(session={}, header_token="anything")
+    request_no_submission = _request(session={SESSION_KEY: "good-token"})
+    with patch("squishmark.services.csrf.get_settings") as mock_settings:
+        mock_settings.return_value = MagicMock(debug=False, dev_skip_auth=False)
+        with pytest.raises(HTTPException) as exc_a:
+            await verify_csrf_token(request_no_session, admin="x")
+        with pytest.raises(HTTPException) as exc_b:
+            await verify_csrf_token(request_no_submission, admin="x")
+
+    assert exc_a.value.detail == exc_b.value.detail
 
 
 @pytest.mark.asyncio
