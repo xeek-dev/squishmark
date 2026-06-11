@@ -1,7 +1,5 @@
 """Routes for blog posts."""
 
-import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from squishmark.dependencies import is_admin
 from squishmark.models.content import Config, Pagination
 from squishmark.models.db import get_db_session
-from squishmark.services.content import get_all_posts, get_featured_posts
+from squishmark.services.content import build_series_context, get_all_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.notes import NotesService
@@ -98,34 +96,9 @@ async def get_post(
     # Featured posts for template context
     featured = get_featured_posts(all_posts, config.site)
 
-    # Build series navigation context if this post belongs to a series.
-    # all_posts is already draft-gated by include_drafts, so drafts are
-    # automatically excluded for non-admins.
-    series_posts: list | None = None
-    series_prev = None
-    series_next = None
-    series_index: int | None = None
-    series_total: int | None = None
-    if post.series:
-        series_posts = sorted(
-            (p for p in all_posts if p.series == post.series),
-            key=lambda p: (
-                p.series_order is None,
-                p.series_order if p.series_order is not None else 0,
-                p.date or datetime.date.min,
-            ),
-        )
-        series_total = len(series_posts)
-        current_idx = next(
-            (i for i, p in enumerate(series_posts) if p.slug == post.slug),
-            None,
-        )
-        if current_idx is not None:
-            series_index = current_idx + 1
-            if current_idx > 0:
-                series_prev = series_posts[current_idx - 1]
-            if current_idx < len(series_posts) - 1:
-                series_next = series_posts[current_idx + 1]
+    # Series navigation context. all_posts is already draft-gated by
+    # include_drafts, so drafts are automatically excluded for non-admins.
+    series_context = build_series_context(post, all_posts)
 
     # Render
     theme_engine = await get_theme_engine(github_service)
@@ -134,11 +107,7 @@ async def get_post(
         post,
         notes,
         featured_posts=featured,
-        series_posts=series_posts,
-        series_prev=series_prev,
-        series_next=series_next,
-        series_index=series_index,
-        series_total=series_total,
+        **series_context,
     )
 
     return HTMLResponse(content=html)

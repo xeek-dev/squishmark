@@ -453,13 +453,14 @@ img {
     text-align: left;
 }
 
+/* No text-transform here: the "// series:" prefix is already lowercase in the
+   template, and the user's series name must keep its original casing. */
 .post-series-label {
     color: var(--color-green);
     font-weight: 600;
     margin-bottom: 0.6rem;
     letter-spacing: 0.03em;
     font-size: 0.8rem;
-    text-transform: lowercase;
 }
 
 .post-series-list {

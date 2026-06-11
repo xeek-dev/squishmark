@@ -9,54 +9,12 @@ import datetime
 import pytest
 
 from squishmark.models.content import FrontMatter, Post
-from squishmark.services.content import get_all_posts
+from squishmark.services.content import build_series_context, get_all_posts
 from squishmark.services.markdown import MarkdownService
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _series_context(post: Post, all_posts: list[Post]) -> dict:
-    """Replicate the router's series-context computation.
-
-    Kept in lockstep with ``get_post`` in routers/posts.py. ``all_posts`` is
-    assumed already draft-gated by the caller.
-    """
-    if not post.series:
-        return {
-            "series_posts": None,
-            "series_prev": None,
-            "series_next": None,
-            "series_index": None,
-            "series_total": None,
-        }
-    series_posts = sorted(
-        (p for p in all_posts if p.series == post.series),
-        key=lambda p: (
-            p.series_order is None,
-            p.series_order if p.series_order is not None else 0,
-            p.date or datetime.date.min,
-        ),
-    )
-    total = len(series_posts)
-    idx = next((i for i, p in enumerate(series_posts) if p.slug == post.slug), None)
-    prev_post = None
-    next_post = None
-    index = None
-    if idx is not None:
-        index = idx + 1
-        if idx > 0:
-            prev_post = series_posts[idx - 1]
-        if idx < len(series_posts) - 1:
-            next_post = series_posts[idx + 1]
-    return {
-        "series_posts": series_posts,
-        "series_prev": prev_post,
-        "series_next": next_post,
-        "series_index": index,
-        "series_total": total,
-    }
 
 
 def _post(slug: str, *, series: str | None = None, series_order=None, date=None) -> Post:
@@ -117,6 +75,34 @@ class TestFrontMatterSeries:
         fm = FrontMatter(series="S", series_order=2.0)
         assert fm.series_order == 2
 
+    def test_series_order_nan_float(self):
+        """float('nan') must coerce to None, not raise ValueError."""
+        fm = FrontMatter(series="S", series_order=float("nan"))
+        assert fm.series_order is None
+
+    def test_series_order_inf_float(self):
+        """float('inf') / float('-inf') must coerce to None, not raise OverflowError."""
+        fm = FrontMatter(series="S", series_order=float("inf"))
+        assert fm.series_order is None
+        fm = FrontMatter(series="S", series_order=float("-inf"))
+        assert fm.series_order is None
+
+    def test_parse_post_yaml_nan_series_order_does_not_raise(self):
+        """YAML `.nan` parses to float('nan') and must coerce to None."""
+        md = MarkdownService()
+        content = "---\ntitle: T\nseries: My Series\nseries_order: .nan\n---\nBody"
+        post = md.parse_post("posts/2026-01-01-t.md", content)
+        assert post.series == "My Series"
+        assert post.series_order is None
+
+    def test_parse_post_yaml_inf_series_order_does_not_raise(self):
+        """YAML `.inf` parses to float('inf') and must coerce to None."""
+        md = MarkdownService()
+        content = "---\ntitle: T\nseries: My Series\nseries_order: .inf\n---\nBody"
+        post = md.parse_post("posts/2026-01-01-t.md", content)
+        assert post.series == "My Series"
+        assert post.series_order is None
+
     def test_parse_post_threads_series(self):
         md = MarkdownService()
         content = "---\ntitle: T\nseries: My Series\nseries_order: 1\n---\nBody"
@@ -152,7 +138,7 @@ class TestSeriesSorting:
             _post("a", series="S", series_order=1),
             _post("b", series="S", series_order=2),
         ]
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert [p.slug for p in ctx["series_posts"]] == ["a", "b", "c"]
 
     def test_date_tiebreak_when_same_order(self):
@@ -160,7 +146,7 @@ class TestSeriesSorting:
             _post("late", series="S", series_order=1, date=datetime.date(2026, 2, 1)),
             _post("early", series="S", series_order=1, date=datetime.date(2026, 1, 1)),
         ]
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert [p.slug for p in ctx["series_posts"]] == ["early", "late"]
 
     def test_none_order_sorts_last(self):
@@ -168,7 +154,7 @@ class TestSeriesSorting:
             _post("unordered", series="S", series_order=None, date=datetime.date(2026, 1, 1)),
             _post("first", series="S", series_order=1, date=datetime.date(2026, 5, 1)),
         ]
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert [p.slug for p in ctx["series_posts"]] == ["first", "unordered"]
 
     def test_only_same_series_included(self):
@@ -177,7 +163,7 @@ class TestSeriesSorting:
             _post("other", series="Different", series_order=1),
             _post("b", series="S", series_order=2),
         ]
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert [p.slug for p in ctx["series_posts"]] == ["a", "b"]
 
 
@@ -198,7 +184,7 @@ class TestSeriesNavigation:
 
     def test_first_post_has_no_prev(self):
         posts = self._three()
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert ctx["series_prev"] is None
         assert ctx["series_next"].slug == "p2"
         assert ctx["series_index"] == 1
@@ -206,21 +192,21 @@ class TestSeriesNavigation:
 
     def test_middle_post_has_both(self):
         posts = self._three()
-        ctx = _series_context(posts[1], posts)
+        ctx = build_series_context(posts[1], posts)
         assert ctx["series_prev"].slug == "p1"
         assert ctx["series_next"].slug == "p3"
         assert ctx["series_index"] == 2
 
     def test_last_post_has_no_next(self):
         posts = self._three()
-        ctx = _series_context(posts[2], posts)
+        ctx = build_series_context(posts[2], posts)
         assert ctx["series_prev"].slug == "p2"
         assert ctx["series_next"] is None
         assert ctx["series_index"] == 3
 
     def test_post_without_series_has_no_context(self):
         posts = [_post("solo")]
-        ctx = _series_context(posts[0], posts)
+        ctx = build_series_context(posts[0], posts)
         assert ctx["series_posts"] is None
         assert ctx["series_prev"] is None
         assert ctx["series_next"] is None
@@ -257,7 +243,7 @@ class TestSeriesDraftGating:
         md = MarkdownService()
         all_posts = await get_all_posts(self._mock_github(), md, include_drafts=False)
         current = next(p for p in all_posts if p.slug == "p1")
-        ctx = _series_context(current, all_posts)
+        ctx = build_series_context(current, all_posts)
         slugs = [p.slug for p in ctx["series_posts"]]
         assert slugs == ["p1", "p3"]
         assert ctx["series_total"] == 2
@@ -269,7 +255,7 @@ class TestSeriesDraftGating:
         md = MarkdownService()
         all_posts = await get_all_posts(self._mock_github(), md, include_drafts=True)
         current = next(p for p in all_posts if p.slug == "p1")
-        ctx = _series_context(current, all_posts)
+        ctx = build_series_context(current, all_posts)
         slugs = [p.slug for p in ctx["series_posts"]]
         assert slugs == ["p1", "p2", "p3"]
         assert ctx["series_total"] == 3

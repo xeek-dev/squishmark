@@ -34,7 +34,7 @@
 
 ## Series context (post.html only)
 
-Present only when the post belongs to a series. Guard rendering with `{% if post.series %}` and treat the rest defensively. All sort by `series_order` (nulls last), then date.
+These five variables are **always present** in the post-template context, but they are all `None` when the post does not belong to a series. Theme authors must therefore guard rendering with `{% if post.series %}` and treat the individual variables defensively. Lists sort by `series_order` (nulls last), then date.
 
 | Variable | Type | Description |
 |----------|------|-------------|

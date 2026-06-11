@@ -1,6 +1,7 @@
 """Pydantic models for content (posts, pages, config)."""
 
 import datetime
+import math
 import re
 from typing import Any, Literal
 
@@ -75,7 +76,9 @@ class FrontMatter(BaseModel):
         if isinstance(v, int):
             return v
         if isinstance(v, float):
-            return int(v)
+            # YAML parses `.nan` / `.inf` to non-finite floats; int() on those
+            # raises (ValueError/OverflowError) — treat them as garbage.
+            return int(v) if math.isfinite(v) else None
         if isinstance(v, str):
             stripped = v.strip()
             try:
