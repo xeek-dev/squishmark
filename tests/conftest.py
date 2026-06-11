@@ -298,9 +298,10 @@ def seeded_client() -> Iterator[Callable[[dict[str, Any]], TestClient]]:
 
         test_client = TestClient(app, base_url="https://testserver")
         test_client.__enter__()
+        # Track immediately so teardown closes the client even if seeding fails.
+        clients.append(test_client)
         resp = test_client.get(_SEED_ROUTE)
         assert resp.status_code == 200, resp.text
-        clients.append(test_client)
         return test_client
 
     yield _make
