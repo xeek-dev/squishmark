@@ -1,6 +1,7 @@
 # SquishMark
 
 [![CI](https://github.com/xeek-dev/squishmark/actions/workflows/ci.yml/badge.svg)](https://github.com/xeek-dev/squishmark/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xeek-dev/squishmark)](https://github.com/xeek-dev/squishmark/releases)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)

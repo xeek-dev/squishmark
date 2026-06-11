@@ -1,0 +1,46 @@
+# Release Please — automated versioning, CHANGELOG, and GitHub releases.
+#
+# On every push to main, opens/updates a "chore(main): release X.Y.Z" PR that
+# bumps `version` in pyproject.toml and updates CHANGELOG.md. Merging that PR
+# creates the git tag (v{X.Y.Z} format) and the GitHub release.
+#
+# Token: prefers the RELEASE_PLEASE_TOKEN secret — a fine-grained PAT with
+# Contents and Pull requests read/write on this repo. It falls back to the
+# default GITHUB_TOKEN, but PRs created with GITHUB_TOKEN do not trigger other
+# workflows, so the release PR's required checks (check-commits, lint, test,
+# typecheck, docker) never run and it cannot merge until the PAT is configured.
+#
+# Downstream consumers (e.g. a future workflow mirroring releases to the
+# content repo) should rely on these job outputs, which are stable:
+#   release_created — "true" when merging the release PR cut a release
+#   tag_name        — the created tag, v{X.Y.Z} format
+#   version         — the bare semantic version, X.Y.Z
+#   body            — the release notes (CHANGELOG section)
+#   upload_url      — URL for attaching release artifacts
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+      body: ${{ steps.release.outputs.body }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
