@@ -44,6 +44,21 @@
     </aside>
     {% endif %}
 
+    {% if post.series %}
+    <details class="post-series" open>
+        <summary>{{ post.series }}{% if series_index and series_total %} &middot; Part {{ series_index }} of {{ series_total }}{% endif %}</summary>
+        <ol class="post-series-list">
+            {% for p in series_posts %}
+            {% if p.slug == post.slug %}
+            <li class="post-series-current" aria-current="true">{{ p.title }}</li>
+            {% else %}
+            <li><a href="{{ p.url }}">{{ p.title }}</a></li>
+            {% endif %}
+            {% endfor %}
+        </ol>
+    </details>
+    {% endif %}
+
     {% if post.toc %}
     <details class="post-toc">
         <summary>Contents</summary>
@@ -56,6 +71,16 @@
     </div>
 
     <footer class="post-footer">
+        {% if post.series and (series_prev or series_next) %}
+        <nav class="post-series-nav" aria-label="Series navigation">
+            {% if series_prev %}
+            <a href="{{ series_prev.url }}" class="post-series-link post-series-prev">&larr; {{ series_prev.title }}</a>
+            {% endif %}
+            {% if series_next %}
+            <a href="{{ series_next.url }}" class="post-series-link post-series-next">{{ series_next.title }} &rarr;</a>
+            {% endif %}
+        </nav>
+        {% endif %}
         <a href="/posts" class="back-link">&larr; Back to posts</a>
     </footer>
 </article>

@@ -27,6 +27,8 @@ class FrontMatter(BaseModel):
     visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
     toc: bool = True  # Per-post opt-out for auto-generated table of contents
+    series: str | None = None  # Series/collection name this post belongs to
+    series_order: int | None = None  # Position within the series (lower = first)
 
     # Allow extra fields for extensibility
     model_config = {"extra": "allow"}
@@ -55,6 +57,33 @@ class FrontMatter(BaseModel):
                 return False
         return True  # unrecognized type/value — fall back to default
 
+    @field_validator("series_order", mode="before")
+    @classmethod
+    def _coerce_series_order(cls, v: Any) -> Any:
+        """Coerce null / empty / malformed values to None.
+
+        YAML allows ``series_order: null``, ``series_order:`` (empty), and
+        arbitrary strings. Pydantic's strict int parser rejects non-numeric
+        strings with ValidationError, which would crash the post-loading path
+        (a 500) for a stylistic frontmatter field. Treat anything that isn't a
+        clean integer as "unordered" (None) and move on.
+        """
+        if v is None or v == "":
+            return None
+        if isinstance(v, bool):
+            return None  # bool is an int subclass; reject True/False as garbage
+        if isinstance(v, int):
+            return v
+        if isinstance(v, float):
+            return int(v)
+        if isinstance(v, str):
+            stripped = v.strip()
+            try:
+                return int(stripped)
+            except ValueError:
+                return None
+        return None  # unrecognized type/value — treat as unordered
+
 
 class Post(BaseModel):
     """A blog post with parsed content."""
@@ -74,6 +103,8 @@ class Post(BaseModel):
     theme: str | None = None  # Per-page theme override
     author: str | None = None  # Per-post author override
     image: str | None = None  # Featured image URL (used for og:image)
+    series: str | None = None  # Series/collection name this post belongs to
+    series_order: int | None = None  # Position within the series (lower = first)
 
     @property
     def url(self) -> str:

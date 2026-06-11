@@ -230,6 +230,11 @@ class ThemeEngine:
         notes: list[Any] | None = None,
         theme_override: str | None = None,
         featured_posts: list[Post] | None = None,
+        series_posts: list[Post] | None = None,
+        series_prev: Post | None = None,
+        series_next: Post | None = None,
+        series_index: int | None = None,
+        series_total: int | None = None,
     ) -> str:
         """Render a single post page."""
         template_name = post.template or "post.html"
@@ -242,6 +247,11 @@ class ThemeEngine:
             post=post,
             notes=notes or [],
             featured_posts=featured_posts or [],
+            series_posts=series_posts,
+            series_prev=series_prev,
+            series_next=series_next,
+            series_index=series_index,
+            series_total=series_total,
         )
 
     async def render_page(
