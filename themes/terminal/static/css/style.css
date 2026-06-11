@@ -440,6 +440,87 @@ img {
     }
 }
 
+/* Post series box — inline within the article (unlike the fixed TOC card). */
+.post-series {
+    margin: 0 0 2.5rem;
+    padding: 1rem 1.1rem;
+    background: var(--color-bg-card);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    text-align: left;
+}
+
+/* No text-transform here: the "// series:" prefix is already lowercase in the
+   template, and the user's series name must keep its original casing. */
+.post-series-label {
+    color: var(--color-green);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    letter-spacing: 0.03em;
+    font-size: 0.8rem;
+}
+
+.post-series-list {
+    margin: 0;
+    padding-left: 1rem;
+    list-style: none;
+    counter-reset: series;
+}
+
+.post-series-list li {
+    margin: 0.15rem 0;
+    position: relative;
+    counter-increment: series;
+}
+
+.post-series-list li::before {
+    content: counter(series) ".";
+    color: var(--color-blue);
+    margin-right: 0.4rem;
+}
+
+.post-series-list a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.post-series-list a:hover {
+    color: var(--color-green);
+    text-decoration: underline;
+}
+
+.post-series-current {
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.post-series-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.post-series-link {
+    color: var(--color-blue);
+    text-decoration: none;
+}
+
+.post-series-link:hover {
+    color: var(--color-green);
+    text-decoration: underline;
+}
+
+.post-series-next {
+    margin-left: auto;
+    text-align: right;
+}
+
 .post-header, .page-header {
     text-align: center;
     margin-bottom: 3rem;

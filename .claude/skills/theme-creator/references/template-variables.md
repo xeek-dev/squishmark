@@ -17,7 +17,7 @@
 | Template | Additional Variables |
 |----------|---------------------|
 | `index.html` | `posts` (list[Post]), `pagination` (Pagination), `notes` (list) |
-| `post.html` | `post` (Post), `notes` (list) |
+| `post.html` | `post` (Post), `notes` (list), series context (see below) |
 | `page.html` | `page` (Page), `notes` (list) |
 | `404.html` | Global context only |
 | `admin/admin.html` | `user` (dict), `analytics` (dict), `notes` (list[NoteResponse]), `cache_size` (int) |
@@ -29,3 +29,17 @@
 - `post.toc` — auto-generated table-of-contents HTML (a `<div class="toc">` wrapping a nested `<ul>`). Empty string when the post has no headings, or when the post sets `toc: false` in frontmatter. Themes opt in to render it; the three bundled themes show three different treatments (inline card, `<details>` collapsible, floating sidebar) — use them as references.
 - `post.reading_time` — string like `"3 min read"`.
 - `post.url` — canonical URL path (`/posts/<slug>`).
+- `post.series` — series/collection name from frontmatter (`series: "My Series"`), or `None`. Posts sharing the same (case-sensitive) name are grouped into an ordered series.
+- `post.series_order` — integer position within the series from frontmatter (`series_order: 2`); lower sorts first, `None`/unordered sorts last (date breaks ties). Malformed values coerce to `None`.
+
+## Series context (post.html only)
+
+These five variables are **always present** in the post-template context, but they are all `None` when the post does not belong to a series. Theme authors must therefore guard rendering with `{% if post.series %}` and treat the individual variables defensively. Lists sort by `series_order` (nulls last), then date.
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `series_posts` | `list[Post] \| None` | All posts in the series, ordered. Drafts are included only for admins. |
+| `series_index` | `int \| None` | 1-based position of the current post in the series. |
+| `series_total` | `int \| None` | Total number of posts in the series. |
+| `series_prev` | `Post \| None` | Previous post in the series (`None` on the first post). |
+| `series_next` | `Post \| None` | Next post in the series (`None` on the last post). |

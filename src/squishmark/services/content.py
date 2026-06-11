@@ -1,5 +1,8 @@
 """Shared content helpers for fetching and filtering posts and pages."""
 
+import datetime
+from typing import Any
+
 from squishmark.models.content import Page, Post, SiteConfig
 from squishmark.services.github import GitHubService
 from squishmark.services.markdown import MarkdownService
@@ -51,6 +54,54 @@ def get_featured_posts(posts: list[Post], site_config: SiteConfig) -> list[Post]
         ),
     )
     return featured[: site_config.featured_max]
+
+
+def build_series_context(post: Post, all_posts: list[Post]) -> dict[str, Any]:
+    """Build the series-navigation template context for a post.
+
+    Returns a dict whose keys match ``ThemeEngine.render_post``'s series
+    kwargs (``series_posts``, ``series_prev``, ``series_next``,
+    ``series_index``, ``series_total``) so callers can splat it directly.
+    All values are None when the post does not belong to a series.
+
+    ``all_posts`` is expected to be already draft-gated by the caller
+    (``get_all_posts(..., include_drafts=...)``), so drafts are excluded
+    from series navigation for non-admins automatically.
+
+    Series posts sort by ``series_order`` ascending (nulls last), then date.
+    """
+    series_posts: list[Post] | None = None
+    series_prev: Post | None = None
+    series_next: Post | None = None
+    series_index: int | None = None
+    series_total: int | None = None
+    if post.series:
+        series_posts = sorted(
+            (p for p in all_posts if p.series == post.series),
+            key=lambda p: (
+                p.series_order is None,
+                p.series_order if p.series_order is not None else 0,
+                p.date or datetime.date.min,
+            ),
+        )
+        series_total = len(series_posts)
+        current_idx = next(
+            (i for i, p in enumerate(series_posts) if p.slug == post.slug),
+            None,
+        )
+        if current_idx is not None:
+            series_index = current_idx + 1
+            if current_idx > 0:
+                series_prev = series_posts[current_idx - 1]
+            if current_idx < len(series_posts) - 1:
+                series_next = series_posts[current_idx + 1]
+    return {
+        "series_posts": series_posts,
+        "series_prev": series_prev,
+        "series_next": series_next,
+        "series_index": series_index,
+        "series_total": series_total,
+    }
 
 
 async def get_all_pages(

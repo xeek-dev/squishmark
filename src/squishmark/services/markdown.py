@@ -206,6 +206,8 @@ class MarkdownService:
             theme=frontmatter.theme,
             author=frontmatter.author,
             image=frontmatter.image,
+            series=frontmatter.series,
+            series_order=frontmatter.series_order,
         )
 
     def parse_page(self, path: str, content: str) -> Page:
