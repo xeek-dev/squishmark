@@ -49,7 +49,7 @@ def _read_registry() -> list[dict]:
         if not isinstance(servers, list):
             return []
         return servers
-    except (json.JSONDecodeError, TypeError, AttributeError):
+    except json.JSONDecodeError, TypeError, AttributeError:
         return []
 
 
@@ -115,7 +115,7 @@ def _kill_registered_pid(pid: int, servers: list[dict] | None = None) -> bool:
         else:
             os.kill(pid, signal.SIGTERM)
             return True
-    except (ProcessLookupError, PermissionError, OSError):
+    except ProcessLookupError, PermissionError, OSError:
         return False
 
 
