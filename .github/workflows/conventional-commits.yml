@@ -40,10 +40,8 @@ jobs:
           # Disable validation for merge commits
           ignoreLabels: |
             ignore-conventional-commits
-          # Configure validation
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            should start with a lowercase letter.
+          # No subjectPattern: any casing after the type(scope) prefix is fine.
+          # Dependabot titles its PRs "chore(deps): Bump ..." (capital B, not
+          # configurable), and we accept that style for human PRs too.
           # Whether the PR title should match the commit message format
           validateSingleCommit: false
