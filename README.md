@@ -247,6 +247,10 @@ python scripts/start-dev.py -b  # run in background (prints PID)
 docker compose up --build
 ```
 
+### Dependency Updates
+
+Dependency updates are automated weekly via [Dependabot](.github/dependabot.yml) across pip, GitHub Actions, and Docker, with minor and patch bumps grouped into a single PR per ecosystem.
+
 ## Tech Stack
 
 - **Python 3.14+** with FastAPI
