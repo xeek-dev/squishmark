@@ -30,6 +30,6 @@ async def search(request: Request, q: str = Query("", max_length=200)) -> JSONRe
         results = [r.model_dump(mode="json") for r in search_index(query, index, limit=DEFAULT_LIMIT)]
 
     return JSONResponse(
-        content={"query": q, "results": results},
+        content={"query": query, "results": results},
         headers={"Cache-Control": "no-store"},
     )

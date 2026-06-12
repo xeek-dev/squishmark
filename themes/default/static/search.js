@@ -67,10 +67,12 @@
             var opts = options();
             if (activeIndex >= 0 && opts[activeIndex]) {
                 opts[activeIndex].classList.remove('is-active');
+                opts[activeIndex].setAttribute('aria-selected', 'false');
             }
             activeIndex = index;
             if (index >= 0 && opts[index]) {
                 opts[index].classList.add('is-active');
+                opts[index].setAttribute('aria-selected', 'true');
                 input.setAttribute('aria-activedescendant', opts[index].id);
                 opts[index].scrollIntoView({ block: 'nearest' });
             } else {
@@ -87,6 +89,7 @@
             results.forEach(function (result, i) {
                 var item = document.createElement('li');
                 item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', 'false');
                 item.id = 'search-opt-' + i;
 
                 var link = document.createElement('a');
