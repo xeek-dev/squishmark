@@ -1,0 +1,182 @@
+"""Server-side post search: tokenization, indexing, and scoring.
+
+Pure and synchronous so the scoring logic is directly unit-testable
+(mirrors ``build_series_context`` in services/content.py). Draft gating is
+the caller's responsibility: index the post list appropriate for the
+audience (``get_all_posts(include_drafts=...)``); the scorer itself never
+filters drafts.
+"""
+
+import datetime
+import re
+from dataclasses import dataclass
+
+from pydantic import BaseModel
+
+from squishmark.models.content import Config, Post
+from squishmark.services.cache import get_cache
+from squishmark.services.content import get_all_posts
+from squishmark.services.github import get_github_service
+from squishmark.services.markdown import get_markdown_service
+
+MIN_QUERY_LENGTH = 2
+DEFAULT_LIMIT = 8
+
+# Audience-separated cache keys. The "all" index includes drafts and must
+# only ever be read for admin requests — sharing one key would leak draft
+# titles/excerpts to anonymous visitors. /search responses themselves are
+# never cached for the same reason.
+SEARCH_INDEX_PUBLISHED_KEY = "search:index:published"
+SEARCH_INDEX_ALL_KEY = "search:index:all"
+
+_WORD_RE = re.compile(r"[a-z0-9]+")
+
+# Presence-based weights per (field, tier). Exact beats prefix within a
+# field; title beats tags beats description beats body across fields. No
+# term frequency — long bodies must not outrank a title hit.
+_WEIGHTS = {
+    "title": (12, 8),
+    "tags": (10, 6),
+    "description": (5, 3),
+    "body": (2, 1),
+}
+
+
+def tokenize(text: str) -> set[str]:
+    """Lowercase and split text into a set of word tokens.
+
+    Splits on anything outside [a-z0-9], so hyphenated and punctuated
+    terms match their parts ("blue-tech" -> {"blue", "tech"}).
+    """
+    return set(_WORD_RE.findall(text.lower()))
+
+
+class SearchResult(BaseModel):
+    """One search hit, shaped for the /search JSON response."""
+
+    title: str
+    url: str
+    date: datetime.date | None
+    tags: list[str]
+    excerpt: str
+    draft: bool
+
+
+@dataclass(frozen=True)
+class IndexedPost:
+    """A post pre-tokenized per field, with its result payload prebuilt."""
+
+    result: SearchResult
+    title_tokens: frozenset[str]
+    tag_tokens: frozenset[str]
+    description_tokens: frozenset[str]
+    body_tokens: frozenset[str]
+
+
+def build_search_index(posts: list[Post]) -> list[IndexedPost]:
+    """Tokenize posts once so per-query scoring is set lookups only."""
+    index: list[IndexedPost] = []
+    for post in posts:
+        index.append(
+            IndexedPost(
+                result=SearchResult(
+                    title=post.title,
+                    url=post.url,
+                    date=post.date,
+                    tags=post.tags,
+                    excerpt=post.description,
+                    draft=post.draft,
+                ),
+                title_tokens=frozenset(tokenize(post.title)),
+                tag_tokens=frozenset(tokenize(" ".join(post.tags))),
+                description_tokens=frozenset(tokenize(post.description)),
+                body_tokens=frozenset(tokenize(post.content)),
+            )
+        )
+    return index
+
+
+def _field_score(query_token: str, field_tokens: frozenset[str], exact_weight: int, prefix_weight: int) -> int:
+    """Score one query token against one field: exact tier wins over prefix."""
+    if query_token in field_tokens:
+        return exact_weight
+    if any(token.startswith(query_token) for token in field_tokens):
+        return prefix_weight
+    return 0
+
+
+def _score_post(query_tokens: list[str], indexed: IndexedPost) -> int:
+    """Sum field scores per query token; 0 when any token matches nothing (AND)."""
+    fields = (
+        (indexed.title_tokens, *_WEIGHTS["title"]),
+        (indexed.tag_tokens, *_WEIGHTS["tags"]),
+        (indexed.description_tokens, *_WEIGHTS["description"]),
+        (indexed.body_tokens, *_WEIGHTS["body"]),
+    )
+    total = 0
+    for query_token in query_tokens:
+        token_score = sum(
+            _field_score(query_token, field_tokens, exact, prefix) for field_tokens, exact, prefix in fields
+        )
+        if token_score == 0:
+            return 0
+        total += token_score
+    return total
+
+
+def search_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
+    """Rank indexed posts against the query; top ``limit`` results.
+
+    Every query token must match somewhere (exact or prefix) for a post to
+    qualify. Ties break by date descending, dateless posts last.
+    """
+    if len(query.strip()) < MIN_QUERY_LENGTH:
+        return []
+    query_tokens = sorted(tokenize(query))
+    if not query_tokens:
+        return []
+
+    scored = [(score, indexed) for indexed in index if (score := _score_post(query_tokens, indexed)) > 0]
+    scored.sort(
+        key=lambda pair: (
+            -pair[0],
+            pair[1].result.date is None,
+            -(pair[1].result.date.toordinal() if pair[1].result.date else 0),
+        ),
+    )
+    return [indexed.result for _, indexed in scored[:limit]]
+
+
+def search_posts(query: str, posts: list[Post], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
+    """Convenience: build an index and search it in one call."""
+    return search_index(query, build_search_index(posts), limit)
+
+
+async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
+    """Return the cached index for the audience, building it on miss.
+
+    Building is the expensive part (get_all_posts re-parses every post's
+    markdown); the index inherits the cache's TTL and is invalidated by
+    the webhook's cache.clear() like every other derived blob.
+    """
+    cache = get_cache()
+    key = SEARCH_INDEX_ALL_KEY if include_drafts else SEARCH_INDEX_PUBLISHED_KEY
+    cached = await cache.get(key)
+    if cached is not None:
+        return cached
+
+    github_service = get_github_service()
+    config_data = await github_service.get_config()
+    config = Config.from_dict(config_data)
+    markdown_service = get_markdown_service(config)
+    posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+
+    index = build_search_index(posts)
+    await cache.set(key, index)
+    return index
+
+
+async def warm_search_indexes() -> None:
+    """Pre-build both audience index variants (used by the webhook warm)."""
+    await get_search_index(include_drafts=False)
+    await get_search_index(include_drafts=True)
