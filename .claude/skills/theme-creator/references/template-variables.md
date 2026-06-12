@@ -43,3 +43,18 @@ These five variables are **always present** in the post-template context, but th
 | `series_total` | `int \| None` | Total number of posts in the series. |
 | `series_prev` | `Post \| None` | Previous post in the series (`None` on the first post). |
 | `series_next` | `Post \| None` | Next post in the series (`None` on the last post). |
+
+## Search component
+
+Navbar search is a shared partial + shared JS, adopted per theme:
+
+```jinja2
+{% set search_mode = "button" %}   {# or "input" #}
+{% include "_search.html" %}
+```
+
+- `button` mode: an icon button (`.search-toggle`) opens a dropdown containing the input and results (default, terminal).
+- `input` mode: the input sits inline in the navbar; the dropdown shows results only (blue-tech).
+- Behavior (debounced `GET /search?q=`, `Cmd/Ctrl+K`, Escape, click-outside, arrow keys) comes from `search.js` — load it with `<script src="/static/{{ theme_name }}/search.js" defer></script>` (resolves via the default-theme static fallback).
+- Themes must style the hooks: `.search`, `.search-toggle`, `.search-input`, `.search-dropdown`, `.search-results` (+ `.search-result-title/-meta/-draft/-excerpt`, `.search-empty`, and `li.is-active` for keyboard highlight). See the three bundled themes for reference treatments.
+- Override the markup per theme by shipping your own `_search.html`, or per site via `theme/_search.html` in the content repo; override behavior by shipping your own `static/search.js`.
