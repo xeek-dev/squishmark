@@ -42,6 +42,8 @@
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
             </div>
+            {% set search_mode = "input" %}
+            {% include "_search.html" %}
             <a href="/posts" class="nav-cta">Read Blog</a>
         </div>
     </nav>
@@ -58,5 +60,7 @@
             </p>
         </div>
     </footer>
+
+    <script src="/static/{{ theme_name }}/search.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,29 @@
+{# Shared search component. Set search_mode before including:
+     {% set search_mode = "button" %}{% include "_search.html" %}
+   button: icon button opens a dropdown containing the input + results.
+   input:  input sits inline in the navbar; dropdown shows results only.
+   Behavior lives in /static/{theme_name}/search.js (default-theme fallback). #}
+{% set search_mode = search_mode | default("button") %}
+<div class="search" data-search="{{ search_mode }}">
+    {% if search_mode == "button" %}
+    <button type="button" class="search-toggle" aria-label="Search" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+    </button>
+    {% else %}
+    <input class="search-input" type="search" placeholder="Search&hellip;" autocomplete="off"
+           role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list"
+           aria-label="Search posts">
+    {% endif %}
+    <div class="search-dropdown" hidden>
+        {% if search_mode == "button" %}
+        <input class="search-input" type="search" placeholder="Search&hellip;" autocomplete="off"
+               role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list"
+               aria-label="Search posts">
+        {% endif %}
+        <ul class="search-results" id="search-results" role="listbox" aria-label="Search results"></ul>
+        <p class="search-empty" hidden>No results</p>
+    </div>
+</div>
