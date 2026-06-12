@@ -180,6 +180,7 @@ _INTEGRATION_MODULES = (
     "test_routes_pages",
     "test_routes_admin",
     "test_routes_webhooks",
+    "test_routes_search",
 )
 
 

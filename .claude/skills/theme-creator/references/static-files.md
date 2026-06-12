@@ -10,6 +10,7 @@
 - Allowed extensions: `.ico` `.png` `.svg` `.jpg` `.jpeg` `.webp` `.gif` `.css` `.js`
 - Cache-Control: `public, max-age=86400` (1 day)
 - Theme static files fall back to the `default` theme if not found in the current theme
+- `search.js` (navbar search behavior) ships in `themes/default/static/` and reaches every theme through that fallback — request it as `/static/{{ theme_name }}/search.js`; a theme overrides behavior by shipping its own `static/search.js`
 
 ## Referencing Static Files in Templates
 

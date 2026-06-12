@@ -125,7 +125,9 @@ img {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    overflow: hidden;
+    /* No overflow: hidden here — it would clip the absolutely-positioned
+       search dropdown. The pixel-art logo is scaled down via transform and
+       stays within bounds on its own. */
 }
 
 .nav-logo {
@@ -1071,4 +1073,143 @@ img {
         padding: 12px 24px;
         font-size: 0.9375rem;
     }
+}
+
+/* Search (button mode — icon opens a dropdown panel) */
+.search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-blue);
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.search-toggle:hover {
+    color: var(--color-green);
+}
+
+.search-toggle svg {
+    display: block;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: calc(100% + 16px);
+    right: 0;
+    width: 340px;
+    max-width: calc(100vw - 2rem);
+    background: var(--color-bg-card);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    border-radius: 4px;
+    padding: 0.6rem;
+    z-index: 10;
+    font-family: var(--font-mono);
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    border-radius: 4px;
+}
+
+.search-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-blue);
+}
+
+.search-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.search-results:not(:empty) {
+    margin-top: 0.6rem;
+}
+
+.search-result-link {
+    display: block;
+    padding: 0.45rem 0.6rem;
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.search-result-link:hover,
+.search-results li.is-active .search-result-link {
+    background: rgba(74, 222, 128, 0.08);
+}
+
+.search-result-title {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-green);
+}
+
+.search-result-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.search-result-draft {
+    border: 1px solid var(--color-blue);
+    color: var(--color-blue);
+    padding: 0 4px;
+    font-size: 0.65rem;
+    text-transform: lowercase;
+}
+
+.search-result-draft::before {
+    content: "[";
+}
+
+.search-result-draft::after {
+    content: "]";
+}
+
+.search-result-excerpt {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+.search-empty {
+    margin: 0.6rem 0 0.2rem;
+    padding: 0 0.6rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.search-empty::before {
+    content: "// ";
+    color: var(--color-text-muted);
 }

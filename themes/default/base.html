@@ -53,6 +53,8 @@
                 {% for page in nav_pages %}
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
+                {% set search_mode = "button" %}
+                {% include "_search.html" %}
                 <button class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode" aria-pressed="false">
                     <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
                         <circle cx="12" cy="12" r="5"></circle>
@@ -88,6 +90,7 @@
         </div>
     </footer>
 
+    <script src="/static/{{ theme_name }}/search.js" defer></script>
     <script>
     (function() {
         var toggle = document.getElementById('theme-toggle');

@@ -54,6 +54,8 @@
                 {% for page in nav_pages %}
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
+                {% set search_mode = "button" %}
+                {% include "_search.html" %}
             </div>
         </div>
     </nav>
@@ -73,6 +75,8 @@
     </footer>
 
     <script src="/static/{{ theme_name }}/js/pixel-font.js"></script>
+    {# search.js has no js/ prefix: it resolves via the default-theme static fallback #}
+    <script src="/static/{{ theme_name }}/search.js" defer></script>
     {% if theme.background in ['matrix', 'noise', 'hex'] %}
     <script src="/static/{{ theme_name }}/js/backgrounds.js"></script>
     {% endif %}
