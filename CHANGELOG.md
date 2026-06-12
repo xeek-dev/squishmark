@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/xeek-dev/squishmark/compare/v0.2.0...v0.3.0) (2026-06-12)
+
+
+### Features
+
+* **search:** add server-side search with navbar ui across themes ([#101](https://github.com/xeek-dev/squishmark/issues/101)) ([bd39bab](https://github.com/xeek-dev/squishmark/commit/bd39bab9b16c2d705f845bb35ef0c300451a0c5a))
+
 ## [0.2.0](https://github.com/xeek-dev/squishmark/compare/v0.1.0...v0.2.0) (2026-06-11)
 
 
