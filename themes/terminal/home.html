@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.title }}{% endblock %}
+
+{% block nav_logo %}
+{% if theme.nav_image %}
+<img src="{{ theme.nav_image }}" alt="{{ site.title }}" class="nav-image nav-image-muted">
+{% else %}
+<div class="nav-pixel-muted" data-pixel-text="{{ site.title }}"
+     data-pixel-size="8" data-pixel-gap="0"
+     data-pixel-skew="-6"
+     data-pixel-split="0"
+     data-pixel-color1="#3d4555" data-pixel-color2="#3d4555"></div>
+{% endif %}
+{% endblock %}
+
+{% macro post_card(post) %}
+<article class="post-card">
+    <div class="post-card-content">
+        {% if post.date %}
+        <time class="post-date" datetime="{{ post.date }}">
+            {{ post.date | format_date }}
+        </time>
+        {% endif %}
+        <h3 class="post-title">
+            <a href="{{ post.url }}">{{ post.title }}</a>
+        </h3>
+        {% if post.description %}
+        <p class="post-excerpt">{{ post.description }}</p>
+        {% endif %}
+        {% if post.tags %}
+        <div class="post-tags">
+            {% for tag in post.tags %}
+            <a class="tag tag-link {% if loop.index is odd %}tag-green{% else %}tag-blue{% endif %}" href="/tags/{{ tag | urlencode }}">{{ tag }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</article>
+{% endmacro %}
+
+{% block content %}
+<section class="hero">
+    {% if theme.hero_image %}
+    <img src="{{ theme.hero_image }}" alt="{{ site.title }}" class="hero-image">
+    {% else %}
+    <div class="hero-pixel-container"
+         data-pixel-text="{{ site.title }}"
+         data-pixel-size="6" data-pixel-gap="1"
+         data-pixel-cursor="solid" data-pixel-skew="0"
+         data-pixel-split="6"
+         data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
+    {% endif %}
+    <p class="hero-subtitle">{{ site.description }}</p>
+
+    <div class="home-search">
+        {% set search_mode = "input" %}
+        {% include "_search.html" %}
+    </div>
+</section>
+
+<div class="home-sections">
+    <section class="home-section" id="latest">
+        <div class="section-header">
+            <h2 class="section-label">// latest</h2>
+            <a class="section-more" href="/posts">all posts &rarr;</a>
+        </div>
+        {% if latest_posts %}
+        <div class="posts-grid">
+            {% for post in latest_posts %}
+            {{ post_card(post) }}
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-posts">
+            <p>No posts yet. Check back soon!</p>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if featured_posts %}
+    <section class="home-section" id="featured">
+        <div class="section-header">
+            <h2 class="section-label">// featured</h2>
+        </div>
+        <div class="posts-grid">
+            {% for post in featured_posts %}
+            {{ post_card(post) }}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
