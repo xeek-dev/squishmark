@@ -1,6 +1,8 @@
 """Shared content helpers for fetching and filtering posts and pages."""
 
+import calendar
 import datetime
+from dataclasses import dataclass
 from typing import Any
 
 from squishmark.models.content import Config, Page, Post, SiteConfig
@@ -111,6 +113,144 @@ def build_series_context(post: Post, all_posts: list[Post]) -> dict[str, Any]:
         "series_index": series_index,
         "series_total": series_total,
     }
+
+
+@dataclass(frozen=True)
+class TagCount:
+    """A tag and how many posts carry it, for the tag index."""
+
+    name: str  # Display label (authored casing of the first occurrence)
+    count: int
+
+
+def build_tag_index(posts: list[Post]) -> list[TagCount]:
+    """Return every tag with its post count, sorted by count desc then name.
+
+    Tags are grouped case-insensitively (so "Python" and "python" are one
+    tag); the display label is the authored casing of the first occurrence.
+    ``posts`` is expected to be already draft-gated by the caller.
+    """
+    labels: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    for post in posts:
+        # Dedup within a post so a repeated tag is not double-counted.
+        for key in {t.lower() for t in post.tags}:
+            labels.setdefault(key, next(t for t in post.tags if t.lower() == key))
+            counts[key] = counts.get(key, 0) + 1
+    tags = [TagCount(name=labels[key], count=counts[key]) for key in counts]
+    tags.sort(key=lambda t: (-t.count, t.name.lower()))
+    return tags
+
+
+def posts_for_tag(posts: list[Post], tag: str) -> list[Post]:
+    """Return posts carrying ``tag``, matched case-insensitively.
+
+    ``posts`` is expected to be already draft-gated by the caller. An unknown
+    tag yields an empty list (callers render an empty listing, not a 404).
+    """
+    wanted = tag.lower()
+    return [p for p in posts if any(t.lower() == wanted for t in p.tags)]
+
+
+@dataclass(frozen=True)
+class ArchiveMonth:
+    """A month bucket within an archive year (``name`` empty for undated)."""
+
+    month: int
+    name: str
+    posts: list[Post]
+
+
+@dataclass(frozen=True)
+class ArchiveYear:
+    """A year bucket of archived posts, newest month first."""
+
+    year: int | None  # None for the trailing "Undated" group
+    label: str
+    months: list[ArchiveMonth]
+
+
+def build_archive(posts: list[Post]) -> list[ArchiveYear]:
+    """Group posts by year then month, newest first, for the archive page.
+
+    Dateless posts collect into a trailing "Undated" group. ``posts`` is
+    expected to be already draft-gated by the caller.
+    """
+    buckets: dict[int, dict[int, list[Post]]] = {}
+    undated: list[Post] = []
+    for post in posts:
+        if post.date is None:
+            undated.append(post)
+            continue
+        buckets.setdefault(post.date.year, {}).setdefault(post.date.month, []).append(post)
+
+    archive: list[ArchiveYear] = []
+    for year in sorted(buckets, reverse=True):
+        months = [
+            ArchiveMonth(
+                month=month,
+                name=calendar.month_name[month],
+                posts=sorted(
+                    buckets[year][month],
+                    key=lambda p: p.date or datetime.date.min,
+                    reverse=True,
+                ),
+            )
+            for month in sorted(buckets[year], reverse=True)
+        ]
+        archive.append(ArchiveYear(year=year, label=str(year), months=months))
+
+    if undated:
+        archive.append(ArchiveYear(year=None, label="Undated", months=[ArchiveMonth(month=0, name="", posts=undated)]))
+    return archive
+
+
+def build_related_posts(
+    post: Post,
+    all_posts: list[Post],
+    *,
+    limit: int = 5,
+    minimum: int = 3,
+) -> list[Post]:
+    """Return posts related to ``post`` by shared-tag count.
+
+    Ranked by number of shared tags descending, ties broken by date
+    descending. The post itself is excluded. When fewer than ``minimum``
+    posts share a tag (including zero overlap), the list is topped up with the
+    most recent remaining posts so readers always get suggestions. Capped at
+    ``limit``.
+
+    ``all_posts`` is expected to be already draft-gated by the caller, so
+    drafts are excluded for non-admins automatically. Mirrors
+    ``build_series_context``.
+    """
+    post_tags = {t.lower() for t in post.tags}
+    candidates = [p for p in all_posts if p.slug != post.slug]
+
+    def date_desc_key(p: Post) -> tuple[bool, datetime.date]:
+        # Dated posts sort ahead of undated; newest first under reverse sort.
+        return (p.date is not None, p.date or datetime.date.min)
+
+    scored = [(p, len(post_tags & {t.lower() for t in p.tags})) for p in candidates]
+    related = [
+        p
+        for p, shared in sorted(
+            (item for item in scored if item[1] > 0),
+            key=lambda item: (item[1], *date_desc_key(item[0])),
+            reverse=True,
+        )
+    ]
+
+    if len(related) < minimum:
+        chosen = {post.slug} | {p.slug for p in related}
+        recent = sorted(
+            (p for p in candidates if p.slug not in chosen),
+            key=date_desc_key,
+            reverse=True,
+        )
+        related.extend(recent[: minimum - len(related)])
+
+    return related[:limit]
 
 
 async def get_all_pages(

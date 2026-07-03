@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Archive - {{ site.title }}{% endblock %}
+
+{% block content %}
+<div class="archive">
+    <h1>Archive</h1>
+
+    {% if years %}
+    {% for year in years %}
+    <section class="archive-year">
+        <h2 class="archive-year-label">{{ year.label }}</h2>
+        {% for month in year.months %}
+        <div class="archive-month">
+            {% if month.name %}
+            <h3 class="archive-month-label">{{ month.name }}</h3>
+            {% endif %}
+            <ul class="archive-list">
+                {% for post in month.posts %}
+                <li class="archive-item">
+                    <a href="{{ post.url }}">{{ post.title }}</a>
+                    {% if post.date %}
+                    <time class="archive-date" datetime="{{ post.date }}">{{ post.date | format_date('%b %d') }}</time>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </section>
+    {% endfor %}
+    {% else %}
+    <p class="no-posts">No posts yet. Check back soon!</p>
+    {% endif %}
+</div>
+{% endblock %}

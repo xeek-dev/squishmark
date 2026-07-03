@@ -27,7 +27,7 @@
         {% if post.tags %}
         <div class="post-tags">
             {% for tag in post.tags %}
-            <span class="tag">{{ tag }}</span>
+            <a class="tag tag-link" href="/tags/{{ tag | urlencode }}">{{ tag }}</a>
             {% endfor %}
         </div>
         {% endif %}
@@ -81,6 +81,7 @@
             {% endif %}
         </nav>
         {% endif %}
+        {% include "_related.html" %}
         {% include "_share.html" %}
         <a href="/posts" class="back-link">&larr; Back to posts</a>
     </footer>

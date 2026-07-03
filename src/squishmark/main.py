@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from squishmark.config import get_settings
 from squishmark.models.content import Config
 from squishmark.models.db import close_db, init_db
-from squishmark.routers import admin, assets, auth, feed, pages, posts, search, seo, webhooks
+from squishmark.routers import admin, archive, assets, auth, feed, pages, posts, search, seo, tags, webhooks
 from squishmark.services.analytics_middleware import register_analytics_middleware
 from squishmark.services.container import build_services
 from squishmark.services.livereload import LiveReloadService
@@ -170,6 +170,8 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(assets.router)
     app.include_router(posts.router)
+    app.include_router(tags.router)
+    app.include_router(archive.router)
     app.include_router(pages.router)  # Catch-all for static pages, must be last
 
     return app

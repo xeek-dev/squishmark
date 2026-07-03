@@ -1177,3 +1177,222 @@ img {
         font-size: 0.8rem;
     }
 }
+
+/* Tag links and tag index */
+.tag-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.tag-link:hover {
+    background: rgba(59, 130, 246, 0.22);
+    color: var(--color-accent-light);
+}
+
+.tag-index {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.tag-eyebrow {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+}
+
+.tag-eyebrow a {
+    color: var(--color-accent-light);
+    text-decoration: none;
+}
+
+.tag-cloud {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.tag-cloud .tag {
+    font-size: 0.8rem;
+    padding: 6px 14px;
+}
+
+.tag-count {
+    margin-left: 0.5rem;
+    opacity: 0.75;
+}
+
+/* Shared compact listing (tag pages) */
+.listing {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.listing-title {
+    margin-bottom: 2rem;
+}
+
+.listing-posts {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.listing-item {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    transition: border-color var(--transition);
+}
+
+.listing-item:hover {
+    border-color: var(--color-accent);
+}
+
+.listing-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.listing-item-title {
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.listing-item-title a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.listing-item-title a:hover {
+    color: var(--color-accent-light);
+}
+
+.listing-item-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.listing-item-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}
+
+/* Archive */
+.archive {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.archive-year {
+    margin-top: 2.5rem;
+}
+
+.archive-year-label {
+    color: var(--color-accent-light);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.4rem;
+}
+
+.archive-month-label {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1.5rem;
+}
+
+.archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0;
+}
+
+.archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.archive-item a {
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color var(--transition);
+}
+
+.archive-item a:hover {
+    color: var(--color-accent-light);
+}
+
+.archive-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Related posts */
+.related-posts {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.related-posts-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent-light);
+    margin-bottom: 0.75rem;
+}
+
+.related-posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.related-post {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.related-post a {
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color var(--transition);
+}
+
+.related-post a:hover {
+    color: var(--color-accent-light);
+}
+
+.related-post-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}

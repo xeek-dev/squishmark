@@ -1267,3 +1267,230 @@ img {
     content: "// ";
     color: var(--color-text-muted);
 }
+
+/* ============================================
+   Tag links, tag index, and compact listings
+   ============================================ */
+.tag-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+
+.tag-link:hover {
+    border-color: var(--color-border-hover);
+}
+
+.tag-index,
+.listing {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.tag-eyebrow {
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+}
+
+.tag-eyebrow a {
+    color: var(--color-green);
+    text-decoration: none;
+}
+
+.tag-eyebrow::before {
+    content: "// ";
+    color: var(--color-text-muted);
+}
+
+.tag-cloud {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.tag-cloud .tag {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+.tag-count {
+    margin-left: 0.5rem;
+    color: var(--color-text-muted);
+}
+
+.listing-title {
+    font-family: var(--font-mono);
+    margin-bottom: 2rem;
+}
+
+.listing-posts {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.listing-item {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    transition: border-color var(--transition);
+}
+
+.listing-item:hover {
+    border-color: var(--color-border-hover);
+}
+
+.listing-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.listing-item-title {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.listing-item-title a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.listing-item-title a:hover {
+    color: var(--color-green);
+}
+
+.listing-item-date {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.listing-item-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin: 0.4rem 0;
+}
+
+/* Archive */
+.archive {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.archive-year {
+    margin-top: 2.5rem;
+}
+
+.archive-year-label {
+    font-family: var(--font-mono);
+    color: var(--color-green);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.4rem;
+}
+
+.archive-month-label {
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 1.5rem;
+}
+
+.archive-month-label::before {
+    content: "// ";
+}
+
+.archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0;
+}
+
+.archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.archive-item a {
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color var(--transition);
+}
+
+.archive-item a:hover {
+    color: var(--color-green);
+}
+
+.archive-date {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Related posts */
+.related-posts {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.related-posts-title {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--color-green);
+    margin-bottom: 0.75rem;
+}
+
+.related-posts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.related-post {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.related-post a {
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color var(--transition);
+}
+
+.related-post a:hover {
+    color: var(--color-green);
+}
+
+.related-post-date {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
