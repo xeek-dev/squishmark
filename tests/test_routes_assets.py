@@ -12,8 +12,10 @@ from squishmark.services.github import GitHubBinaryFile
 @asynccontextmanager
 async def _client_with_github(mock_github: AsyncMock):
     """Build the app with the GitHub service in the container mocked."""
-    # Theme engine loads custom templates during the lifespan.
+    # Theme engine loads custom templates during the lifespan; the startup
+    # theme log reads the config (None renders defaults).
     mock_github.list_directory.return_value = []
+    mock_github.get_config.return_value = None
     with (
         patch("squishmark.services.container.create_github_service", return_value=mock_github),
         patch("squishmark.main.init_db", new_callable=AsyncMock),

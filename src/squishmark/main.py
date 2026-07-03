@@ -50,7 +50,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     theme_engine = ThemeEngine(services)
     await theme_engine.load_custom_templates()
     app.state.theme_engine = theme_engine
-    logger.info("Theme engine initialized")
+    config = Config.from_dict(await services.github.get_config())
+    logger.info("Theme engine initialized (configured theme: %s)", config.theme.name)
 
     # Start live reload watcher in debug mode
     if settings.debug:

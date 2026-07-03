@@ -1,5 +1,6 @@
 """Theme engine for Jinja2 template rendering."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,8 @@ from squishmark.services.content import get_cached_pages
 from squishmark.services.theme.favicon import FaviconDetector
 from squishmark.services.theme.filters import register_filters
 from squishmark.services.theme.loader import AsyncHybridLoader, ThemedEnvironment
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from squishmark.services.container import Services
@@ -146,6 +149,7 @@ class ThemeEngine:
         """
         # Resolve theme name (override or config default)
         theme_name = theme_override or config.theme.name
+        logger.debug("Rendering %s with theme %s", template_name, theme_name)
 
         # Theme-prefixed name so lookup is stateless (loader resolves the
         # custom / theme / default fallback chain from the prefix).
