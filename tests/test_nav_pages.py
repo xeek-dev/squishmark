@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
+from squishmark.dependencies import SiteContext
 from squishmark.models.content import Config, FrontMatter, Page, ThemeConfig
 from squishmark.services.container import Services
 from squishmark.services.markdown import MarkdownService
@@ -85,9 +86,10 @@ class TestHiddenPage404:
             mock_github.get_file.return_value = MagicMock(content=hidden_content)
             mock_notes_cls.return_value = AsyncMock()
             services = Services(settings=MagicMock(), cache=AsyncMock(), github=mock_github)
+            context = SiteContext(config=Config(), services=services)
 
             with pytest.raises(HTTPException) as exc_info:
-                await get_page(mock_request, services, AsyncMock(), "secret", db=AsyncMock())
+                await get_page(mock_request, context, AsyncMock(), "secret", db=AsyncMock())
 
             assert exc_info.value.status_code == 404
 
@@ -111,8 +113,9 @@ class TestHiddenPage404:
             mock_engine.render_page.return_value = "<html>Unlisted</html>"
 
             services = Services(settings=MagicMock(), cache=AsyncMock(), github=mock_github)
+            context = SiteContext(config=Config(), services=services)
             mock_request = MagicMock()
-            response = await get_page(mock_request, services, mock_engine, "unlisted", db=AsyncMock())
+            response = await get_page(mock_request, context, mock_engine, "unlisted", db=AsyncMock())
 
             assert response.status_code == 200
 

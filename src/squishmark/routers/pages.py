@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from squishmark.dependencies import ServicesDep, ThemeEngineDep, is_admin
-from squishmark.models.content import Config
+from squishmark.dependencies import SiteContextDep, ThemeEngineDep, is_admin
 from squishmark.models.db import get_db_session
 from squishmark.services.content import get_cached_posts, get_featured_posts
 from squishmark.services.notes import NotesService
@@ -16,7 +15,7 @@ router = APIRouter(tags=["pages"])
 @router.get("/{slug}", response_class=HTMLResponse)
 async def get_page(
     request: Request,
-    services: ServicesDep,
+    context: SiteContextDep,
     theme_engine: ThemeEngineDep,
     slug: str,
     db: AsyncSession = Depends(get_db_session),
@@ -27,16 +26,12 @@ async def get_page(
     This route has lower priority than /posts routes and is designed
     to be a catch-all for pages like /about, /contact, etc.
     """
-    # Get config
-    config_data = await services.github.get_config()
-    config = Config.from_dict(config_data)
-
-    # Get markdown service with config
-    markdown_service = services.markdown_for(config)
+    config = context.config
+    markdown_service = context.markdown
 
     # Try to find the page
     page_path = f"pages/{slug}.md"
-    file = await services.github.get_file(page_path)
+    file = await context.services.github.get_file(page_path)
 
     if file is None:
         raise HTTPException(status_code=404, detail="Page not found")
@@ -54,7 +49,7 @@ async def get_page(
     notes = await notes_service.get_for_path(f"/{slug}", include_private=admin)
 
     # Featured posts for template context (published only, shown to everyone)
-    all_posts = await get_cached_posts(services, include_drafts=False)
+    all_posts = await get_cached_posts(context.services, include_drafts=False)
     featured = get_featured_posts(all_posts, config.site)
 
     # Render
