@@ -40,7 +40,11 @@ class SiteContext:
 
     @property
     def markdown(self) -> MarkdownService:
-        """Return the markdown service, built once from this request's config."""
+        """Return the markdown service for this request's config.
+
+        Caching lives in ``Services.markdown_for``; see it for how config
+        changes affect the instance.
+        """
         return self.services.markdown_for(self.config)
 
 
