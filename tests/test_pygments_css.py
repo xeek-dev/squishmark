@@ -171,3 +171,34 @@ async def test_pygments_css_route_follows_config_change():
         assert second.status_code == 200
         assert first.text != second.text
         assert second.text == MarkdownService(pygments_style="monokai").get_pygments_css()
+
+
+@pytest.mark.asyncio
+async def test_pygments_style_follows_cache_refresh(tmp_path):
+    """The production refresh path with real caching: a config.yml edit stays
+    invisible while the config is cached, then takes effect after cache.clear()
+    (what the admin refresh and webhook do), with no restart."""
+    from squishmark.config import Settings
+    from squishmark.services.cache import Cache
+    from squishmark.services.container import Services
+    from squishmark.services.github import GitHubService
+
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("theme:\n  pygments_style: github-dark\n", encoding="utf-8")
+
+    settings = Settings(github_content_repo=f"file://{tmp_path}")
+    cache = Cache(ttl_seconds=300)
+    services = Services(settings=settings, cache=cache, github=GitHubService(settings, cache))
+
+    config = Config.from_dict(await services.github.get_config())
+    assert services.markdown_for(config).pygments_style == "github-dark"
+
+    # Edit config.yml on disk: still cached, so the old style keeps serving.
+    config_file.write_text("theme:\n  pygments_style: monokai\n", encoding="utf-8")
+    config = Config.from_dict(await services.github.get_config())
+    assert services.markdown_for(config).pygments_style == "github-dark"
+
+    # The refresh (admin/webhook) clears the cache: new style takes effect.
+    await cache.clear()
+    config = Config.from_dict(await services.github.get_config())
+    assert services.markdown_for(config).pygments_style == "monokai"
