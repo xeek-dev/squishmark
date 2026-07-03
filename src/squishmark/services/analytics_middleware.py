@@ -5,7 +5,8 @@ import logging
 import re
 
 from fastapi import FastAPI, Request
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 from squishmark.models.db import get_db_session
 from squishmark.services.analytics import AnalyticsService
@@ -44,6 +45,8 @@ async def track_page_view(request: Request) -> None:
         referrer = request.headers.get("referer")
         user_agent = request.headers.get("user-agent")
 
+        # The generator yields once; letting it complete runs its post-yield
+        # commit. Breaking out would close it before the commit.
         async for session in get_db_session():
             analytics = AnalyticsService(session)
             await analytics.track_view(
@@ -52,13 +55,12 @@ async def track_page_view(request: Request) -> None:
                 referrer=referrer,
                 user_agent=user_agent,
             )
-            break
     except Exception as e:
         # Don't let analytics errors affect the request
-        logger.warning(f"Failed to track page view: {e}")
+        logger.warning("Failed to track page view: %s", e, exc_info=True)
 
 
-async def analytics_middleware(request: Request, call_next):
+async def analytics_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
     """Track page views for non-static, non-admin, non-bot HTML requests."""
     response = await call_next(request)
 
