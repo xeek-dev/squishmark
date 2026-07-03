@@ -31,6 +31,18 @@ SEARCH_INDEX_ALL_KEY = "search:index:all"
 
 _WORD_RE = re.compile(r"[a-z0-9]+")
 
+# Markdown noise stripped from post bodies before tokenization, so URLs,
+# HTML tags, and link targets don't pollute the index ("http"/"png" must
+# not match every post). Code-block *text* is deliberately kept searchable
+# — readers search for function names and commands that only appear in
+# code. Image regex runs before link regex ("![...](...)"" contains link
+# syntax); bare-URL regex runs last, after link targets are already gone.
+_MD_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
+_MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_MD_REF_DEF_RE = re.compile(r"^[ \t]*\[[^\]]+\]:\s+\S+.*$", re.MULTILINE)
+_HTML_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
+_BARE_URL_RE = re.compile(r"(?:https?://|www\.)\S+")
+
 # Presence-based weights per (field, tier). Exact beats prefix within a
 # field; title beats tags beats description beats body across fields. No
 # term frequency — long bodies must not outrank a title hit.
@@ -49,6 +61,21 @@ def tokenize(text: str) -> set[str]:
     terms match their parts ("blue-tech" -> {"blue", "tech"}).
     """
     return set(_WORD_RE.findall(text.lower()))
+
+
+def strip_markdown_noise(text: str) -> str:
+    """Reduce markdown to its searchable text.
+
+    Keeps link text and image alt text but drops their URL targets,
+    reference-link definitions, HTML tags, and bare URLs. Markdown
+    punctuation (``#``, ``*``, backticks) needs no handling — the
+    tokenizer already splits it away.
+    """
+    text = _MD_IMAGE_RE.sub(r"\1", text)
+    text = _MD_LINK_RE.sub(r"\1", text)
+    text = _MD_REF_DEF_RE.sub(" ", text)
+    text = _HTML_TAG_RE.sub(" ", text)
+    return _BARE_URL_RE.sub(" ", text)
 
 
 class SearchResult(BaseModel):
@@ -90,7 +117,7 @@ def build_search_index(posts: list[Post]) -> list[IndexedPost]:
                 title_tokens=frozenset(tokenize(post.title)),
                 tag_tokens=frozenset(tokenize(" ".join(post.tags))),
                 description_tokens=frozenset(tokenize(post.description)),
-                body_tokens=frozenset(tokenize(post.content)),
+                body_tokens=frozenset(tokenize(strip_markdown_noise(post.content))),
             )
         )
     return index
@@ -124,7 +151,7 @@ def _score_post(query_tokens: list[str], indexed: IndexedPost) -> int:
     return total
 
 
-def search_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
+def query_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
     """Rank indexed posts against the query; top ``limit`` results.
 
     Every query token must match somewhere (exact or prefix) for a post to
@@ -149,15 +176,17 @@ def search_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMI
 
 def search_posts(query: str, posts: list[Post], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
     """Convenience: build an index and search it in one call."""
-    return search_index(query, build_search_index(posts), limit)
+    return query_index(query, build_search_index(posts), limit)
 
 
 async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     """Return the cached index for the audience, building it on miss.
 
     Building is the expensive part (get_all_posts re-parses every post's
-    markdown); the index inherits the cache's TTL and is invalidated by
-    the webhook's cache.clear() like every other derived blob.
+    markdown), so one miss parses everything once with drafts included and
+    caches both audience variants — the published index is just the drafts
+    filtered out. Both inherit the cache's TTL and are invalidated by the
+    webhook's cache.clear() like every other derived blob.
     """
     cache = get_cache()
     key = SEARCH_INDEX_ALL_KEY if include_drafts else SEARCH_INDEX_PUBLISHED_KEY
@@ -169,14 +198,18 @@ async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
     markdown_service = get_markdown_service(config)
-    posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+    posts = await get_all_posts(github_service, markdown_service, include_drafts=True)
 
-    index = build_search_index(posts)
-    await cache.set(key, index)
-    return index
+    all_index = build_search_index(posts)
+    published_index = [indexed for indexed in all_index if not indexed.result.draft]
+    await cache.set(SEARCH_INDEX_ALL_KEY, all_index)
+    await cache.set(SEARCH_INDEX_PUBLISHED_KEY, published_index)
+    return all_index if include_drafts else published_index
 
 
 async def warm_search_indexes() -> None:
-    """Pre-build both audience index variants (used by the webhook warm)."""
-    await get_search_index(include_drafts=False)
+    """Pre-build both audience index variants (used by the webhook warm).
+
+    One call suffices: an index miss builds and caches both variants.
+    """
     await get_search_index(include_drafts=True)

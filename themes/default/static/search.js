@@ -9,12 +9,20 @@
  * Results are rendered exclusively with createElement/textContent — never
  * innerHTML — because titles/excerpts/tags are author-supplied content and
  * Jinja autoescaping does not protect JSON-to-DOM rendering.
+ *
+ * Multiple instances per page are supported: element ids are scoped per
+ * instance and the document-level handlers (Cmd/Ctrl+K, Escape,
+ * click-outside) are registered once, over all instances. Cmd/Ctrl+K goes
+ * to the first instance (the navbar) and deliberately fires even when
+ * focus is in another text field — command-palette convention.
  */
 (function () {
     'use strict';
 
     var DEBOUNCE_MS = 200;
     var MIN_CHARS = 2;
+
+    var instances = [];
 
     function formatDate(iso) {
         // Parse as local date parts; new Date("YYYY-MM-DD") is UTC and can
@@ -24,7 +32,7 @@
         return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
-    function initSearch(root) {
+    function initSearch(root, instanceIndex) {
         var mode = root.getAttribute('data-search') || 'button';
         var toggle = root.querySelector('.search-toggle');
         var input = root.querySelector('.search-input');
@@ -32,6 +40,10 @@
         var list = root.querySelector('.search-results');
         var empty = root.querySelector('.search-empty');
         if (!input || !dropdown || !list) return;
+
+        var listId = 'search-results-' + instanceIndex;
+        list.id = listId;
+        input.setAttribute('aria-controls', listId);
 
         var debounceTimer = null;
         var controller = null;
@@ -90,7 +102,7 @@
                 var item = document.createElement('li');
                 item.setAttribute('role', 'option');
                 item.setAttribute('aria-selected', 'false');
-                item.id = 'search-opt-' + i;
+                item.id = listId + '-opt-' + i;
 
                 var link = document.createElement('a');
                 link.className = 'search-result-link';
@@ -194,24 +206,41 @@
             });
         }
 
-        document.addEventListener('keydown', function (e) {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                if (mode === 'button') openDropdown();
-                input.focus();
-            } else if (e.key === 'Escape' && !dropdown.hidden) {
-                closeDropdown();
-                input.blur();
-            }
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!root.contains(e.target)) closeDropdown();
+        instances.push({
+            root: root,
+            mode: mode,
+            input: input,
+            dropdown: dropdown,
+            open: openDropdown,
+            close: closeDropdown
         });
     }
 
     function init() {
         document.querySelectorAll('[data-search]').forEach(initSearch);
+        if (instances.length === 0) return;
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                var target = instances[0];
+                if (target.mode === 'button') target.open();
+                target.input.focus();
+            } else if (e.key === 'Escape') {
+                instances.forEach(function (inst) {
+                    if (!inst.dropdown.hidden) {
+                        inst.close();
+                        inst.input.blur();
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            instances.forEach(function (inst) {
+                if (!inst.root.contains(e.target)) inst.close();
+            });
+        });
     }
 
     if (document.readyState === 'loading') {
