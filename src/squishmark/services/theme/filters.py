@@ -1,5 +1,6 @@
 """Custom Jinja2 filters for SquishMark templates."""
 
+import re
 from typing import Any
 from urllib.parse import quote
 
@@ -17,12 +18,24 @@ def format_date(value: Any, fmt: str = "%B %d, %Y") -> str:
 
 
 def accent_first_word(value: str) -> Markup:
-    """Wrap the first word in an accent span for styling."""
+    """Wrap the first word in an accent span for styling.
+
+    Multi-word titles accent the first whitespace-delimited word. A single-word
+    CamelCase title (e.g. ``SquishMark``) is split on its last interior
+    uppercase boundary so it renders two-tone (``Squish`` accented, ``Mark``
+    plain), matching the navbar logo; a single lowercase word falls back to
+    accenting the whole word.
+    """
     if not value:
         return Markup("")
     words = value.split(" ", 1)
     if len(words) == 1:
-        return Markup(f'<span class="accent">{words[0]}</span>')
+        word = words[0]
+        interior_caps = [m.start() for m in re.finditer(r"[A-Z]", word) if m.start() > 0]
+        if interior_caps:
+            split = interior_caps[-1]
+            return Markup(f'<span class="accent">{word[:split]}</span>{word[split:]}')
+        return Markup(f'<span class="accent">{word}</span>')
     return Markup(f'<span class="accent">{words[0]}</span> {words[1]}')
 
 

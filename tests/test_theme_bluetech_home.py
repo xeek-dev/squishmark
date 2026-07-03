@@ -85,6 +85,18 @@ def test_home_renders_hero_latest_and_featured(fake_github: FakeGitHubService) -
     assert "Secret Draft" not in body
 
 
+def test_home_hero_title_two_tone_for_single_word_camelcase(fake_github: FakeGitHubService) -> None:
+    fake_github.config = {**BLUE_TECH_CONFIG, "site": {**BLUE_TECH_CONFIG["site"], "title": "SquishMark"}}
+    fake_github.files = _files(with_featured=False)
+    app = create_app()
+    with TestClient(app) as c:
+        resp = c.get("/", follow_redirects=False)
+    assert resp.status_code == 200
+    body = resp.text
+    # Hero title splits the single CamelCase word into an accented + plain half.
+    assert '<h1 class="hero-title"><span class="accent">Squish</span>Mark</h1>' in body
+
+
 def test_home_hides_featured_when_none(fake_github: FakeGitHubService) -> None:
     with blue_tech_client(fake_github, with_featured=False) as c:
         resp = c.get("/", follow_redirects=False)
