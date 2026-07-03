@@ -45,7 +45,7 @@ class TestBuildTagIndex:
             _post("c", tags=["alpha"]),
         ]
         result = [(t.name, t.count) for t in build_tag_index(posts)]
-        # python (2) first; alpha (2) ties python? alpha=2, python=2 -> name asc
+        # alpha and python tie at 2, so name ascending breaks the tie; zeta (1) last
         assert result == [("alpha", 2), ("python", 2), ("zeta", 1)]
 
     def test_case_insensitive_grouping(self):

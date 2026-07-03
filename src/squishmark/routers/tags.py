@@ -1,5 +1,7 @@
 """Routes for tag discovery pages."""
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
@@ -46,6 +48,6 @@ async def get_tag(
         context.config,
         tag=tag,
         posts=posts,
-        canonical_url=theme_engine.build_canonical_url(context.config, f"/tags/{tag}"),
+        canonical_url=theme_engine.build_canonical_url(context.config, f"/tags/{quote(tag, safe='')}"),
     )
     return HTMLResponse(content=html)
