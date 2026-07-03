@@ -16,3 +16,9 @@ class TestAccentFirstWord:
 
     def test_empty_string_returns_empty_markup(self):
         assert str(accent_first_word("")) == ""
+
+
+def test_space_rule_wins_over_capitals():
+    """A spaced title splits on the space only; CamelCase in the first word
+    is left intact (the rules are mutually exclusive)."""
+    assert str(accent_first_word("SquishMark Blog")) == '<span class="accent">SquishMark</span> Blog'
