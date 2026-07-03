@@ -1104,3 +1104,50 @@ a:hover {
     font-size: 0.9rem;
     margin: 0.35rem 0;
 }
+
+/* Archive */
+.archive-year {
+    margin-top: calc(var(--spacing-unit) * 1.5);
+}
+
+.archive-year-label {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.3rem;
+}
+
+.archive-month-label {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: var(--spacing-unit);
+}
+
+.archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+}
+
+.archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.3rem 0;
+}
+
+.archive-item a {
+    text-decoration: none;
+    color: var(--color-text);
+}
+
+.archive-item a:hover {
+    color: var(--color-accent);
+}
+
+.archive-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}

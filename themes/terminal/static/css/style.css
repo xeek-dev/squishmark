@@ -1383,3 +1383,66 @@ img {
     font-size: 0.9rem;
     margin: 0.4rem 0;
 }
+
+/* Archive */
+.archive {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.archive-year {
+    margin-top: 2.5rem;
+}
+
+.archive-year-label {
+    font-family: var(--font-mono);
+    color: var(--color-green);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.4rem;
+}
+
+.archive-month-label {
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 1.5rem;
+}
+
+.archive-month-label::before {
+    content: "// ";
+}
+
+.archive-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0;
+}
+
+.archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.archive-item a {
+    text-decoration: none;
+    color: var(--color-text);
+    transition: color var(--transition);
+}
+
+.archive-item a:hover {
+    color: var(--color-green);
+}
+
+.archive-date {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
