@@ -8,6 +8,7 @@ filters drafts.
 """
 
 import datetime
+import difflib
 import re
 from dataclasses import dataclass
 
@@ -41,15 +42,26 @@ _MD_REF_DEF_RE = re.compile(r"^[ \t]*\[[^\]]+\]:\s+\S+.*$", re.MULTILINE)
 _HTML_TAG_RE = re.compile(r"</?[a-zA-Z][^>]*>")
 _BARE_URL_RE = re.compile(r"(?:https?://|www\.)\S+")
 
-# Presence-based weights per (field, tier). Exact beats prefix within a
-# field; title beats tags beats description beats body across fields. No
-# term frequency — long bodies must not outrank a title hit.
+# Presence-based weights per (field, tier): exact, prefix, fuzzy. Exact
+# beats prefix beats fuzzy within a field; title beats tags beats
+# description beats body across fields. No term frequency: long bodies
+# must not outrank a title hit. Weights alone cannot make every fuzzy hit
+# rank below every real hit across fields (a fuzzy title would outscore an
+# exact body), so query_index additionally sorts posts that needed any
+# fuzzy match behind posts matched entirely by exact/prefix; these weights
+# only order posts within the same class.
 _WEIGHTS = {
-    "title": (12, 8),
-    "tags": (10, 6),
-    "description": (5, 3),
-    "body": (2, 1),
+    "title": (12, 8, 6),
+    "tags": (10, 6, 4),
+    "description": (5, 3, 2),
+    "body": (2, 1, 1),
 }
+
+# Fuzzy tier thresholds. Tokens shorter than 4 chars are excluded: a
+# single edit rewrites too much of a short token and false positives
+# dominate (e.g. "cat" would match "car").
+FUZZY_MIN_TOKEN_LENGTH = 4
+FUZZY_RATIO_THRESHOLD = 0.8
 
 
 def tokenize(text: str) -> set[str]:
@@ -121,17 +133,44 @@ def build_search_index(posts: list[Post]) -> list[IndexedPost]:
     return index
 
 
-def _field_score(query_token: str, field_tokens: frozenset[str], exact_weight: int, prefix_weight: int) -> int:
-    """Score one query token against one field: exact tier wins over prefix."""
+def _fuzzy_matches(query_token: str, field_tokens: frozenset[str]) -> bool:
+    """True when any field token is within FUZZY_RATIO_THRESHOLD of the query token."""
+    if len(query_token) < FUZZY_MIN_TOKEN_LENGTH:
+        return False
+    # seq2 is the cached side of SequenceMatcher, so fix the query token
+    # there and swap candidates through seq1. real_quick_ratio is a cheap
+    # upper bound that skips most candidates before the O(n*m) ratio call.
+    matcher = difflib.SequenceMatcher(None, "", query_token)
+    for token in field_tokens:
+        matcher.set_seq1(token)
+        if matcher.real_quick_ratio() >= FUZZY_RATIO_THRESHOLD and matcher.ratio() >= FUZZY_RATIO_THRESHOLD:
+            return True
+    return False
+
+
+def _field_score(
+    query_token: str, field_tokens: frozenset[str], exact_weight: int, prefix_weight: int, fuzzy_weight: int
+) -> tuple[int, bool]:
+    """Score one query token against one field: exact > prefix > fuzzy.
+
+    Returns (score, used_fuzzy) so the caller can rank fuzzy-dependent
+    posts behind posts with real matches.
+    """
     if query_token in field_tokens:
-        return exact_weight
+        return exact_weight, False
     if any(token.startswith(query_token) for token in field_tokens):
-        return prefix_weight
-    return 0
+        return prefix_weight, False
+    if _fuzzy_matches(query_token, field_tokens):
+        return fuzzy_weight, True
+    return 0, False
 
 
-def _score_post(query_tokens: list[str], indexed: IndexedPost) -> int:
-    """Sum field scores per query token; 0 when any token matches nothing (AND)."""
+def _score_post(query_tokens: list[str], indexed: IndexedPost) -> tuple[int, bool]:
+    """Sum field scores per query token; total 0 when any token matches nothing (AND).
+
+    Returns (total, used_fuzzy); used_fuzzy is True when at least one
+    token matched only via the fuzzy tier in every field it hit.
+    """
     fields = (
         (indexed.title_tokens, *_WEIGHTS["title"]),
         (indexed.tag_tokens, *_WEIGHTS["tags"]),
@@ -139,21 +178,30 @@ def _score_post(query_tokens: list[str], indexed: IndexedPost) -> int:
         (indexed.body_tokens, *_WEIGHTS["body"]),
     )
     total = 0
+    used_fuzzy = False
     for query_token in query_tokens:
-        token_score = sum(
-            _field_score(query_token, field_tokens, exact, prefix) for field_tokens, exact, prefix in fields
-        )
+        token_score = 0
+        token_real_match = False
+        for field_tokens, exact, prefix, fuzzy in fields:
+            score, field_fuzzy = _field_score(query_token, field_tokens, exact, prefix, fuzzy)
+            token_score += score
+            if score > 0 and not field_fuzzy:
+                token_real_match = True
         if token_score == 0:
-            return 0
+            return 0, False
+        if not token_real_match:
+            used_fuzzy = True
         total += token_score
-    return total
+    return total, used_fuzzy
 
 
 def query_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
     """Rank indexed posts against the query; top ``limit`` results.
 
-    Every query token must match somewhere (exact or prefix) for a post to
-    qualify. Ties break by date descending, dateless posts last.
+    Every query token must match somewhere (exact, prefix, or fuzzy) for a
+    post to qualify. Posts needing any fuzzy match rank behind posts
+    matched entirely by exact/prefix. Ties break by date descending,
+    dateless posts last.
     """
     if len(query.strip()) < MIN_QUERY_LENGTH:
         return []
@@ -161,15 +209,20 @@ def query_index(query: str, index: list[IndexedPost], limit: int = DEFAULT_LIMIT
     if not query_tokens:
         return []
 
-    scored = [(score, indexed) for indexed in index if (score := _score_post(query_tokens, indexed)) > 0]
+    scored: list[tuple[int, bool, IndexedPost]] = []
+    for indexed in index:
+        score, used_fuzzy = _score_post(query_tokens, indexed)
+        if score > 0:
+            scored.append((score, used_fuzzy, indexed))
     scored.sort(
-        key=lambda pair: (
-            -pair[0],
-            pair[1].result.date is None,
-            -(pair[1].result.date.toordinal() if pair[1].result.date else 0),
+        key=lambda item: (
+            item[1],
+            -item[0],
+            item[2].result.date is None,
+            -(item[2].result.date.toordinal() if item[2].result.date else 0),
         ),
     )
-    return [indexed.result for _, indexed in scored[:limit]]
+    return [indexed.result for _, _, indexed in scored[:limit]]
 
 
 def search_posts(query: str, posts: list[Post], limit: int = DEFAULT_LIMIT) -> list[SearchResult]:
