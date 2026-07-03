@@ -5,7 +5,10 @@ HTML ``Accept`` header is served as the themed HTML 404 page by the custom
 exception handler in ``main.py``.
 """
 
+import pytest
 from fastapi.testclient import TestClient
+
+pytestmark = pytest.mark.integration
 
 
 def test_get_page_ok(client: TestClient) -> None:

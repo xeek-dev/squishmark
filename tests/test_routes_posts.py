@@ -6,7 +6,10 @@ HTML 404 handler are all exercised end to end. Content comes from the in-memory
 one draft, ``per_page=2``).
 """
 
+import pytest
 from fastapi.testclient import TestClient
+
+pytestmark = pytest.mark.integration
 
 
 def test_list_posts_ok_with_content(client: TestClient) -> None:
