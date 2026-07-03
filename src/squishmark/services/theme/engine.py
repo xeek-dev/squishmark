@@ -3,13 +3,13 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from jinja2 import Environment, TemplateNotFound
+from jinja2 import TemplateNotFound
 
 from squishmark.models.content import Config, Page, Pagination, Post
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme.favicon import FaviconDetector
 from squishmark.services.theme.filters import register_filters
-from squishmark.services.theme.loader import AsyncHybridLoader
+from squishmark.services.theme.loader import AsyncHybridLoader, ThemedEnvironment
 
 if TYPE_CHECKING:
     from squishmark.services.github import GitHubService
@@ -44,12 +44,12 @@ class ThemeEngine:
 
         # Create loader and environment
         self.loader = AsyncHybridLoader(themes_path)
-        self.env = Environment(
+        self.env = ThemedEnvironment(
             loader=self.loader,
             autoescape=True,
             trim_blocks=True,
             lstrip_blocks=True,
-            auto_reload=True,  # Always check uptodate() to support dynamic theme switching
+            auto_reload=True,  # Always check uptodate() to support live theme editing
         )
 
         # Add custom filters
@@ -153,10 +153,9 @@ class ThemeEngine:
         # Resolve theme name (override or config default)
         theme_name = theme_override or config.theme.name
 
-        # Set the loader's current theme before getting template
-        self.loader.current_theme = theme_name
-
-        template = self.env.get_template(template_name)
+        # Theme-prefixed name so lookup is stateless (loader resolves the
+        # custom / theme / default fallback chain from the prefix).
+        template = self.env.get_template(f"{theme_name}/{template_name}")
 
         # Detect favicon if not explicitly set in config
         favicon_url = config.site.favicon
@@ -303,18 +302,10 @@ class ThemeEngine:
         For HTMX swaps where we only need a self-contained snippet (no nav,
         no favicon, no GitHub fetches). The partial must not depend on
         site/theme/canonical context.
-
-        The previous ``current_theme`` is restored after rendering so concurrent
-        requests don't see each other's theme leak through this shared loader.
         """
-        previous_theme = self.loader.current_theme
-        try:
-            if theme_override:
-                self.loader.current_theme = theme_override
-            template = self.env.get_template(template_name)
-            return template.render(**context)
-        finally:
-            self.loader.current_theme = previous_theme
+        theme_name = theme_override or self.loader.default_theme
+        template = self.env.get_template(f"{theme_name}/{template_name}")
+        return template.render(**context)
 
 
 # Global theme engine instance

@@ -474,41 +474,38 @@ async def test_update_note_htmx_form_missing_text_leaves_text_unchanged():
     mock_service.update_note.assert_called_once_with(note_id=1, text=None, is_public=True)
 
 
-@pytest.mark.asyncio
-async def test_render_partial_restores_current_theme():
-    """ThemeEngine.render_partial must restore the previous current_theme after rendering."""
+def test_render_partial_uses_theme_prefixed_name():
+    """render_partial must look up the theme-prefixed template name."""
     from unittest.mock import MagicMock as MM
 
     from squishmark.services.theme.engine import ThemeEngine
 
     engine = ThemeEngine.__new__(ThemeEngine)
     engine.loader = MM()
-    engine.loader.current_theme = "blue-tech"
+    engine.loader.default_theme = "default"
     engine.env = MM()
     engine.env.get_template.return_value.render.return_value = "<div></div>"
 
     engine.render_partial("admin/_note_item.html", theme_override="terminal")
 
-    assert engine.loader.current_theme == "blue-tech"
+    engine.env.get_template.assert_called_once_with("terminal/admin/_note_item.html")
 
 
-@pytest.mark.asyncio
-async def test_render_partial_restores_theme_on_render_exception():
-    """The previous current_theme must be restored even if rendering raises."""
+def test_render_partial_defaults_to_default_theme():
+    """Without an override, render_partial resolves against the default theme."""
     from unittest.mock import MagicMock as MM
 
     from squishmark.services.theme.engine import ThemeEngine
 
     engine = ThemeEngine.__new__(ThemeEngine)
     engine.loader = MM()
-    engine.loader.current_theme = "default"
+    engine.loader.default_theme = "default"
     engine.env = MM()
-    engine.env.get_template.return_value.render.side_effect = RuntimeError("template crash")
+    engine.env.get_template.return_value.render.return_value = "<div></div>"
 
-    with pytest.raises(RuntimeError, match="template crash"):
-        engine.render_partial("admin/_note_item.html", theme_override="terminal")
+    engine.render_partial("admin/_note_item.html")
 
-    assert engine.loader.current_theme == "default"
+    engine.env.get_template.assert_called_once_with("default/admin/_note_item.html")
 
 
 @pytest.mark.asyncio
