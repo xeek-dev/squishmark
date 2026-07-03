@@ -123,35 +123,27 @@ class TestHiddenPage404:
 
 
 class TestGetNavPages:
-    """Tests for ThemeEngine.get_nav_pages() filtering and sorting."""
+    """Tests for ThemeEngine.get_nav_pages() filtering and sorting.
 
-    def _make_page_content(self, title: str, visibility: str = "public", nav_order: int | None = None) -> str:
-        """Build markdown content with frontmatter."""
-        lines = [f"title: {title}", f"visibility: {visibility}"]
-        if nav_order is not None:
-            lines.append(f"nav_order: {nav_order}")
-        return "---\n" + "\n".join(lines) + "\n---\nContent"
+    get_nav_pages reads the shared cached content layer (get_cached_pages),
+    which already excludes hidden pages, so these tests patch it with the
+    visible variant and assert the engine's own public-filter, sort, and
+    truncation logic.
+    """
+
+    def _page(self, title: str, visibility: str = "public", nav_order: int | None = None) -> Page:
+        return Page(slug=title.lower(), title=title, visibility=visibility, nav_order=nav_order)
 
     @pytest.mark.asyncio
     async def test_filters_public_only(self):
-        """Only public pages should appear in nav."""
+        """Only public pages should appear in nav (unlisted excluded)."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        mock_github = AsyncMock()
-        mock_github.list_directory.return_value = [
-            "pages/about.md",
-            "pages/secret.md",
-            "pages/draft.md",
-        ]
-        mock_github.get_file.side_effect = [
-            MagicMock(content=self._make_page_content("About", "public")),
-            MagicMock(content=self._make_page_content("Secret", "hidden")),
-            MagicMock(content=self._make_page_content("Draft", "unlisted")),
-        ]
-
-        engine = ThemeEngine(mock_github)
+        visible = [self._page("About", "public"), self._page("Draft", "unlisted")]
+        engine = ThemeEngine(AsyncMock())
         config = Config()
-        pages = await engine.get_nav_pages(config)
+        with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
+            pages = await engine.get_nav_pages(config)
 
         assert len(pages) == 1
         assert pages[0].title == "About"
@@ -161,23 +153,16 @@ class TestGetNavPages:
         """Pages sort by nav_order ascending (nulls last), then title."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        mock_github = AsyncMock()
-        mock_github.list_directory.return_value = [
-            "pages/contact.md",
-            "pages/about.md",
-            "pages/projects.md",
-            "pages/blog.md",
+        visible = [
+            self._page("Contact", nav_order=2),
+            self._page("About", nav_order=1),
+            self._page("Projects"),
+            self._page("Blog"),
         ]
-        mock_github.get_file.side_effect = [
-            MagicMock(content=self._make_page_content("Contact", nav_order=2)),
-            MagicMock(content=self._make_page_content("About", nav_order=1)),
-            MagicMock(content=self._make_page_content("Projects")),
-            MagicMock(content=self._make_page_content("Blog")),
-        ]
-
-        engine = ThemeEngine(mock_github)
+        engine = ThemeEngine(AsyncMock())
         config = Config()
-        pages = await engine.get_nav_pages(config)
+        with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
+            pages = await engine.get_nav_pages(config)
 
         titles = [p.title for p in pages]
         # nav_order 1, nav_order 2, then alphabetical nulls
@@ -188,21 +173,11 @@ class TestGetNavPages:
         """nav_max_pages should limit the number of pages returned."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        mock_github = AsyncMock()
-        mock_github.list_directory.return_value = [
-            "pages/a.md",
-            "pages/b.md",
-            "pages/c.md",
-        ]
-        mock_github.get_file.side_effect = [
-            MagicMock(content=self._make_page_content("A")),
-            MagicMock(content=self._make_page_content("B")),
-            MagicMock(content=self._make_page_content("C")),
-        ]
-
-        engine = ThemeEngine(mock_github)
+        visible = [self._page("A"), self._page("B"), self._page("C")]
+        engine = ThemeEngine(AsyncMock())
         config = Config(theme=ThemeConfig(nav_max_pages=2))
-        pages = await engine.get_nav_pages(config)
+        with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
+            pages = await engine.get_nav_pages(config)
 
         assert len(pages) == 2
 
@@ -211,11 +186,9 @@ class TestGetNavPages:
         """Should return empty list when no pages exist."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        mock_github = AsyncMock()
-        mock_github.list_directory.return_value = []
-
-        engine = ThemeEngine(mock_github)
+        engine = ThemeEngine(AsyncMock())
         config = Config()
-        pages = await engine.get_nav_pages(config)
+        with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=[])):
+            pages = await engine.get_nav_pages(config)
 
         assert pages == []

@@ -211,6 +211,7 @@ class TestSitemapEndpoint:
 
         with (
             patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()
@@ -257,6 +258,7 @@ class TestSitemapEndpoint:
 
         with (
             patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()
@@ -281,6 +283,7 @@ class TestRobotsEndpoint:
 
         with (
             patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()
