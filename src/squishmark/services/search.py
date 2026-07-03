@@ -148,28 +148,23 @@ def _fuzzy_matches(query_token: str, field_tokens: frozenset[str]) -> bool:
     return False
 
 
-def _field_score(
-    query_token: str, field_tokens: frozenset[str], exact_weight: int, prefix_weight: int, fuzzy_weight: int
-) -> tuple[int, bool]:
-    """Score one query token against one field: exact > prefix > fuzzy.
-
-    Returns (score, used_fuzzy) so the caller can rank fuzzy-dependent
-    posts behind posts with real matches.
-    """
+def _field_score(query_token: str, field_tokens: frozenset[str], exact_weight: int, prefix_weight: int) -> int:
+    """Score one query token against one field: exact tier wins over prefix."""
     if query_token in field_tokens:
-        return exact_weight, False
+        return exact_weight
     if any(token.startswith(query_token) for token in field_tokens):
-        return prefix_weight, False
-    if _fuzzy_matches(query_token, field_tokens):
-        return fuzzy_weight, True
-    return 0, False
+        return prefix_weight
+    return 0
 
 
 def _score_post(query_tokens: list[str], indexed: IndexedPost) -> tuple[int, bool]:
     """Sum field scores per query token; total 0 when any token matches nothing (AND).
 
-    Returns (total, used_fuzzy); used_fuzzy is True when at least one
-    token matched only via the fuzzy tier in every field it hit.
+    Fuzzy is a pure fallback: it is only evaluated for a token with no
+    exact/prefix match in any field, so fuzzy hits never perturb ordering
+    among real-match posts and cost nothing on queries with real hits.
+    Returns (total, used_fuzzy); used_fuzzy is True when any token needed
+    the fallback.
     """
     fields = (
         (indexed.title_tokens, *_WEIGHTS["title"]),
@@ -180,16 +175,15 @@ def _score_post(query_tokens: list[str], indexed: IndexedPost) -> tuple[int, boo
     total = 0
     used_fuzzy = False
     for query_token in query_tokens:
-        token_score = 0
-        token_real_match = False
-        for field_tokens, exact, prefix, fuzzy in fields:
-            score, field_fuzzy = _field_score(query_token, field_tokens, exact, prefix, fuzzy)
-            token_score += score
-            if score > 0 and not field_fuzzy:
-                token_real_match = True
+        token_score = sum(
+            _field_score(query_token, field_tokens, exact, prefix) for field_tokens, exact, prefix, _ in fields
+        )
         if token_score == 0:
-            return 0, False
-        if not token_real_match:
+            token_score = sum(
+                fuzzy for field_tokens, _, _, fuzzy in fields if _fuzzy_matches(query_token, field_tokens)
+            )
+            if token_score == 0:
+                return 0, False
             used_fuzzy = True
         total += token_score
     return total, used_fuzzy

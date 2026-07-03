@@ -272,3 +272,22 @@ class TestBodyMarkdownStripping:
         posts = [_post("t", title="The https survival guide", description="all about png files")]
         assert len(search_posts("https", posts)) == 1
         assert len(search_posts("png", posts)) == 1
+
+
+class TestFuzzyIsPureFallback:
+    def test_fuzzy_adds_nothing_when_token_has_real_match(self):
+        """A token with an exact match anywhere must not collect fuzzy points
+        from other fields, so real-match posts tie on score and date decides."""
+        older_with_fuzzy_body = _post(
+            "older",
+            title="Gumbo recipe",
+            content="a gumbz appears here",
+            date=datetime.date(2026, 1, 1),
+        )
+        newer_plain = _post(
+            "newer",
+            title="Gumbo stories",
+            date=datetime.date(2026, 2, 1),
+        )
+        results = search_posts("gumbo", [older_with_fuzzy_body, newer_plain])
+        assert [r.url for r in results] == ["/posts/newer", "/posts/older"]
