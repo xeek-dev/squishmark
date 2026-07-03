@@ -33,7 +33,7 @@
         {% if post.tags %}
         <div class="post-tags">
             {% for tag in post.tags %}
-            <span class="tag {% if loop.index is odd %}tag-green{% else %}tag-blue{% endif %}">{{ tag }}</span>
+            <a class="tag tag-link {% if loop.index is odd %}tag-green{% else %}tag-blue{% endif %}" href="/tags/{{ tag | urlencode }}">{{ tag }}</a>
             {% endfor %}
         </div>
         {% endif %}

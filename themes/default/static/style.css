@@ -1011,3 +1011,96 @@ a:hover {
         text-align: center;
     }
 }
+
+/* Tag links and tag index */
+.tag-link {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tag-link:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.tag-eyebrow {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+}
+
+.tag-eyebrow a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+.tag-cloud {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.tag-cloud .tag {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.6rem;
+}
+
+.tag-count {
+    margin-left: 0.45rem;
+    opacity: 0.7;
+    font-size: 0.72rem;
+}
+
+/* Shared compact listing (tag pages) */
+.listing-title {
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+}
+
+.listing-posts {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-unit);
+}
+
+.listing-item {
+    padding-bottom: var(--spacing-unit);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.listing-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.listing-item-title {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.listing-item-title a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.listing-item-title a:hover {
+    color: var(--color-accent);
+}
+
+.listing-item-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.listing-item-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0.35rem 0;
+}

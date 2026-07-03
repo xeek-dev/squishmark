@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Posts tagged {{ tag }} - {{ site.title }}{% endblock %}
+
+{% block content %}
+<div class="listing">
+    <p class="tag-eyebrow"><a href="/tags">Tags</a> /</p>
+    <h1 class="listing-title">Posts tagged &ldquo;{{ tag }}&rdquo;</h1>
+
+    {% if posts %}
+    <ul class="listing-posts">
+        {% for post in posts %}
+        <li class="listing-item">
+            <div class="listing-item-head">
+                <h2 class="listing-item-title">
+                    <a href="{{ post.url }}">{{ post.title }}</a>
+                </h2>
+                {% if post.date %}
+                <time class="listing-item-date" datetime="{{ post.date }}">{{ post.date | format_date }}</time>
+                {% endif %}
+            </div>
+            {% if post.description %}
+            <p class="listing-item-desc">{{ post.description }}</p>
+            {% endif %}
+            {% if post.tags %}
+            <div class="post-tags">
+                {% for t in post.tags %}
+                <a class="tag tag-link" href="/tags/{{ t | urlencode }}">{{ t }}</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="no-posts">No posts tagged &ldquo;{{ tag }}&rdquo; yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

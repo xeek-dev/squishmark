@@ -1177,3 +1177,116 @@ img {
         font-size: 0.8rem;
     }
 }
+
+/* Tag links and tag index */
+.tag-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.tag-link:hover {
+    background: rgba(59, 130, 246, 0.22);
+    color: var(--color-accent-light);
+}
+
+.tag-index {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.tag-eyebrow {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+}
+
+.tag-eyebrow a {
+    color: var(--color-accent-light);
+    text-decoration: none;
+}
+
+.tag-cloud {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.tag-cloud .tag {
+    font-size: 0.8rem;
+    padding: 6px 14px;
+}
+
+.tag-count {
+    margin-left: 0.5rem;
+    opacity: 0.75;
+}
+
+/* Shared compact listing (tag pages) */
+.listing {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.listing-title {
+    margin-bottom: 2rem;
+}
+
+.listing-posts {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.listing-item {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    transition: border-color var(--transition);
+}
+
+.listing-item:hover {
+    border-color: var(--color-accent);
+}
+
+.listing-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.listing-item-title {
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.listing-item-title a {
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.listing-item-title a:hover {
+    color: var(--color-accent-light);
+}
+
+.listing-item-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.listing-item-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}

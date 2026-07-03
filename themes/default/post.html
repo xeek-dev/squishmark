@@ -27,7 +27,7 @@
         {% if post.tags %}
         <div class="post-tags">
             {% for tag in post.tags %}
-            <span class="tag">{{ tag }}</span>
+            <a class="tag tag-link" href="/tags/{{ tag | urlencode }}">{{ tag }}</a>
             {% endfor %}
         </div>
         {% endif %}
