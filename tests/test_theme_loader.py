@@ -88,6 +88,42 @@ class TestLoaderFallbackChain:
         assert name == "terminal/base.html"
 
 
+class TestTraversalRejection:
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "terminal/../secrets.txt",
+            "terminal/../../etc/hosts",
+            "../default/base.html",
+            "/etc/hosts",
+            "terminal//etc/hosts",
+            "terminal/..\\..\\etc\\hosts",
+            "..\\etc\\hosts",
+        ],
+    )
+    def test_traversal_names_rejected(self, tmp_path: Path, name: str):
+        _build_themes(tmp_path)
+        loader = AsyncHybridLoader(tmp_path)
+        with pytest.raises(TemplateNotFound):
+            loader.get_source(MagicMock(), name)
+
+    def test_include_traversal_rejected(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        (tmp_path / "terminal" / "evil.html").write_text('{% include "../../secret.txt" %}', encoding="utf-8")
+        (tmp_path / "secret.txt").write_text("SECRET", encoding="utf-8")
+        env = ThemedEnvironment(loader=AsyncHybridLoader(tmp_path))
+        with pytest.raises(TemplateNotFound):
+            env.get_template("terminal/evil.html").render()
+
+    def test_nested_names_still_resolve(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        admin_dir = tmp_path / "terminal" / "admin"
+        admin_dir.mkdir()
+        (admin_dir / "admin.html").write_text("ADMIN:terminal", encoding="utf-8")
+        env = ThemedEnvironment(loader=AsyncHybridLoader(tmp_path))
+        assert env.get_template("terminal/admin/admin.html").render() == "ADMIN:terminal"
+
+
 class TestThemedEnvironmentJoinPath:
     def test_keeps_reference_within_parent_theme(self, tmp_path: Path):
         _build_themes(tmp_path)

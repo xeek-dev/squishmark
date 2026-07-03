@@ -19,6 +19,11 @@ def split_theme(name: str, default_theme: str) -> tuple[str, str]:
     return theme, rest
 
 
+def _is_unsafe(part: str) -> bool:
+    """True when a theme or template name could escape themes_path."""
+    return not part or part.startswith("/") or "\\" in part or ".." in part.split("/")
+
+
 class ThemedEnvironment(Environment):
     """Jinja environment that keeps extends/includes within the parent's theme.
 
@@ -64,6 +69,10 @@ class AsyncHybridLoader(BaseLoader):
     def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
         """Load a template from cache, requested theme, or default theme."""
         theme, name = split_theme(template, self.default_theme)
+
+        # Reject names that could traverse outside themes_path.
+        if _is_unsafe(theme) or _is_unsafe(name):
+            raise TemplateNotFound(template)
 
         # Custom templates from the content repo take precedence, keyed by their
         # bare name as loaded (see ThemeEngine.load_custom_templates).
