@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from squishmark.dependencies import SiteContextDep, ThemeEngineDep, is_admin
 from squishmark.models.content import Pagination
 from squishmark.models.db import get_db_session
-from squishmark.services.content import build_series_context, get_cached_posts, get_featured_posts
+from squishmark.services.content import (
+    build_related_posts,
+    build_series_context,
+    get_cached_posts,
+    get_featured_posts,
+)
 from squishmark.services.notes import NotesService
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -86,12 +91,16 @@ async def get_post(
     # include_drafts, so drafts are automatically excluded for non-admins.
     series_context = build_series_context(post, all_posts)
 
+    # Related posts by shared tags (same draft gating via all_posts).
+    related = build_related_posts(post, all_posts)
+
     # Render
     html = await theme_engine.render_post(
         config,
         post,
         notes,
         featured_posts=featured,
+        related_posts=related,
         **series_context,
     )
 

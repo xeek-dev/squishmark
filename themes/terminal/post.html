@@ -80,6 +80,8 @@
             {% endif %}
         </nav>
         {% endif %}
+        {% set related_label = "// related" %}
+        {% include "_related.html" %}
         {% set share_label = "// share" %}
         {% include "_share.html" %}
         <a href="/posts" class="back-link">&larr; Back to posts</a>

@@ -1,0 +1,16 @@
+{# Related posts. Hidden entirely when there are none. #}
+{% if related_posts %}
+<section class="related-posts" aria-label="Related posts">
+    <p class="related-posts-title">{{ related_label | default("Related posts") }}</p>
+    <ul class="related-posts-list">
+        {% for related in related_posts %}
+        <li class="related-post">
+            <a href="{{ related.url }}">{{ related.title }}</a>
+            {% if related.date %}
+            <time class="related-post-date" datetime="{{ related.date }}">{{ related.date | format_date }}</time>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}

@@ -9,6 +9,8 @@ one draft, ``per_page=2``).
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import FakeGitHubService
+
 pytestmark = pytest.mark.integration
 
 
@@ -80,3 +82,18 @@ def test_draft_detail_200_for_admin(admin_client: TestClient) -> None:
     resp = admin_client.get("/posts/secret-draft")
     assert resp.status_code == 200
     assert "Secret Draft" in resp.text
+
+
+def test_post_detail_shows_related_posts(fake_github: FakeGitHubService, client: TestClient) -> None:
+    """A post detail page surfaces related posts sharing its tags."""
+    tagged = "---\ntitle: {title}\ntags: [python]\n---\n\n# {title}\n\nBody.\n"
+    fake_github.files = {
+        "posts/2026-01-03-main.md": tagged.format(title="Main Post"),
+        "posts/2026-01-02-friend.md": tagged.format(title="Friend Post"),
+        "posts/2026-01-01-buddy.md": tagged.format(title="Buddy Post"),
+    }
+    resp = client.get("/posts/main")
+    assert resp.status_code == 200
+    assert 'class="related-posts"' in resp.text
+    assert "Friend Post" in resp.text
+    assert "Buddy Post" in resp.text
