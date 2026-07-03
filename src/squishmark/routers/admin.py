@@ -2,6 +2,9 @@
 
 import json
 import logging
+import re
+import time
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -71,6 +74,16 @@ class CSRFTokenResponse(BaseModel):
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+def _inject_dev_auth_banner(html: str) -> str:
+    """Insert the dev-mode auth-bypass banner after the opening <body> tag."""
+    templates_dir = Path(__file__).parent.parent / "templates"
+    banner_html = (templates_dir / "dev_auth_banner.html").read_text(encoding="utf-8")
+    banner_css = (templates_dir / "dev_auth_banner.css").read_text(encoding="utf-8")
+    banner = f"<style>{banner_css}</style>{banner_html}"
+    # Callable replacement so backslashes in the banner are inserted literally
+    return re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + banner, html, count=1)
 
 
 def _to_note_response(note: Note) -> NoteResponse:
@@ -210,14 +223,7 @@ async def admin_dashboard(
     # Inject dev mode banner if auth bypass is active
     settings = get_settings()
     if settings.debug and settings.dev_skip_auth:
-        import re
-        from pathlib import Path
-
-        templates_dir = Path(__file__).parent.parent / "templates"
-        banner_html = (templates_dir / "dev_auth_banner.html").read_text()
-        banner_css = (templates_dir / "dev_auth_banner.css").read_text()
-        banner = f"<style>{banner_css}</style>{banner_html}"
-        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
+        html = _inject_dev_auth_banner(html)
 
     return HTMLResponse(content=html)
 
@@ -371,8 +377,6 @@ async def refresh_cache(
     admin: AdminUser,
 ) -> CacheRefreshResponse:
     """Clear and refresh the content cache."""
-    import time
-
     start = time.time()
 
     # Clear the cache

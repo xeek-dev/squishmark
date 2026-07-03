@@ -7,7 +7,7 @@ import pytest
 from fastapi.responses import HTMLResponse
 from httpx import ASGITransport, AsyncClient
 
-from squishmark.main import is_bot_user_agent
+from squishmark.services.analytics_middleware import is_bot_user_agent
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ async def _assert_track_called(headers: dict, path: str, expected: bool, add_htm
         stack[3],
         stack[4],
         stack[5],
-        patch("squishmark.main.track_page_view", new=tracker),
+        patch("squishmark.services.analytics_middleware.track_page_view", new=tracker),
     ):
         from squishmark.main import create_app
 
@@ -144,3 +144,47 @@ async def test_bot_request_to_html_page_not_tracked():
         expected=False,
         add_html_route=True,
     )
+
+
+@pytest.mark.asyncio
+async def test_track_page_view_persists_view(tmp_path, monkeypatch: pytest.MonkeyPatch):
+    """Regression for #118: track_page_view must commit, not just flush.
+
+    Breaking out of the get_db_session loop closed the generator before its
+    post-yield commit, silently rolling back every page view.
+    """
+    from sqlalchemy import func, select
+    from starlette.requests import Request
+
+    from squishmark.config import get_settings
+    from squishmark.models.db import PageView, close_db, get_db_session, init_db
+    from squishmark.services.analytics_middleware import track_page_view
+
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{tmp_path / 'analytics.db'}")
+    get_settings.cache_clear()
+    await init_db()
+    try:
+        request = Request(
+            scope={
+                "type": "http",
+                "method": "GET",
+                "path": "/posts/hello-world",
+                "query_string": b"",
+                "headers": [
+                    (b"user-agent", b"Mozilla/5.0 (Windows NT 10.0) Chrome/120"),
+                    (b"referer", b"https://example.com/"),
+                ],
+                "client": ("203.0.113.7", 4242),
+                "scheme": "http",
+                "server": ("test", 80),
+            }
+        )
+        await track_page_view(request)
+
+        # Verify from a fresh session: the row must have been committed.
+        async for session in get_db_session():
+            result = await session.execute(select(func.count(PageView.id)))
+            assert result.scalar() == 1
+    finally:
+        await close_db()
+        get_settings.cache_clear()
