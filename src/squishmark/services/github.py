@@ -1,6 +1,7 @@
 """GitHub content fetching service."""
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,8 @@ import httpx
 
 from squishmark.config import Settings, parse_file_url
 from squishmark.services.cache import Cache, get_cache
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -77,6 +80,7 @@ class GitHubService:
 
             return GitHubFile(path=path, content=content)
         except Exception:
+            logger.warning("Failed to read local file %r", path, exc_info=True)
             return None
 
     async def _fetch_github_file(self, path: str, ref: str = "main") -> GitHubFile | None:
@@ -93,7 +97,8 @@ class GitHubService:
                 return None
             response.raise_for_status()
             return GitHubFile(path=path, content=response.text)
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            logger.warning("Failed to fetch %s from GitHub: %s", url, exc)
             return None
 
     async def get_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubFile | None:
@@ -122,7 +127,7 @@ class GitHubService:
         else:
             result = await self._fetch_github_file(path, ref)
 
-        # Cache the result (even None to avoid repeated lookups)
+        # Cache only successful results; misses stay uncached so they can retry.
         if use_cache and result is not None:
             await self.cache.set(cache_key, result)
 
@@ -162,6 +167,7 @@ class GitHubService:
                 content_type=self._get_content_type(path),
             )
         except Exception:
+            logger.warning("Failed to read local binary file %r", path, exc_info=True)
             return None
 
     async def _fetch_github_binary_file(self, path: str, ref: str = "main") -> GitHubBinaryFile | None:
@@ -181,7 +187,8 @@ class GitHubService:
                 content=response.content,
                 content_type=self._get_content_type(path),
             )
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            logger.warning("Failed to fetch binary %s from GitHub: %s", url, exc)
             return None
 
     async def get_binary_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubBinaryFile | None:
@@ -233,6 +240,7 @@ class GitHubService:
 
             return await loop.run_in_executor(None, _list_files)
         except Exception:
+            logger.warning("Failed to list local directory %r", path, exc_info=True)
             return []
 
     async def _list_github_directory(self, path: str, ref: str = "main") -> list[str]:
@@ -254,7 +262,8 @@ class GitHubService:
                 return []
 
             return sorted([item["path"] for item in items if item["type"] == "file"])
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
+            logger.warning("Failed to list GitHub directory %s: %s", url, exc)
             return []
 
     async def list_directory(self, path: str, ref: str = "main", use_cache: bool = True) -> list[str]:
@@ -318,7 +327,8 @@ class GitHubService:
             if use_cache:
                 await self.cache.set(cache_key, config)
             return config
-        except yaml.YAMLError:
+        except yaml.YAMLError as exc:
+            logger.warning("Failed to parse config YAML: %s", exc)
             return None
 
 
