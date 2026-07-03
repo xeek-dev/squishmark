@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/xeek-dev/squishmark/compare/v0.3.0...v0.4.0) (2026-07-03)
+
+
+### Features
+
+* **engine:** add tag pages, archive, and related posts ([#127](https://github.com/xeek-dev/squishmark/issues/127)) ([09c8a1b](https://github.com/xeek-dev/squishmark/commit/09c8a1b6cbbcaf1c43e337b21d57a72facf96c67))
+* **themes:** split theme homepages from the posts listing ([#130](https://github.com/xeek-dev/squishmark/issues/130)) ([b0b46df](https://github.com/xeek-dev/squishmark/commit/b0b46df290e380b9ea3df76cd9591703e461e0ca))
+
+
+### Bug Fixes
+
+* **terminal:** move home search out of hero so results are not clipped ([b0b46df](https://github.com/xeek-dev/squishmark/commit/b0b46df290e380b9ea3df76cd9591703e461e0ca))
+
 ## [0.3.0](https://github.com/xeek-dev/squishmark/compare/v0.2.0...v0.3.0) (2026-07-03)
 
 
