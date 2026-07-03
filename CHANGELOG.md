@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.3.0](https://github.com/xeek-dev/squishmark/compare/v0.2.0...v0.3.0) (2026-07-03)
+
+
+### Features
+
+* **search:** add fuzzy match tier for typo tolerance ([#124](https://github.com/xeek-dev/squishmark/issues/124)) ([ada0721](https://github.com/xeek-dev/squishmark/commit/ada072156f6ae6149b1a323e6d0936bb7329c991))
+* **search:** add server-side search with navbar ui across themes ([#101](https://github.com/xeek-dev/squishmark/issues/101)) ([bd39bab](https://github.com/xeek-dev/squishmark/commit/bd39bab9b16c2d705f845bb35ef0c300451a0c5a))
+* **themes:** add social share buttons to posts ([#126](https://github.com/xeek-dev/squishmark/issues/126)) ([eabd895](https://github.com/xeek-dev/squishmark/commit/eabd8957b41dcbcdcc6a4e61a3f52ea78d5c9c11))
+
+
+### Bug Fixes
+
+* **analytics:** commit page views by letting the session generator complete ([af83c32](https://github.com/xeek-dev/squishmark/commit/af83c32996ac7575224b9664ce7340fe9a925f32))
+* **markdown:** follow pygments_style config changes without restart ([#122](https://github.com/xeek-dev/squishmark/issues/122)) ([6ca96bb](https://github.com/xeek-dev/squishmark/commit/6ca96bbe697e560b79af3bce8e8c79d106dcb964))
+* **search:** review follow-ups for body relevance, single-parse warm, scorer rename, and frontend scoping ([#106](https://github.com/xeek-dev/squishmark/issues/106)) ([65cf20b](https://github.com/xeek-dev/squishmark/commit/65cf20bfe8dd4b7edf618951cd40aea7ff477b0c))
+* **theme:** drop stale jinja cache on reload and inject services into ThemeEngine ([76eeee9](https://github.com/xeek-dev/squishmark/commit/76eeee901d4d596f674793202d0ba100e8475951))
+* **theme:** make template lookup stateless with theme-prefixed names ([#116](https://github.com/xeek-dev/squishmark/issues/116)) ([4551d1b](https://github.com/xeek-dev/squishmark/commit/4551d1b2903160c455c1ee4c6ac261a5db3514ea))
+* **themes:** fall back to execCommand when clipboard write rejects ([eabd895](https://github.com/xeek-dev/squishmark/commit/eabd8957b41dcbcdcc6a4e61a3f52ea78d5c9c11))
+
+
+### Code Refactoring
+
+* **deps:** add SiteContext dependency to remove per-route config ritual ([#123](https://github.com/xeek-dev/squishmark/issues/123)) ([680de62](https://github.com/xeek-dev/squishmark/commit/680de62ba67cd5d5ad995152708974328077b76a))
+* **engine:** split asset routes and analytics middleware out of main ([#115](https://github.com/xeek-dev/squishmark/issues/115)) ([af83c32](https://github.com/xeek-dev/squishmark/commit/af83c32996ac7575224b9664ce7340fe9a925f32))
+* **services:** replace module singletons with DI container ([#120](https://github.com/xeek-dev/squishmark/issues/120)) ([76eeee9](https://github.com/xeek-dev/squishmark/commit/76eeee901d4d596f674793202d0ba100e8475951))
+
+
+### Tests
+
+* **routes:** cover remaining HTTP endpoints and switch to integration marker ([#125](https://github.com/xeek-dev/squishmark/issues/125)) ([312baae](https://github.com/xeek-dev/squishmark/commit/312baaee2f2cafeffe021e6f6bc20b839e33b8a0))
+
+
+### Miscellaneous
+
+* **deps:** Bump actions/checkout from 6 to 7 ([#104](https://github.com/xeek-dev/squishmark/issues/104)) ([bdcd663](https://github.com/xeek-dev/squishmark/commit/bdcd663280f327fba3db6b8f262bad6db7a913df))
+* **engine:** log github fetch errors and tidy admin router ([#114](https://github.com/xeek-dev/squishmark/issues/114)) ([2a911fd](https://github.com/xeek-dev/squishmark/commit/2a911fdd114f9780301d7e769febec5de210b949))
+
 ## [0.2.0](https://github.com/xeek-dev/squishmark/compare/v0.1.0...v0.2.0) (2026-06-11)
 
 
