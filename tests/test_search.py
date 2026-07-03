@@ -86,8 +86,71 @@ class TestPrefixMatching:
         assert len(search_posts("pyth", posts)) == 1
 
     def test_mid_word_substring_does_not_match(self):
+        # "frig" sits inside "refrigerator" but is neither a prefix of it
+        # nor within the fuzzy ratio threshold (0.5), so it must not match.
+        posts = [_post("fridge-post", title="Refrigerator Repair")]
+        assert search_posts("frig", posts) == []
+
+
+class TestFuzzyMatching:
+    def test_single_char_typo_matches(self):
+        posts = [_post("gumbo-post", title="Gumbo Recipe")]
+        results = search_posts("gumob", posts)
+        assert [r.url for r in results] == ["/posts/gumbo-post"]
+
+    def test_missing_char_typo_matches(self):
+        posts = [_post("space-post", title="Intergalactic Travel")]
+        assert len(search_posts("intergalatic", posts)) == 1
+
+    def test_near_prefix_typo_matches_via_fuzzy(self):
+        # "ython" is not a prefix of "python" but is one edit away
+        # (ratio 0.909), so the fuzzy tier picks it up.
         posts = [_post("python-post", title="Python Tips")]
-        assert search_posts("ython", posts) == []
+        assert len(search_posts("ython", posts)) == 1
+
+    def test_ratio_exactly_at_threshold_matches(self):
+        # ratio("gumbz", "gumbo") == 0.8, the inclusive threshold.
+        posts = [_post("gumbo-post", title="Gumbo Recipe")]
+        assert len(search_posts("gumbz", posts)) == 1
+
+    def test_ratio_below_threshold_does_not_match(self):
+        # ratio("gumb", "gump") == 0.75, just under the threshold.
+        posts = [_post("gump-post", title="Gump Tales")]
+        assert search_posts("gumb", posts) == []
+
+    def test_short_query_token_never_fuzzy_matches(self):
+        # ratio("tew", "stew") == 0.857, above the threshold, but tokens
+        # under 4 chars are excluded from the fuzzy tier.
+        posts = [_post("stew-post", title="Stew Night")]
+        assert search_posts("tew", posts) == []
+
+    def test_fuzzy_ranks_below_exact_and_prefix_in_same_field(self):
+        posts = [
+            _post("fuzzy-hit", title="Gumbz Files"),
+            _post("prefix-hit", title="Gumbology Studies"),
+            _post("exact-hit", title="Gumbo Recipe"),
+        ]
+        results = search_posts("gumbo", posts)
+        assert [r.url for r in results] == [
+            "/posts/exact-hit",
+            "/posts/prefix-hit",
+            "/posts/fuzzy-hit",
+        ]
+
+    def test_fuzzy_never_outranks_real_match_across_fields(self):
+        # A fuzzy title hit carries more weight than an exact body hit,
+        # but posts needing fuzzy still sort behind real matches.
+        posts = [
+            _post("fuzzy-title", title="Gumbz"),
+            _post("exact-body", title="Cooking Notes", content="gumbo simmering all day"),
+        ]
+        results = search_posts("gumbo", posts)
+        assert [r.url for r in results] == ["/posts/exact-body", "/posts/fuzzy-title"]
+
+    def test_fuzzy_token_counts_toward_and_semantics(self):
+        posts = [_post("gumbo-post", title="Gumbo Recipe", content="cooking at midnight")]
+        assert len(search_posts("gumob midnight", posts)) == 1
+        assert search_posts("gumob zeppelin", posts) == []
 
 
 class TestMultiTokenAnd:
@@ -209,3 +272,22 @@ class TestBodyMarkdownStripping:
         posts = [_post("t", title="The https survival guide", description="all about png files")]
         assert len(search_posts("https", posts)) == 1
         assert len(search_posts("png", posts)) == 1
+
+
+class TestFuzzyIsPureFallback:
+    def test_fuzzy_adds_nothing_when_token_has_real_match(self):
+        """A token with an exact match anywhere must not collect fuzzy points
+        from other fields, so real-match posts tie on score and date decides."""
+        older_with_fuzzy_body = _post(
+            "older",
+            title="Gumbo recipe",
+            content="a gumbz appears here",
+            date=datetime.date(2026, 1, 1),
+        )
+        newer_plain = _post(
+            "newer",
+            title="Gumbo stories",
+            date=datetime.date(2026, 2, 1),
+        )
+        results = search_posts("gumbo", [older_with_fuzzy_body, newer_plain])
+        assert [r.url for r in results] == ["/posts/newer", "/posts/older"]
