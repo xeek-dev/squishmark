@@ -52,12 +52,14 @@
          data-pixel-color1="#3b82f6" data-pixel-color2="#4ade80"></div>
     {% endif %}
     <p class="hero-subtitle">{{ site.description }}</p>
-
-    <div class="home-search">
-        {% set search_mode = "input" %}
-        {% include "_search.html" %}
-    </div>
 </section>
+
+{# Outside .hero: its overflow hidden (pixel glow clipping) would cut off
+   the search results dropdown. #}
+<div class="home-search">
+    {% set search_mode = "input" %}
+    {% include "_search.html" %}
+</div>
 
 <div class="home-sections">
     <section class="home-section" id="latest">
