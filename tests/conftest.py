@@ -188,13 +188,13 @@ def _reset_environment(
     """Per-test isolation of settings and (for integration tests) the fake.
 
     For tests marked ``@pytest.mark.integration`` this pins the environment the
-    real ``create_app()`` reads (file-based SQLite — ``:memory:`` loses tables
-    across the separate connections SQLAlchemy's async pool opens — plus
+    real ``create_app()`` reads (file-based SQLite, since ``:memory:`` loses
+    tables across the separate connections SQLAlchemy's async pool opens, plus
     secret/admin/webhook config) and injects a default fake GitHub service into
     the lifespan-built container by patching ``create_github_service``.
 
     The env-pinning is scoped to marked tests so it never pollutes
-    ``os.environ`` for the pre-existing suites — several of which build a bare
+    ``os.environ`` for the pre-existing suites, several of which build a bare
     ``Settings()`` and assert on environment-derived defaults.
     """
     is_integration = request.node.get_closest_marker("integration") is not None
