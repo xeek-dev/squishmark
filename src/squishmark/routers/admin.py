@@ -15,9 +15,11 @@ from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
 from squishmark.services.cache import get_cache
+from squishmark.services.content import warm_content_caches
 from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
+from squishmark.services.search import warm_search_indexes
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
 
 logger = logging.getLogger(__name__)
@@ -398,6 +400,10 @@ async def refresh_cache(
 
     # Reload theme engine
     await get_theme_engine(github_service)
+
+    # Pre-parse posts, pages, and search indexes so the next request isn't cold
+    await warm_content_caches()
+    await warm_search_indexes()
 
     duration_ms = (time.time() - start) * 1000
     warmed = cache.size

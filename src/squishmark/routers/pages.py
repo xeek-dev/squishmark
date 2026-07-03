@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from squishmark.dependencies import is_admin
 from squishmark.models.content import Config
 from squishmark.models.db import get_db_session
-from squishmark.services.content import get_all_posts, get_featured_posts
+from squishmark.services.content import get_cached_posts, get_featured_posts
 from squishmark.services.github import get_github_service
 from squishmark.services.markdown import get_markdown_service
 from squishmark.services.notes import NotesService
@@ -56,8 +56,8 @@ async def get_page(
     notes_service = NotesService(db)
     notes = await notes_service.get_for_path(f"/{slug}", include_private=admin)
 
-    # Featured posts for template context
-    all_posts = await get_all_posts(github_service, markdown_service)
+    # Featured posts for template context (published only, shown to everyone)
+    all_posts = await get_cached_posts(include_drafts=False)
     featured = get_featured_posts(all_posts, config.site)
 
     # Render

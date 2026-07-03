@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from jinja2 import Environment, TemplateNotFound
 
 from squishmark.models.content import Config, Page, Pagination, Post
-from squishmark.services.markdown import get_markdown_service
+from squishmark.services.content import get_cached_pages
 from squishmark.services.theme.favicon import FaviconDetector
 from squishmark.services.theme.filters import register_filters
 from squishmark.services.theme.loader import AsyncHybridLoader
@@ -86,19 +86,12 @@ class ThemeEngine:
         alphabetically by title.  The list is truncated to
         ``config.theme.nav_max_pages`` when set.
         """
-        page_files = await self.github_service.list_directory("pages")
-        markdown_service = get_markdown_service(config)
-
-        pages: list[Page] = []
-        for path in page_files:
-            if not path.endswith(".md"):
-                continue
-            file = await self.github_service.get_file(path)
-            if file is None:
-                continue
-            page = markdown_service.parse_page(path, file.content)
-            if page.visibility == "public":
-                pages.append(page)
+        # Reuse the shared cached content layer so pages are parsed at most once
+        # per TTL instead of on every render. The visible variant already
+        # excludes hidden pages; keep the explicit public filter (unlisted pages
+        # stay out of the navbar).
+        cached_pages = await get_cached_pages(include_hidden=False)
+        pages = [p for p in cached_pages if p.visibility == "public"]
 
         # Sort: pages with nav_order first (ascending), then alphabetical by title
         pages.sort(key=lambda p: (p.nav_order is None, p.nav_order or 0, p.title))

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from squishmark.config import get_settings
 from squishmark.services.cache import get_cache
+from squishmark.services.content import warm_content_caches
 from squishmark.services.github import get_github_service
 from squishmark.services.search import warm_search_indexes
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
@@ -90,6 +91,9 @@ async def github_webhook(request: Request) -> dict:
 
     # Reload theme engine
     await get_theme_engine(github_service)
+
+    # Pre-parse posts and pages so the first render after a push isn't cold
+    await warm_content_caches()
 
     # Pre-build both search index variants so the first search isn't cold
     await warm_search_indexes()

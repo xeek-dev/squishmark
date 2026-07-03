@@ -7,9 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from squishmark.dependencies import is_admin
 from squishmark.models.content import Config, Pagination
 from squishmark.models.db import get_db_session
-from squishmark.services.content import build_series_context, get_all_posts, get_featured_posts
+from squishmark.services.content import build_series_context, get_cached_posts, get_featured_posts
 from squishmark.services.github import get_github_service
-from squishmark.services.markdown import get_markdown_service
 from squishmark.services.notes import NotesService
 from squishmark.services.theme import get_theme_engine
 
@@ -28,12 +27,9 @@ async def list_posts(
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
 
-    # Get markdown service with config
-    markdown_service = get_markdown_service(config)
-
     # Get all posts (admins can see drafts)
     include_drafts = is_admin(request)
-    all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+    all_posts = await get_cached_posts(include_drafts=include_drafts)
 
     # Paginate
     per_page = config.posts.per_page
@@ -77,12 +73,9 @@ async def get_post(
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
 
-    # Get markdown service with config
-    markdown_service = get_markdown_service(config)
-
     # Get all posts and find the matching one (admins can see drafts)
     include_drafts = is_admin(request)
-    all_posts = await get_all_posts(github_service, markdown_service, include_drafts=include_drafts)
+    all_posts = await get_cached_posts(include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
 

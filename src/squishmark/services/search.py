@@ -13,11 +13,9 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from squishmark.models.content import Config, Post
+from squishmark.models.content import Post
 from squishmark.services.cache import get_cache
-from squishmark.services.content import get_all_posts
-from squishmark.services.github import get_github_service
-from squishmark.services.markdown import get_markdown_service
+from squishmark.services.content import get_cached_posts
 
 MIN_QUERY_LENGTH = 2
 DEFAULT_LIMIT = 8
@@ -182,11 +180,12 @@ def search_posts(query: str, posts: list[Post], limit: int = DEFAULT_LIMIT) -> l
 async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     """Return the cached index for the audience, building it on miss.
 
-    Building is the expensive part (get_all_posts re-parses every post's
-    markdown), so one miss parses everything once with drafts included and
-    caches both audience variants — the published index is just the drafts
-    filtered out. Both inherit the cache's TTL and are invalidated by the
-    webhook's cache.clear() like every other derived blob.
+    Building is the expensive part (tokenizing every post body), so one miss
+    indexes everything once with drafts included and caches both audience
+    variants: the published index is just the drafts filtered out. Both inherit
+    the cache's TTL and are invalidated by the webhook's cache.clear() like
+    every other derived blob. The parsed posts come from the shared cached
+    content layer (get_cached_posts), so they are parsed at most once per TTL.
     """
     cache = get_cache()
     key = SEARCH_INDEX_ALL_KEY if include_drafts else SEARCH_INDEX_PUBLISHED_KEY
@@ -194,11 +193,7 @@ async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     if cached is not None:
         return cached
 
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
-    config = Config.from_dict(config_data)
-    markdown_service = get_markdown_service(config)
-    posts = await get_all_posts(github_service, markdown_service, include_drafts=True)
+    posts = await get_cached_posts(include_drafts=True)
 
     all_index = build_search_index(posts)
     published_index = [indexed for indexed in all_index if not indexed.result.draft]
