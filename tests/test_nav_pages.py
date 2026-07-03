@@ -135,7 +135,7 @@ class TestGetNavPages:
         from squishmark.services.theme.engine import ThemeEngine
 
         visible = [self._page("About", "public"), self._page("Draft", "unlisted")]
-        engine = ThemeEngine(AsyncMock(), services=MagicMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -154,7 +154,7 @@ class TestGetNavPages:
             self._page("Projects"),
             self._page("Blog"),
         ]
-        engine = ThemeEngine(AsyncMock(), services=MagicMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -169,7 +169,7 @@ class TestGetNavPages:
         from squishmark.services.theme.engine import ThemeEngine
 
         visible = [self._page("A"), self._page("B"), self._page("C")]
-        engine = ThemeEngine(AsyncMock(), services=MagicMock())
+        engine = ThemeEngine(MagicMock())
         config = Config(theme=ThemeConfig(nav_max_pages=2))
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -181,7 +181,7 @@ class TestGetNavPages:
         """Should return empty list when no pages exist."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        engine = ThemeEngine(AsyncMock(), services=MagicMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=[])):
             pages = await engine.get_nav_pages(config)

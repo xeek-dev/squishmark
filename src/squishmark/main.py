@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Theme engine loads custom templates from the content repo (async), so it
     # is built here rather than in build_services. It holds a back-reference to
     # the container so get_nav_pages can reach the cached content layer.
-    theme_engine = ThemeEngine(services.github, services=services)
+    theme_engine = ThemeEngine(services)
     await theme_engine.load_custom_templates()
     app.state.theme_engine = theme_engine
     logger.info("Theme engine initialized")

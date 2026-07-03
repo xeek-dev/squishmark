@@ -13,7 +13,6 @@ from squishmark.services.theme.loader import AsyncHybridLoader, ThemedEnvironmen
 
 if TYPE_CHECKING:
     from squishmark.services.container import Services
-    from squishmark.services.github import GitHubService
 
 # Default pygments style shipped with each bundled theme.
 # When the user's configured pygments_style matches, the theme's hand-tuned
@@ -30,15 +29,11 @@ class ThemeEngine:
 
     def __init__(
         self,
-        github_service: "GitHubService",
+        services: "Services",
         themes_path: Path | None = None,
-        services: "Services | None" = None,
     ) -> None:
-        self.github_service = github_service
-        # Needed by get_nav_pages to reach the shared cached content layer.
-        # Set at construction in production; None in unit tests that patch
-        # get_cached_pages directly.
         self.services = services
+        self.github_service = services.github
 
         # Default to the bundled themes directory
         if themes_path is None:
@@ -62,7 +57,7 @@ class ThemeEngine:
         register_filters(self.env)
 
         # Favicon detector for content repository
-        self.favicon_detector = FaviconDetector(github_service)
+        self.favicon_detector = FaviconDetector(self.github_service)
 
     async def load_custom_templates(self) -> int:
         """
@@ -96,7 +91,6 @@ class ThemeEngine:
         # per TTL instead of on every render. The visible variant already
         # excludes hidden pages; keep the explicit public filter (unlisted pages
         # stay out of the navbar).
-        assert self.services is not None, "ThemeEngine.services must be set before rendering"
         cached_pages = await get_cached_pages(self.services, include_hidden=False)
         pages = [p for p in cached_pages if p.visibility == "public"]
 
@@ -316,4 +310,8 @@ class ThemeEngine:
         """
         self.favicon_detector.clear_cache()
         self.loader.clear_cache()
+        # Custom templates report uptodate=True, so Jinja's compiled-template
+        # cache must be dropped too or edited templates keep serving stale.
+        if self.env.cache is not None:
+            self.env.cache.clear()
         await self.load_custom_templates()
