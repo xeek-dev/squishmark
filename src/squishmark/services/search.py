@@ -35,7 +35,7 @@ _WORD_RE = re.compile(r"[a-z0-9]+")
 # HTML tags, and link targets don't pollute the index ("http"/"png" must
 # not match every post). Code-block *text* is deliberately kept searchable
 # — readers search for function names and commands that only appear in
-# code. Image regex runs before link regex ("![...](...)"" contains link
+# code. Image regex runs before link regex ("![...](...)" contains link
 # syntax); bare-URL regex runs last, after link targets are already gone.
 _MD_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
 _MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
