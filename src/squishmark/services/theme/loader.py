@@ -6,32 +6,57 @@ from typing import Any
 from jinja2 import BaseLoader, Environment, TemplateNotFound
 
 
+def split_theme(name: str, default_theme: str) -> tuple[str, str]:
+    """Split a theme-prefixed template name into ``(theme, template)``.
+
+    Names are of the form ``"<theme>/<template>"`` (e.g. ``"terminal/post.html"``
+    or ``"terminal/admin/admin.html"``). A name without a slash carries no theme
+    prefix and resolves against the default theme.
+    """
+    theme, sep, rest = name.partition("/")
+    if not sep:
+        return default_theme, name
+    return theme, rest
+
+
+def _is_unsafe(part: str) -> bool:
+    """True when a theme or template name could escape themes_path."""
+    return not part or part.startswith("/") or "\\" in part or ".." in part.split("/")
+
+
+class ThemedEnvironment(Environment):
+    """Jinja environment that keeps extends/includes within the parent's theme.
+
+    Template names are theme-prefixed (``"<theme>/<name>"``). When a template
+    references another by bare name, the reference is resolved against the
+    parent's theme so inheritance stays within the requested theme. Fallback to
+    the default theme is handled by :class:`AsyncHybridLoader`.
+    """
+
+    def join_path(self, template: str, parent: str) -> str:
+        theme, sep, _rest = parent.partition("/")
+        if not sep:
+            return template
+        return f"{theme}/{template}"
+
+
 class AsyncHybridLoader(BaseLoader):
     """
     Async-friendly template loader that caches templates in memory.
     Templates must be pre-loaded before rendering.
 
-    Supports loading from:
-    1. Custom templates cache (from content repo)
-    2. Current bundled theme directory
+    Lookup is stateless: the requested theme is encoded in the template name
+    (``"<theme>/<name>"``). For each lookup the sources are searched in order:
+
+    1. Custom templates cache (from content repo), keyed by bare name
+    2. Requested theme directory
     3. Default bundled theme directory (fallback)
     """
 
     def __init__(self, themes_path: Path, default_theme: str = "default") -> None:
         self.themes_path = themes_path
         self.default_theme = default_theme
-        self._current_theme: str = default_theme
         self._template_cache: dict[str, str] = {}
-
-    @property
-    def current_theme(self) -> str:
-        """Get the current theme name."""
-        return self._current_theme
-
-    @current_theme.setter
-    def current_theme(self, value: str) -> None:
-        """Set the current theme name."""
-        self._current_theme = value
 
     def add_template(self, name: str, source: str) -> None:
         """Add a template to the cache."""
@@ -42,22 +67,29 @@ class AsyncHybridLoader(BaseLoader):
         self._template_cache.clear()
 
     def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
-        """Load a template from cache, current theme, or default theme."""
-        # Check cache first (custom templates from content repo)
-        if template in self._template_cache:
-            return self._template_cache[template], template, lambda: True
+        """Load a template from cache, requested theme, or default theme."""
+        theme, name = split_theme(template, self.default_theme)
 
-        # Try current theme directory
-        if self._current_theme != self.default_theme:
-            current_path = self.themes_path / self._current_theme / template
-            if current_path.exists():
-                # Return lambda: False to force reload when theme changes
-                return current_path.read_text(encoding="utf-8"), str(current_path), lambda: False
+        # Reject names that could traverse outside themes_path.
+        if _is_unsafe(theme) or _is_unsafe(name):
+            raise TemplateNotFound(template)
 
-        # Fall back to default theme
-        default_path = self.themes_path / self.default_theme / template
+        # Custom templates from the content repo take precedence, keyed by their
+        # bare name as loaded (see ThemeEngine.load_custom_templates).
+        if name in self._template_cache:
+            return self._template_cache[name], template, lambda: True
+
+        # Requested theme directory (skipped when it is the default theme).
+        # Return the prefixed name so join_path can recover the theme, and
+        # lambda: False to always re-read (supports live theme editing).
+        if theme != self.default_theme:
+            theme_path = self.themes_path / theme / name
+            if theme_path.exists():
+                return theme_path.read_text(encoding="utf-8"), template, lambda: False
+
+        # Fall back to the default theme.
+        default_path = self.themes_path / self.default_theme / name
         if default_path.exists():
-            # Return lambda: False to force reload when theme changes
-            return default_path.read_text(encoding="utf-8"), str(default_path), lambda: False
+            return default_path.read_text(encoding="utf-8"), template, lambda: False
 
         raise TemplateNotFound(template)
