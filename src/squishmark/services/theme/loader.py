@@ -66,6 +66,21 @@ class AsyncHybridLoader(BaseLoader):
         """Clear the template cache."""
         self._template_cache.clear()
 
+    def has_theme_template(self, theme: str, name: str) -> bool:
+        """True when ``theme``'s own directory or a content-repo override
+        provides ``name``.
+
+        The default-theme fallback is deliberately excluded: a template that
+        only exists in the default theme is not reported for other themes.
+        When ``theme`` is the default theme, its own directory is checked as
+        normal (that is the active theme's file, not a fallback).
+        """
+        if _is_unsafe(theme) or _is_unsafe(name):
+            return False
+        if name in self._template_cache:
+            return True
+        return (self.themes_path / theme / name).is_file()
+
     def get_source(self, environment: Environment, template: str) -> tuple[str, str | None, Any]:
         """Load a template from cache, requested theme, or default theme."""
         theme, name = split_theme(template, self.default_theme)

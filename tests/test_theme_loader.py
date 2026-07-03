@@ -90,6 +90,55 @@ class TestLoaderFallbackChain:
         assert name == "terminal/base.html"
 
 
+class TestHasThemeTemplate:
+    """has_theme_template counts the theme's own dir and custom overrides, but
+    never the default-theme fallback (issue #32)."""
+
+    def test_own_theme_dir_reports_true(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        (tmp_path / "terminal" / "home.html").write_text("HOME:terminal", encoding="utf-8")
+        loader = AsyncHybridLoader(tmp_path)
+        assert loader.has_theme_template("terminal", "home.html") is True
+
+    def test_default_fallback_not_counted(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        # home.html only in the default theme.
+        (tmp_path / "default" / "home.html").write_text("HOME:default", encoding="utf-8")
+        loader = AsyncHybridLoader(tmp_path)
+        # terminal has none of its own, and the default fallback must not leak.
+        assert loader.has_theme_template("terminal", "home.html") is False
+
+    def test_default_theme_own_dir_counted(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        (tmp_path / "default" / "home.html").write_text("HOME:default", encoding="utf-8")
+        loader = AsyncHybridLoader(tmp_path)
+        # For the default theme itself, its own dir is the active theme's file.
+        assert loader.has_theme_template("default", "home.html") is True
+
+    def test_custom_override_reports_true(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        loader = AsyncHybridLoader(tmp_path)
+        loader.add_template("home.html", "HOME:custom")
+        assert loader.has_theme_template("terminal", "home.html") is True
+
+    def test_missing_reports_false(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        loader = AsyncHybridLoader(tmp_path)
+        assert loader.has_theme_template("terminal", "home.html") is False
+
+    def test_unsafe_name_reports_false(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        loader = AsyncHybridLoader(tmp_path)
+        assert loader.has_theme_template("terminal", "../secrets.txt") is False
+
+    def test_engine_delegates_to_loader(self, tmp_path: Path):
+        _build_themes(tmp_path)
+        (tmp_path / "terminal" / "home.html").write_text("HOME:terminal", encoding="utf-8")
+        engine = _make_engine(tmp_path)
+        assert engine.has_template("home.html", "terminal") is True
+        assert engine.has_template("home.html", "default") is False
+
+
 class TestTraversalRejection:
     @pytest.mark.parametrize(
         "name",

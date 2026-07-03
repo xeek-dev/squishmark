@@ -128,6 +128,15 @@ class ThemeEngine:
         # Unknown theme or user overrode the style -- use dynamic route
         return "/pygments.css"
 
+    def has_template(self, name: str, theme_name: str) -> bool:
+        """True when the active theme resolves ``name`` from its own directory
+        or a content-repo override.
+
+        The default-theme fallback is excluded, so a template shipped only by
+        the default theme does not leak onto every other theme.
+        """
+        return self.loader.has_theme_template(theme_name, name)
+
     async def render(
         self,
         template_name: str,
