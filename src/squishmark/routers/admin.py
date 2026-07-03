@@ -77,10 +77,11 @@ DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 def _inject_dev_auth_banner(html: str) -> str:
     """Insert the dev-mode auth-bypass banner after the opening <body> tag."""
     templates_dir = Path(__file__).parent.parent / "templates"
-    banner_html = (templates_dir / "dev_auth_banner.html").read_text()
-    banner_css = (templates_dir / "dev_auth_banner.css").read_text()
+    banner_html = (templates_dir / "dev_auth_banner.html").read_text(encoding="utf-8")
+    banner_css = (templates_dir / "dev_auth_banner.css").read_text(encoding="utf-8")
     banner = f"<style>{banner_css}</style>{banner_html}"
-    return re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
+    # Callable replacement so backslashes in the banner are inserted literally
+    return re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + banner, html, count=1)
 
 
 def _to_note_response(note: Note) -> NoteResponse:
