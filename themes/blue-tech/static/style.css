@@ -1394,8 +1394,12 @@ img {
 }
 
 .home-section-title {
-    font-size: 1.05rem;
-    font-weight: 700;
+    color: var(--color-accent);
+    opacity: 0.75;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
     line-height: 1.2;
 }
 
