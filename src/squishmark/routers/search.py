@@ -8,7 +8,7 @@ from squishmark.services.search import (
     DEFAULT_LIMIT,
     MIN_QUERY_LENGTH,
     get_search_index,
-    search_index,
+    query_index,
 )
 
 router = APIRouter(tags=["search"])
@@ -27,7 +27,7 @@ async def search(request: Request, q: str = Query("", max_length=200)) -> JSONRe
 
     if len(query) >= MIN_QUERY_LENGTH:
         index = await get_search_index(include_drafts=is_admin(request))
-        results = [r.model_dump(mode="json") for r in search_index(query, index, limit=DEFAULT_LIMIT)]
+        results = [r.model_dump(mode="json") for r in query_index(query, index, limit=DEFAULT_LIMIT)]
 
     return JSONResponse(
         content={"query": query, "results": results},

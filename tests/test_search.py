@@ -10,8 +10,9 @@ from squishmark.models.content import Post
 from squishmark.services.search import (
     DEFAULT_LIMIT,
     build_search_index,
-    search_index,
+    query_index,
     search_posts,
+    strip_markdown_noise,
     tokenize,
 )
 
@@ -160,7 +161,51 @@ class TestResultShape:
         assert result.date == datetime.date(2026, 2, 15)
         assert result.draft is False
 
-    def test_search_index_matches_search_posts(self):
+    def test_query_index_matches_search_posts(self):
         posts = [_post("a", title="Gumbo")]
         index = build_search_index(posts)
-        assert search_index("gumbo", index) == search_posts("gumbo", posts)
+        assert query_index("gumbo", index) == search_posts("gumbo", posts)
+
+
+class TestBodyMarkdownStripping:
+    def test_link_url_not_indexed_but_link_text_is(self):
+        posts = [_post("linked", content="Read [the gumbo guide](https://example.com/gumbo-guide.html) today")]
+        assert len(search_posts("guide", posts)) == 1
+        assert search_posts("example", posts) == []
+        assert search_posts("https", posts) == []
+
+    def test_image_url_not_indexed_but_alt_text_is(self):
+        posts = [_post("pic", content="![gumbo pot photo](/static/images/pot-final.png)")]
+        assert len(search_posts("photo", posts)) == 1
+        assert search_posts("png", posts) == []
+        assert search_posts("static", posts) == []
+
+    def test_bare_url_not_indexed(self):
+        posts = [_post("bare", content="See https://gumbo-archive.example.org/recipes for more")]
+        assert search_posts("archive", posts) == []
+        assert search_posts("recipes", posts) == []
+
+    def test_reference_link_definition_not_indexed(self):
+        posts = [_post("ref", content="Try the stew[1]\n\n[1]: https://example.com/stew-details\n")]
+        assert search_posts("details", posts) == []
+        assert len(search_posts("stew", posts)) == 1
+
+    def test_html_tags_not_indexed_but_their_text_is(self):
+        posts = [_post("html", content='<div class="callout">gumbo tips inside</div>')]
+        assert len(search_posts("tips", posts)) == 1
+        assert search_posts("callout", posts) == []
+        assert search_posts("div", posts) == []
+
+    def test_code_block_text_stays_searchable(self):
+        posts = [_post("code", content="```python\ndef make_roux(flour):\n    return flour\n```")]
+        assert len(search_posts("roux", posts)) == 1
+        assert len(search_posts("flour", posts)) == 1
+
+    def test_strip_preserves_plain_prose(self):
+        assert strip_markdown_noise("plain gumbo prose") == "plain gumbo prose"
+
+    def test_title_and_description_not_stripped(self):
+        """Stripping applies to the body only; other fields index as-is."""
+        posts = [_post("t", title="The https survival guide", description="all about png files")]
+        assert len(search_posts("https", posts)) == 1
+        assert len(search_posts("png", posts)) == 1

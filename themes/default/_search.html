@@ -2,7 +2,9 @@
      {% set search_mode = "button" %}{% include "_search.html" %}
    button: icon button opens a dropdown containing the input + results.
    input:  input sits inline in the navbar; dropdown shows results only.
-   Behavior lives in /static/{theme_name}/search.js (default-theme fallback). #}
+   Behavior lives in /static/{theme_name}/search.js (default-theme fallback).
+   Element ids and aria-controls are assigned per instance by search.js, so
+   a page may safely contain more than one search component. #}
 {% set search_mode = search_mode | default("button") %}
 <div class="search" data-search="{{ search_mode }}">
     {% if search_mode == "button" %}
@@ -14,16 +16,16 @@
     </button>
     {% else %}
     <input class="search-input" type="search" placeholder="Search&hellip;" autocomplete="off"
-           role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list"
+           role="combobox" aria-expanded="false" aria-autocomplete="list"
            aria-label="Search posts">
     {% endif %}
     <div class="search-dropdown" hidden>
         {% if search_mode == "button" %}
         <input class="search-input" type="search" placeholder="Search&hellip;" autocomplete="off"
-               role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list"
+               role="combobox" aria-expanded="false" aria-autocomplete="list"
                aria-label="Search posts">
         {% endif %}
-        <ul class="search-results" id="search-results" role="listbox" aria-label="Search results"></ul>
+        <ul class="search-results" role="listbox" aria-label="Search results"></ul>
         <p class="search-empty" hidden>No results</p>
     </div>
 </div>
