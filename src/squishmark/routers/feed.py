@@ -6,10 +6,9 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from fastapi import APIRouter
 from fastapi.responses import Response
 
+from squishmark.dependencies import ServicesDep
 from squishmark.models.content import Config, Post
-from squishmark.services.cache import get_cache
 from squishmark.services.content import get_cached_posts
-from squishmark.services.github import get_github_service
 
 router = APIRouter(tags=["feed"])
 
@@ -77,20 +76,19 @@ FEED_CACHE_KEY = "feed:atom"
 
 
 @router.get("/feed.xml")
-async def atom_feed() -> Response:
+async def atom_feed(services: ServicesDep) -> Response:
     """Serve the Atom 1.0 feed."""
-    cache = get_cache()
+    cache = services.cache
 
     # Return cached feed if available
     cached_xml = await cache.get(FEED_CACHE_KEY)
     if cached_xml is not None:
         return Response(content=cached_xml, media_type="application/atom+xml; charset=utf-8")
 
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
-    posts = await get_cached_posts(include_drafts=False)
+    posts = await get_cached_posts(services, include_drafts=False)
     posts = posts[:20]  # Limit to 20 most recent
 
     xml_bytes = _build_atom_feed(config, posts)

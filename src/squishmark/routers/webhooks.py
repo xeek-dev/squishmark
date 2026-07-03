@@ -6,11 +6,9 @@ import hmac
 from fastapi import APIRouter, HTTPException, Request
 
 from squishmark.config import get_settings
-from squishmark.services.cache import get_cache
+from squishmark.dependencies import ServicesDep, ThemeEngineDep
 from squishmark.services.content import warm_content_caches
-from squishmark.services.github import get_github_service
 from squishmark.services.search import warm_search_indexes
-from squishmark.services.theme import get_theme_engine, reset_theme_engine
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -30,7 +28,7 @@ def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool
 
 
 @router.post("/github")
-async def github_webhook(request: Request) -> dict:
+async def github_webhook(request: Request, services: ServicesDep, theme_engine: ThemeEngineDep) -> dict:
     """
     Handle GitHub webhook for automatic cache refresh.
 
@@ -67,14 +65,14 @@ async def github_webhook(request: Request) -> dict:
         return {"status": "ignored", "event": event}
 
     # Refresh cache
-    cache = get_cache()
+    cache = services.cache
     cleared = await cache.clear()
 
-    # Reset theme engine
-    reset_theme_engine()
+    # Reload theme engine templates and favicon detection
+    await theme_engine.reload()
 
     # Warm the cache
-    github_service = get_github_service()
+    github_service = services.github
 
     # Fetch config
     await github_service.get_config(use_cache=True)
@@ -89,14 +87,11 @@ async def github_webhook(request: Request) -> dict:
     for path in page_files:
         await github_service.get_file(path, use_cache=True)
 
-    # Reload theme engine
-    await get_theme_engine(github_service)
-
     # Pre-parse posts and pages so the first render after a push isn't cold
-    await warm_content_caches()
+    await warm_content_caches(services)
 
     # Pre-build both search index variants so the first search isn't cold
-    await warm_search_indexes()
+    await warm_search_indexes(services)
 
     return {
         "status": "ok",

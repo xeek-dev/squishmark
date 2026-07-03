@@ -12,6 +12,7 @@ from squishmark.services.theme.filters import register_filters
 from squishmark.services.theme.loader import AsyncHybridLoader, ThemedEnvironment
 
 if TYPE_CHECKING:
+    from squishmark.services.container import Services
     from squishmark.services.github import GitHubService
 
 # Default pygments style shipped with each bundled theme.
@@ -31,8 +32,13 @@ class ThemeEngine:
         self,
         github_service: "GitHubService",
         themes_path: Path | None = None,
+        services: "Services | None" = None,
     ) -> None:
         self.github_service = github_service
+        # Needed by get_nav_pages to reach the shared cached content layer.
+        # Set at construction in production; None in unit tests that patch
+        # get_cached_pages directly.
+        self.services = services
 
         # Default to the bundled themes directory
         if themes_path is None:
@@ -90,7 +96,8 @@ class ThemeEngine:
         # per TTL instead of on every render. The visible variant already
         # excludes hidden pages; keep the explicit public filter (unlisted pages
         # stay out of the navbar).
-        cached_pages = await get_cached_pages(include_hidden=False)
+        assert self.services is not None, "ThemeEngine.services must be set before rendering"
+        cached_pages = await get_cached_pages(self.services, include_hidden=False)
         pages = [p for p in cached_pages if p.visibility == "public"]
 
         # Sort: pages with nav_order first (ascending), then alphabetical by title
@@ -300,27 +307,13 @@ class ThemeEngine:
         template = self.env.get_template(f"{theme_name}/{template_name}")
         return template.render(**context)
 
+    async def reload(self) -> None:
+        """Drop cached custom templates and favicon, then reload from the repo.
 
-# Global theme engine instance
-_theme_engine: ThemeEngine | None = None
-
-
-async def get_theme_engine(github_service: "GitHubService | None" = None) -> ThemeEngine:
-    """Get or create the global theme engine instance."""
-    global _theme_engine
-    if _theme_engine is None:
-        if github_service is None:
-            from squishmark.services.github import get_github_service
-
-            github_service = get_github_service()
-        _theme_engine = ThemeEngine(github_service)
-        await _theme_engine.load_custom_templates()
-    return _theme_engine
-
-
-def reset_theme_engine() -> None:
-    """Reset the global theme engine. Useful for testing or cache refresh."""
-    global _theme_engine
-    if _theme_engine:
-        _theme_engine.favicon_detector.clear_cache()
-    _theme_engine = None
+        Called after a content push (webhook / admin refresh). Clearing the
+        loader cache first means a template removed from the content repo stops
+        being served, matching the old rebuild-from-scratch behavior.
+        """
+        self.favicon_detector.clear_cache()
+        self.loader.clear_cache()
+        await self.load_custom_templates()

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 
-from squishmark.dependencies import is_admin
+from squishmark.dependencies import ServicesDep, is_admin
 from squishmark.services.search import (
     DEFAULT_LIMIT,
     MIN_QUERY_LENGTH,
@@ -15,7 +15,7 @@ router = APIRouter(tags=["search"])
 
 
 @router.get("/search")
-async def search(request: Request, q: str = Query("", max_length=200)) -> JSONResponse:
+async def search(request: Request, services: ServicesDep, q: str = Query("", max_length=200)) -> JSONResponse:
     """Search posts by keyword; admins also match drafts.
 
     Short or empty queries return an empty result set with 200 (the client
@@ -26,7 +26,7 @@ async def search(request: Request, q: str = Query("", max_length=200)) -> JSONRe
     results: list[dict] = []
 
     if len(query) >= MIN_QUERY_LENGTH:
-        index = await get_search_index(include_drafts=is_admin(request))
+        index = await get_search_index(services, include_drafts=is_admin(request))
         results = [r.model_dump(mode="json") for r in query_index(query, index, limit=DEFAULT_LIMIT)]
 
     return JSONResponse(

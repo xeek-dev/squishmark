@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from squishmark.config import Settings, parse_file_url
-from squishmark.services.cache import Cache, get_cache
+from squishmark.services.cache import Cache
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,9 @@ class GitHubService:
     GITHUB_API_BASE = "https://api.github.com"
     GITHUB_RAW_BASE = "https://raw.githubusercontent.com"
 
-    def __init__(self, settings: Settings, cache: Cache | None = None) -> None:
+    def __init__(self, settings: Settings, cache: Cache) -> None:
         self.settings = settings
-        self.cache = cache or get_cache()
+        self.cache = cache
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
@@ -330,25 +330,3 @@ class GitHubService:
         except yaml.YAMLError as exc:
             logger.warning("Failed to parse config YAML: %s", exc)
             return None
-
-
-# Global service instance
-_github_service: GitHubService | None = None
-
-
-def get_github_service() -> GitHubService:
-    """Get the global GitHub service instance."""
-    global _github_service
-    if _github_service is None:
-        from squishmark.config import get_settings
-
-        _github_service = GitHubService(get_settings())
-    return _github_service
-
-
-async def shutdown_github_service() -> None:
-    """Shutdown the global GitHub service."""
-    global _github_service
-    if _github_service:
-        await _github_service.close()
-        _github_service = None

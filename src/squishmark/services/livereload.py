@@ -209,21 +209,3 @@ def _inject_script(body: bytes) -> bytes:
     if idx == -1:
         return body
     return body[:idx] + _LIVERELOAD_SCRIPT.encode() + body[idx:]
-
-
-# Global service instance
-_livereload_service: LiveReloadService | None = None
-
-
-def get_livereload_service() -> LiveReloadService:
-    """Get or create the global LiveReload service instance."""
-    global _livereload_service
-    if _livereload_service is None:
-        _livereload_service = LiveReloadService()
-    return _livereload_service
-
-
-def reset_livereload_service() -> None:
-    """Reset the global LiveReload service."""
-    global _livereload_service
-    _livereload_service = None

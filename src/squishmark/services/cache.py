@@ -68,25 +68,3 @@ class Cache:
     def size(self) -> int:
         """Return the current number of entries in the cache."""
         return len(self._store)
-
-
-# Global cache instance
-_cache: Cache | None = None
-
-
-def get_cache() -> Cache:
-    """Get the global cache instance."""
-    global _cache
-    if _cache is None:
-        from squishmark.config import get_settings
-
-        settings = get_settings()
-        ttl = 0 if settings.debug else settings.cache_ttl_seconds
-        _cache = Cache(ttl_seconds=ttl)
-    return _cache
-
-
-def reset_cache() -> None:
-    """Reset the global cache instance. Useful for testing."""
-    global _cache
-    _cache = None
