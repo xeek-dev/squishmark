@@ -8,6 +8,8 @@ import pytest
 from jinja2 import TemplateNotFound
 
 from squishmark.models.content import Config
+from squishmark.services.cache import Cache
+from squishmark.services.container import Services
 from squishmark.services.theme.engine import ThemeEngine
 from squishmark.services.theme.loader import (
     AsyncHybridLoader,
@@ -142,7 +144,11 @@ class TestThemedEnvironmentJoinPath:
 def _make_engine(themes_path: Path) -> ThemeEngine:
     github_service = MagicMock()
     github_service.list_directory = AsyncMock(return_value=[])
-    engine = ThemeEngine(github_service, themes_path=themes_path)
+    github_service.get_config = AsyncMock(return_value={})
+    # get_nav_pages reaches the cached content layer through services; an empty
+    # pages listing yields an empty navbar.
+    services = Services(settings=MagicMock(), cache=Cache(ttl_seconds=0), github=github_service)
+    engine = ThemeEngine(services, themes_path=themes_path)
 
     # Favicon detection is an await point in render(); yield control there so
     # concurrent renders interleave (this is where the old shared state raced).
@@ -180,3 +186,26 @@ class TestConcurrentRenders:
             "BASE:terminal",
             "BASE:blue-tech",
         ]
+
+
+class TestReload:
+    @pytest.mark.asyncio
+    async def test_reload_picks_up_edited_custom_template(self, tmp_path: Path):
+        """reload() must serve the new custom template source, not Jinja's
+        cached compile (custom templates report uptodate=True)."""
+        from squishmark.services.github import GitHubFile
+
+        _build_themes(tmp_path)
+        engine = _make_engine(tmp_path)
+        github = engine.github_service
+        github.list_directory = AsyncMock(return_value=["theme/snippet.html"])
+        github.get_file = AsyncMock(return_value=GitHubFile(path="theme/snippet.html", content="V1"))
+
+        await engine.load_custom_templates()
+        assert engine.render_partial("snippet.html", theme_override="default") == "V1"
+
+        github.get_file = AsyncMock(return_value=GitHubFile(path="theme/snippet.html", content="V2"))
+        await engine.reload()
+        assert engine.render_partial("snippet.html", theme_override="default") == "V2"
+        # reload must bypass the content cache, not rely on callers clearing it
+        github.get_file.assert_called_with("theme/snippet.html", use_cache=False)

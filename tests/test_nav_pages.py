@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from squishmark.models.content import Config, FrontMatter, Page, ThemeConfig
+from squishmark.services.container import Services
 from squishmark.services.markdown import MarkdownService
 
 
@@ -78,19 +79,15 @@ class TestHiddenPage404:
         mock_request = MagicMock()
         hidden_content = "---\ntitle: Secret\nvisibility: hidden\n---\nContent"
 
-        with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
-            patch("squishmark.routers.pages.get_theme_engine"),
-            patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
-        ):
+        with patch("squishmark.routers.pages.NotesService") as mock_notes_cls:
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=hidden_content)
             mock_notes_cls.return_value = AsyncMock()
+            services = Services(settings=MagicMock(), cache=AsyncMock(), github=mock_github)
 
             with pytest.raises(HTTPException) as exc_info:
-                await get_page(mock_request, "secret", db=AsyncMock())
+                await get_page(mock_request, services, AsyncMock(), "secret", db=AsyncMock())
 
             assert exc_info.value.status_code == 404
 
@@ -102,22 +99,20 @@ class TestHiddenPage404:
         unlisted_content = "---\ntitle: Unlisted\nvisibility: unlisted\n---\nContent"
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=unlisted_content)
             mock_notes_cls.return_value = AsyncMock()
 
             mock_engine = AsyncMock()
-            mock_get_engine.return_value = mock_engine
             mock_engine.render_page.return_value = "<html>Unlisted</html>"
 
+            services = Services(settings=MagicMock(), cache=AsyncMock(), github=mock_github)
             mock_request = MagicMock()
-            response = await get_page(mock_request, "unlisted", db=AsyncMock())
+            response = await get_page(mock_request, services, mock_engine, "unlisted", db=AsyncMock())
 
             assert response.status_code == 200
 
@@ -140,7 +135,7 @@ class TestGetNavPages:
         from squishmark.services.theme.engine import ThemeEngine
 
         visible = [self._page("About", "public"), self._page("Draft", "unlisted")]
-        engine = ThemeEngine(AsyncMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -159,7 +154,7 @@ class TestGetNavPages:
             self._page("Projects"),
             self._page("Blog"),
         ]
-        engine = ThemeEngine(AsyncMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -174,7 +169,7 @@ class TestGetNavPages:
         from squishmark.services.theme.engine import ThemeEngine
 
         visible = [self._page("A"), self._page("B"), self._page("C")]
-        engine = ThemeEngine(AsyncMock())
+        engine = ThemeEngine(MagicMock())
         config = Config(theme=ThemeConfig(nav_max_pages=2))
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=visible)):
             pages = await engine.get_nav_pages(config)
@@ -186,7 +181,7 @@ class TestGetNavPages:
         """Should return empty list when no pages exist."""
         from squishmark.services.theme.engine import ThemeEngine
 
-        engine = ThemeEngine(AsyncMock())
+        engine = ThemeEngine(MagicMock())
         config = Config()
         with patch("squishmark.services.theme.engine.get_cached_pages", AsyncMock(return_value=[])):
             pages = await engine.get_nav_pages(config)

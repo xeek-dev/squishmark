@@ -1,13 +1,14 @@
 """Tests for Atom feed route."""
 
 import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from xml.etree.ElementTree import fromstring
 
 import pytest
 
 from squishmark.models.content import Config, Post
 from squishmark.routers.feed import _build_atom_feed, _rfc3339
+from squishmark.services.container import Services
 
 ATOM_NS = "http://www.w3.org/2005/Atom"
 
@@ -15,6 +16,11 @@ ATOM_NS = "http://www.w3.org/2005/Atom"
 def _ns(tag: str) -> str:
     """Prefix a tag with the Atom namespace."""
     return f"{{{ATOM_NS}}}{tag}"
+
+
+def _services(github: AsyncMock, cache: AsyncMock) -> Services:
+    """Build a service container wrapping the given github and cache mocks."""
+    return Services(settings=MagicMock(), cache=cache, github=github)
 
 
 @pytest.fixture
@@ -148,18 +154,12 @@ class TestAtomFeedEndpoint:
             MagicMock(content="---\ntitle: Draft\ndate: 2026-01-02\ndraft: true\n---\nDraft content here."),
         ]
 
-        with (
-            patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.feed import atom_feed
+        from squishmark.routers.feed import atom_feed
 
-            response = await atom_feed()
+        response = await atom_feed(_services(mock_github, mock_cache))
 
         root = fromstring(response.body)
         entries = root.findall(_ns("entry"))
@@ -179,18 +179,12 @@ class TestAtomFeedEndpoint:
             MagicMock(content=f"---\ntitle: Post {i}\ndate: 2026-01-{i:02d}\n---\nContent {i}") for i in range(1, 26)
         ]
 
-        with (
-            patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.feed import atom_feed
+        from squishmark.routers.feed import atom_feed
 
-            response = await atom_feed()
+        response = await atom_feed(_services(mock_github, mock_cache))
 
         root = fromstring(response.body)
         entries = root.findall(_ns("entry"))
@@ -203,18 +197,12 @@ class TestAtomFeedEndpoint:
         mock_github.get_config.return_value = {"site": {"title": "Test"}}
         mock_github.list_directory.return_value = []
 
-        with (
-            patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.feed import atom_feed
+        from squishmark.routers.feed import atom_feed
 
-            response = await atom_feed()
+        response = await atom_feed(_services(mock_github, mock_cache))
 
         assert "application/atom+xml" in response.media_type
 
@@ -223,13 +211,11 @@ class TestAtomFeedEndpoint:
         """Cached XML should be returned without rebuilding."""
         cached_xml = b'<?xml version="1.0"?><feed>cached</feed>'
 
-        with patch("squishmark.routers.feed.get_cache") as mock_cache_fn:
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = cached_xml
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = cached_xml
 
-            from squishmark.routers.feed import atom_feed
+        from squishmark.routers.feed import atom_feed
 
-            response = await atom_feed()
+        response = await atom_feed(_services(AsyncMock(), mock_cache))
 
         assert response.body == cached_xml

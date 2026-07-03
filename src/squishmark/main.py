@@ -13,8 +13,9 @@ from squishmark.models.content import Config
 from squishmark.models.db import close_db, init_db
 from squishmark.routers import admin, assets, auth, feed, pages, posts, search, seo, webhooks
 from squishmark.services.analytics_middleware import register_analytics_middleware
-from squishmark.services.github import get_github_service, shutdown_github_service
-from squishmark.services.theme import get_theme_engine, reset_theme_engine
+from squishmark.services.container import build_services
+from squishmark.services.livereload import LiveReloadService
+from squishmark.services.theme import ThemeEngine
 
 # Configure logging
 logging.basicConfig(
@@ -39,34 +40,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
     logger.info("Database initialized")
 
-    # Pre-initialize services
-    github_service = get_github_service()
+    # Build the service container and hang it on app.state for DI.
+    services = build_services(settings)
+    app.state.services = services
 
-    # Load custom templates if any
-    await get_theme_engine(github_service)
-    logger.info("Theme engine initialized")
+    # Theme engine loads custom templates from the content repo (async), so it
+    # is built here rather than in build_services. It holds a back-reference to
+    # the container so get_nav_pages can reach the cached content layer.
+    theme_engine = ThemeEngine(services)
+    await theme_engine.load_custom_templates()
+    app.state.theme_engine = theme_engine
+    config = Config.from_dict(await services.github.get_config())
+    logger.info("Theme engine initialized (configured theme: %s)", config.theme.name)
 
     # Start live reload watcher in debug mode
     if settings.debug:
-        from squishmark.services.livereload import get_livereload_service
-
-        livereload = get_livereload_service()
-        await livereload.start()
+        services.livereload = LiveReloadService()
+        await services.livereload.start()
 
     yield
 
     # Shutdown
     logger.info("Shutting down SquishMark")
 
-    if settings.debug:
-        from squishmark.services.livereload import get_livereload_service, reset_livereload_service
+    if settings.debug and services.livereload is not None:
+        await services.livereload.stop()
 
-        livereload = get_livereload_service()
-        await livereload.stop()
-        reset_livereload_service()
-
-    await shutdown_github_service()
-    reset_theme_engine()
+    await services.github.close()
     await close_db()
 
 
@@ -91,10 +91,10 @@ def create_app() -> FastAPI:
         if "text/html" in accept and exc.status_code == 404:
             # Return HTML 404 page
             try:
-                github_service = get_github_service()
-                config_data = await github_service.get_config()
+                services = request.app.state.services
+                config_data = await services.github.get_config()
                 config = Config.from_dict(config_data)
-                theme_engine = await get_theme_engine()
+                theme_engine = request.app.state.theme_engine
                 html = await theme_engine.render_404(config)
                 return HTMLResponse(content=html, status_code=404)
             except Exception:
@@ -150,13 +150,14 @@ def create_app() -> FastAPI:
 
     # LiveReload WebSocket endpoint and middleware (debug mode only)
     if settings.debug:
-        from squishmark.services.livereload import LiveReloadMiddleware, get_livereload_service
+        from squishmark.services.livereload import LiveReloadMiddleware
 
         @app.websocket("/dev/livereload")
         async def livereload_ws(websocket: WebSocket) -> None:
             """WebSocket endpoint for theme live reload notifications."""
-            livereload = get_livereload_service()
-            await livereload.handle_websocket(websocket)
+            livereload = websocket.app.state.services.livereload
+            if livereload is not None:
+                await livereload.handle_websocket(websocket)
 
         app.add_middleware(LiveReloadMiddleware)
 

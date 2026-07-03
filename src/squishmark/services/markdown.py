@@ -13,7 +13,7 @@ from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.toc import TocExtension
 from pygments.formatters import HtmlFormatter
 
-from squishmark.models.content import Config, FrontMatter, Page, Post
+from squishmark.models.content import FrontMatter, Page, Post
 from squishmark.services.url_rewriter import rewrite_image_urls
 
 
@@ -298,22 +298,3 @@ class MarkdownService:
                 pass
 
         return None
-
-
-# Global service instance
-_markdown_service: MarkdownService | None = None
-
-
-def get_markdown_service(config: Config | None = None) -> MarkdownService:
-    """Get the global markdown service instance."""
-    global _markdown_service
-    if _markdown_service is None:
-        style = config.theme.pygments_style if config else "github-dark"
-        _markdown_service = MarkdownService(pygments_style=style)
-    return _markdown_service
-
-
-def reset_markdown_service() -> None:
-    """Reset the global markdown service. Useful for testing or config changes."""
-    global _markdown_service
-    _markdown_service = None

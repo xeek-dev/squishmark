@@ -4,9 +4,9 @@ import datetime
 from typing import Any
 
 from squishmark.models.content import Config, Page, Post, SiteConfig
-from squishmark.services.cache import get_cache
-from squishmark.services.github import GitHubService, get_github_service
-from squishmark.services.markdown import MarkdownService, get_markdown_service
+from squishmark.services.container import Services
+from squishmark.services.github import GitHubService
+from squishmark.services.markdown import MarkdownService
 
 # Audience-separated cache keys. The "all" variants include drafts (posts) and
 # hidden pages, so they must only ever be served to admins: sharing a key would
@@ -141,15 +141,15 @@ async def get_all_pages(
     return pages
 
 
-async def _build_content_services() -> tuple[GitHubService, MarkdownService]:
+async def _build_content_services(services: Services) -> tuple[GitHubService, MarkdownService]:
     """Resolve the github and markdown services from the active config."""
-    github_service = get_github_service()
+    github_service = services.github
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
-    return github_service, get_markdown_service(config)
+    return github_service, services.markdown_for(config)
 
 
-async def get_cached_posts(include_drafts: bool) -> list[Post]:
+async def get_cached_posts(services: Services, include_drafts: bool) -> list[Post]:
     """Return the cached parsed posts for the audience, building on miss.
 
     Parsing every post's markdown (including Pygments highlighting) is the
@@ -159,13 +159,13 @@ async def get_cached_posts(include_drafts: bool) -> list[Post]:
     webhook's cache.clear() like every other derived blob. Mirrors
     services/search.py::get_search_index.
     """
-    cache = get_cache()
+    cache = services.cache
     key = POSTS_ALL_KEY if include_drafts else POSTS_PUBLISHED_KEY
     cached = await cache.get(key)
     if cached is not None:
         return cached
 
-    github_service, markdown_service = await _build_content_services()
+    github_service, markdown_service = await _build_content_services(services)
     posts = await get_all_posts(github_service, markdown_service, include_drafts=True)
 
     published = [p for p in posts if not p.draft]
@@ -174,20 +174,20 @@ async def get_cached_posts(include_drafts: bool) -> list[Post]:
     return posts if include_drafts else published
 
 
-async def get_cached_pages(include_hidden: bool) -> list[Page]:
+async def get_cached_pages(services: Services, include_hidden: bool) -> list[Page]:
     """Return the cached parsed pages for the audience, building on miss.
 
     Same drafts-included-once pattern as get_cached_posts: the visible variant
     is the hidden pages filtered out. The "all" variant must only be served to
     admins.
     """
-    cache = get_cache()
+    cache = services.cache
     key = PAGES_ALL_KEY if include_hidden else PAGES_VISIBLE_KEY
     cached = await cache.get(key)
     if cached is not None:
         return cached
 
-    github_service, markdown_service = await _build_content_services()
+    github_service, markdown_service = await _build_content_services(services)
     pages = await get_all_pages(github_service, markdown_service, include_hidden=True)
 
     visible = [p for p in pages if p.visibility != "hidden"]
@@ -196,10 +196,10 @@ async def get_cached_pages(include_hidden: bool) -> list[Page]:
     return pages if include_hidden else visible
 
 
-async def warm_content_caches() -> None:
+async def warm_content_caches(services: Services) -> None:
     """Pre-build both audience variants of posts and pages (webhook/admin warm).
 
     One call per content type suffices: a miss builds and caches both variants.
     """
-    await get_cached_posts(include_drafts=True)
-    await get_cached_pages(include_hidden=True)
+    await get_cached_posts(services, include_drafts=True)
+    await get_cached_pages(services, include_hidden=True)

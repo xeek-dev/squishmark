@@ -4,6 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from squishmark.services.cache import Cache
+from squishmark.services.container import Services
+
 POST_CONTENT = "---\ntitle: Test Post\ndate: 2026-01-01\n---\nContent"
 PAGE_CONTENT = "---\ntitle: About\n---\nContent"
 
@@ -22,6 +25,15 @@ def _anonymous_request():
     return request
 
 
+def _services(mock_github: AsyncMock) -> Services:
+    """Build a service container wrapping the given github mock.
+
+    A real cache (not an AsyncMock, whose ``get`` returns a truthy mock and
+    would read as a false cache hit) so the cached content layer parses.
+    """
+    return Services(settings=MagicMock(), cache=Cache(ttl_seconds=0), github=mock_github)
+
+
 class TestPostNotesRendering:
     """Tests for notes being fetched and passed to templates on post pages."""
 
@@ -34,21 +46,17 @@ class TestPostNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.posts.get_github_service") as mock_get_github,
-            patch("squishmark.services.content.get_github_service", mock_get_github),
-            patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.list_directory.return_value = ["posts/2026-01-01-my-post.md"]
             mock_github.get_file.return_value = MagicMock(content=POST_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_anonymous_request(), "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=False)
 
@@ -61,21 +69,17 @@ class TestPostNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.posts.get_github_service") as mock_get_github,
-            patch("squishmark.services.content.get_github_service", mock_get_github),
-            patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=True),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.list_directory.return_value = ["posts/2026-01-01-my-post.md"]
             mock_github.get_file.return_value = MagicMock(content=POST_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_admin_request(), "my-post", db=AsyncMock())
+            await get_post(_admin_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=True)
 
@@ -88,21 +92,17 @@ class TestPostNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.posts.get_github_service") as mock_get_github,
-            patch("squishmark.services.content.get_github_service", mock_get_github),
-            patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.list_directory.return_value = ["posts/2026-01-01-my-post.md"]
             mock_github.get_file.return_value = MagicMock(content=POST_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_anonymous_request(), "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=False)
 
@@ -116,27 +116,21 @@ class TestPostNotesRendering:
         mock_notes.get_for_path.return_value = fake_notes
 
         with (
-            patch("squishmark.routers.posts.get_github_service") as mock_get_github,
-            patch("squishmark.services.content.get_github_service", mock_get_github),
-            patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.list_directory.return_value = ["posts/2026-01-01-my-post.md"]
             mock_github.get_file.return_value = MagicMock(content=POST_CONTENT)
             mock_notes_cls.return_value = mock_notes
+            engine = AsyncMock()
+            engine.render_post.return_value = "<html></html>"
 
-            mock_engine = AsyncMock()
-            mock_get_engine.return_value = mock_engine
-            mock_engine.render_post.return_value = "<html></html>"
-
-            await get_post(_anonymous_request(), "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
 
             # Verify notes were passed as the third positional arg to render_post
-            call_args = mock_engine.render_post.call_args
+            call_args = engine.render_post.call_args
             assert call_args[0][2] == fake_notes
 
     @pytest.mark.asyncio
@@ -148,24 +142,20 @@ class TestPostNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.posts.get_github_service") as mock_get_github,
-            patch("squishmark.services.content.get_github_service", mock_get_github),
-            patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.list_directory.return_value = ["posts/2026-01-01-my-post.md"]
             mock_github.get_file.return_value = MagicMock(content=POST_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            response = await get_post(_anonymous_request(), "my-post", db=AsyncMock())
+            response = await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
 
             assert response.status_code == 200
-            call_args = mock_get_engine.return_value.render_post.call_args
+            call_args = engine.render_post.call_args
             assert call_args[0][2] == []
 
 
@@ -181,20 +171,17 @@ class TestPageNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=PAGE_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_anonymous_request(), "about", db=AsyncMock())
+            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=False)
 
@@ -207,20 +194,17 @@ class TestPageNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=True),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=PAGE_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_admin_request(), "about", db=AsyncMock())
+            await get_page(_admin_request(), _services(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=True)
 
@@ -233,20 +217,17 @@ class TestPageNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=PAGE_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_anonymous_request(), "about", db=AsyncMock())
+            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=False)
 
@@ -260,25 +241,20 @@ class TestPageNotesRendering:
         mock_notes.get_for_path.return_value = fake_notes
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=PAGE_CONTENT)
             mock_notes_cls.return_value = mock_notes
+            engine = AsyncMock()
+            engine.render_page.return_value = "<html></html>"
 
-            mock_engine = AsyncMock()
-            mock_get_engine.return_value = mock_engine
-            mock_engine.render_page.return_value = "<html></html>"
+            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
 
-            await get_page(_anonymous_request(), "about", db=AsyncMock())
-
-            call_args = mock_engine.render_page.call_args
+            call_args = engine.render_page.call_args
             assert call_args[0][2] == fake_notes
 
     @pytest.mark.asyncio
@@ -290,21 +266,18 @@ class TestPageNotesRendering:
         mock_notes.get_for_path.return_value = []
 
         with (
-            patch("squishmark.routers.pages.get_github_service") as mock_get_github,
             patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
-            patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
         ):
             mock_github = AsyncMock()
-            mock_get_github.return_value = mock_github
             mock_github.get_config.return_value = None
             mock_github.get_file.return_value = MagicMock(content=PAGE_CONTENT)
             mock_notes_cls.return_value = mock_notes
-            mock_get_engine.return_value = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
+            engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            response = await get_page(_anonymous_request(), "about", db=AsyncMock())
+            response = await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
 
             assert response.status_code == 200
-            call_args = mock_get_engine.return_value.render_page.call_args
+            call_args = engine.render_page.call_args
             assert call_args[0][2] == []

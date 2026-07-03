@@ -5,9 +5,10 @@ custom HTML 404 handler) via ``TestClient`` used as a context manager. The
 GitHub content layer is replaced with an in-memory :class:`FakeGitHubService`
 so no network access is required.
 
-The autouse :func:`_reset_environment` fixture is the linchpin: it points every
-process-global singleton at per-test state and tears it all down afterwards so
-the pre-existing (non-integration) test modules stay green.
+The autouse :func:`_reset_environment` fixture is the linchpin: it clears the
+settings cache and, for the HTTP integration modules, injects a
+:class:`FakeGitHubService` into the lifespan-built service container by patching
+the container's ``create_github_service`` factory.
 """
 
 from collections.abc import Callable, Iterator
@@ -16,22 +17,20 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-import squishmark.services.github as github_module
+import squishmark.services.container as container_module
 from squishmark.config import get_settings
 from squishmark.main import create_app
-from squishmark.services.cache import reset_cache
 from squishmark.services.github import GitHubBinaryFile, GitHubFile
-from squishmark.services.markdown import reset_markdown_service
-from squishmark.services.theme import reset_theme_engine
 
 
 class FakeGitHubService:
     """Dict-backed stand-in for :class:`~squishmark.services.github.GitHubService`.
 
-    Matches the real public coroutine signatures so it can be dropped in as the
-    module-global ``_github_service``. ``list_directory`` derives a directory's
-    children from the keys of ``files`` (and ``binary_files``) by prefix match,
-    mirroring how the real service lists a GitHub/local directory.
+    Matches the real public coroutine signatures so it can be dropped into the
+    service container in place of the real GitHub service. ``list_directory``
+    derives a directory's children from the keys of ``files`` (and
+    ``binary_files``) by prefix match, mirroring how the real service lists a
+    GitHub/local directory.
     """
 
     def __init__(
@@ -191,19 +190,17 @@ def _reset_environment(
     tmp_path: Any,
     make_content: Callable[..., FakeGitHubService],
 ) -> Iterator[FakeGitHubService | None]:
-    """Per-test isolation of every process-global singleton.
+    """Per-test isolation of settings and (for integration modules) the fake.
 
-    For the HTTP integration modules this also pins the environment the real
+    For the HTTP integration modules this pins the environment the real
     ``create_app()`` reads (file-based SQLite — ``:memory:`` loses tables across
     the separate connections SQLAlchemy's async pool opens — plus secret/admin/
-    webhook config) and installs a default fake GitHub service as the module
-    global. Tests can swap in their own via ``github_module._github_service = ...``
-    before constructing a client.
+    webhook config) and injects a default fake GitHub service into the
+    lifespan-built container by patching ``create_github_service``.
 
     The env-pinning is scoped to this PR's integration modules so it never
     pollutes ``os.environ`` for the pre-existing suites — several of which build
-    a bare ``Settings()`` and assert on environment-derived defaults. The
-    singleton resets below run for *every* test and are side-effect free.
+    a bare ``Settings()`` and assert on environment-derived defaults.
     """
     is_integration = request.module.__name__.rsplit(".", 1)[-1] in _INTEGRATION_MODULES
 
@@ -218,22 +215,15 @@ def _reset_environment(
         monkeypatch.setenv("DEV_SKIP_AUTH", "false")
 
     get_settings.cache_clear()
-    reset_cache()
-    reset_markdown_service()
-    reset_theme_engine()
 
     fake: FakeGitHubService | None = None
     if is_integration:
         fake = make_content()
-        github_module._github_service = fake
+        monkeypatch.setattr(container_module, "create_github_service", lambda settings, cache: fake)
 
     yield fake
 
-    github_module._github_service = None
     get_settings.cache_clear()
-    reset_cache()
-    reset_markdown_service()
-    reset_theme_engine()
 
 
 # --- Clients ---------------------------------------------------------------

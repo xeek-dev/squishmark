@@ -1,5 +1,6 @@
 """Theme engine for Jinja2 template rendering."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -11,8 +12,10 @@ from squishmark.services.theme.favicon import FaviconDetector
 from squishmark.services.theme.filters import register_filters
 from squishmark.services.theme.loader import AsyncHybridLoader, ThemedEnvironment
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
-    from squishmark.services.github import GitHubService
+    from squishmark.services.container import Services
 
 # Default pygments style shipped with each bundled theme.
 # When the user's configured pygments_style matches, the theme's hand-tuned
@@ -29,10 +32,11 @@ class ThemeEngine:
 
     def __init__(
         self,
-        github_service: "GitHubService",
+        services: "Services",
         themes_path: Path | None = None,
     ) -> None:
-        self.github_service = github_service
+        self.services = services
+        self.github_service = services.github
 
         # Default to the bundled themes directory
         if themes_path is None:
@@ -56,21 +60,21 @@ class ThemeEngine:
         register_filters(self.env)
 
         # Favicon detector for content repository
-        self.favicon_detector = FaviconDetector(github_service)
+        self.favicon_detector = FaviconDetector(self.github_service)
 
-    async def load_custom_templates(self) -> int:
+    async def load_custom_templates(self, use_cache: bool = True) -> int:
         """
         Pre-load custom templates from the content repository.
 
         Returns:
             Number of custom templates loaded
         """
-        custom_templates = await self.github_service.list_directory("theme")
+        custom_templates = await self.github_service.list_directory("theme", use_cache=use_cache)
         count = 0
 
         for path in custom_templates:
             if path.endswith(".html"):
-                file = await self.github_service.get_file(path)
+                file = await self.github_service.get_file(path, use_cache=use_cache)
                 if file:
                     # Extract template name from path (e.g., "theme/post.html" -> "post.html")
                     template_name = path.split("/")[-1]
@@ -90,7 +94,7 @@ class ThemeEngine:
         # per TTL instead of on every render. The visible variant already
         # excludes hidden pages; keep the explicit public filter (unlisted pages
         # stay out of the navbar).
-        cached_pages = await get_cached_pages(include_hidden=False)
+        cached_pages = await get_cached_pages(self.services, include_hidden=False)
         pages = [p for p in cached_pages if p.visibility == "public"]
 
         # Sort: pages with nav_order first (ascending), then alphabetical by title
@@ -145,6 +149,7 @@ class ThemeEngine:
         """
         # Resolve theme name (override or config default)
         theme_name = theme_override or config.theme.name
+        logger.debug("Rendering %s with theme %s", template_name, theme_name)
 
         # Theme-prefixed name so lookup is stateless (loader resolves the
         # custom / theme / default fallback chain from the prefix).
@@ -300,27 +305,19 @@ class ThemeEngine:
         template = self.env.get_template(f"{theme_name}/{template_name}")
         return template.render(**context)
 
+    async def reload(self) -> None:
+        """Drop cached custom templates and favicon, then reload from the repo.
 
-# Global theme engine instance
-_theme_engine: ThemeEngine | None = None
-
-
-async def get_theme_engine(github_service: "GitHubService | None" = None) -> ThemeEngine:
-    """Get or create the global theme engine instance."""
-    global _theme_engine
-    if _theme_engine is None:
-        if github_service is None:
-            from squishmark.services.github import get_github_service
-
-            github_service = get_github_service()
-        _theme_engine = ThemeEngine(github_service)
-        await _theme_engine.load_custom_templates()
-    return _theme_engine
-
-
-def reset_theme_engine() -> None:
-    """Reset the global theme engine. Useful for testing or cache refresh."""
-    global _theme_engine
-    if _theme_engine:
-        _theme_engine.favicon_detector.clear_cache()
-    _theme_engine = None
+        Called after a content push (webhook / admin refresh). Clearing the
+        loader cache first means a template removed from the content repo stops
+        being served, matching the old rebuild-from-scratch behavior.
+        """
+        self.favicon_detector.clear_cache()
+        self.loader.clear_cache()
+        # Custom templates report uptodate=True, so Jinja's compiled-template
+        # cache must be dropped too or edited templates keep serving stale.
+        if self.env.cache is not None:
+            self.env.cache.clear()
+        # Bypass the content cache so reload does not depend on callers
+        # having cleared it first.
+        await self.load_custom_templates(use_cache=False)

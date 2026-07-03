@@ -6,11 +6,29 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 
 from squishmark.config import Settings, get_settings
+from squishmark.services.container import Services
+from squishmark.services.theme import ThemeEngine
 
 logger = logging.getLogger(__name__)
 
 # Type alias for settings dependency
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def get_services(request: Request) -> Services:
+    """Return the service container built in the lifespan and hung on app.state."""
+    return request.app.state.services
+
+
+ServicesDep = Annotated[Services, Depends(get_services)]
+
+
+def get_theme_engine(request: Request) -> ThemeEngine:
+    """Return the theme engine built in the lifespan and hung on app.state."""
+    return request.app.state.theme_engine
+
+
+ThemeEngineDep = Annotated[ThemeEngine, Depends(get_theme_engine)]
 
 
 def is_admin(request: Request) -> bool:

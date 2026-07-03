@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from squishmark.models.content import Post
-from squishmark.services.cache import get_cache
+from squishmark.services.container import Services
 from squishmark.services.content import get_cached_posts
 
 MIN_QUERY_LENGTH = 2
@@ -177,7 +177,7 @@ def search_posts(query: str, posts: list[Post], limit: int = DEFAULT_LIMIT) -> l
     return query_index(query, build_search_index(posts), limit)
 
 
-async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
+async def get_search_index(services: Services, include_drafts: bool) -> list[IndexedPost]:
     """Return the cached index for the audience, building it on miss.
 
     Building is the expensive part (tokenizing every post body), so one miss
@@ -187,13 +187,13 @@ async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     every other derived blob. The parsed posts come from the shared cached
     content layer (get_cached_posts), so they are parsed at most once per TTL.
     """
-    cache = get_cache()
+    cache = services.cache
     key = SEARCH_INDEX_ALL_KEY if include_drafts else SEARCH_INDEX_PUBLISHED_KEY
     cached = await cache.get(key)
     if cached is not None:
         return cached
 
-    posts = await get_cached_posts(include_drafts=True)
+    posts = await get_cached_posts(services, include_drafts=True)
 
     all_index = build_search_index(posts)
     published_index = [indexed for indexed in all_index if not indexed.result.draft]
@@ -202,9 +202,9 @@ async def get_search_index(include_drafts: bool) -> list[IndexedPost]:
     return all_index if include_drafts else published_index
 
 
-async def warm_search_indexes() -> None:
+async def warm_search_indexes(services: Services) -> None:
     """Pre-build both audience index variants (used by the webhook warm).
 
     One call suffices: an index miss builds and caches both variants.
     """
-    await get_search_index(include_drafts=True)
+    await get_search_index(services, include_drafts=True)

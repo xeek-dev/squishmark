@@ -13,17 +13,15 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
-from squishmark.dependencies import AdminUser, is_htmx
+from squishmark.dependencies import AdminUser, ServicesDep, ThemeEngineDep, is_htmx
 from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
-from squishmark.services.cache import get_cache
 from squishmark.services.content import warm_content_caches
 from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
-from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
 from squishmark.services.search import warm_search_indexes
-from squishmark.services.theme import get_theme_engine, reset_theme_engine
+from squishmark.services.theme import ThemeEngine
 
 logger = logging.getLogger(__name__)
 
@@ -99,12 +97,15 @@ def _to_note_response(note: Note) -> NoteResponse:
     )
 
 
-async def _render_note_partial(template_name: str, **context: Any) -> str:
+async def _render_note_partial(
+    services: ServicesDep,
+    theme_engine: ThemeEngine,
+    template_name: str,
+    **context: Any,
+) -> str:
     """Render a notes admin partial using the active site theme."""
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     theme_name = Config.from_dict(config_data).theme.name
-    theme_engine = await get_theme_engine(github_service)
     return theme_engine.render_partial(template_name, theme_override=theme_name, **context)
 
 
@@ -179,12 +180,12 @@ async def admin_dashboard(
     request: Request,
     admin: AdminUser,
     session: DbSession,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
 ) -> HTMLResponse:
     """Render the admin dashboard."""
-    github_service = get_github_service()
-
     # Get config
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
     # Get analytics
@@ -196,11 +197,10 @@ async def admin_dashboard(
     notes = await notes_service.get_all()
 
     # Get cache info
-    cache = get_cache()
+    cache = services.cache
 
     # Render admin template
     csrf_token = get_or_create_csrf_token(request)
-    theme_engine = await get_theme_engine(github_service)
     try:
         html = await theme_engine.render_admin(
             config,
@@ -271,6 +271,8 @@ async def create_note(
     request: Request,
     admin: AdminUser,
     session: DbSession,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
 ) -> NoteResponse | HTMLResponse:
     """Create a new note. Returns an HTML partial for HTMX, JSON otherwise."""
     note_data = await parse_note_create(request)
@@ -283,7 +285,7 @@ async def create_note(
     )
     response = _to_note_response(note)
     if is_htmx(request):
-        html = await _render_note_partial("admin/_note_item.html", note=response)
+        html = await _render_note_partial(services, theme_engine, "admin/_note_item.html", note=response)
         return HTMLResponse(content=html, status_code=201)
     return response
 
@@ -297,6 +299,8 @@ async def update_note(
     request: Request,
     admin: AdminUser,
     session: DbSession,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
     note_id: int,
 ) -> NoteResponse | HTMLResponse:
     """Update a note. Returns an HTML partial for HTMX, JSON otherwise."""
@@ -312,7 +316,7 @@ async def update_note(
         raise HTTPException(status_code=404, detail="Note not found")
     response = _to_note_response(note)
     if is_htmx(request):
-        html = await _render_note_partial("admin/_note_item.html", note=response)
+        html = await _render_note_partial(services, theme_engine, "admin/_note_item.html", note=response)
         return HTMLResponse(content=html)
     return response
 
@@ -343,6 +347,8 @@ async def delete_note(
 async def edit_note_form(
     admin: AdminUser,
     session: DbSession,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
     note_id: int,
 ) -> HTMLResponse:
     """Return the inline edit form for a note (HTMX swap target)."""
@@ -351,7 +357,9 @@ async def edit_note_form(
     note = await notes_service.get_by_id(note_id)
     if note is None:
         raise HTTPException(status_code=404, detail="Note not found")
-    html = await _render_note_partial("admin/_note_edit_form.html", note=_to_note_response(note))
+    html = await _render_note_partial(
+        services, theme_engine, "admin/_note_edit_form.html", note=_to_note_response(note)
+    )
     return HTMLResponse(content=html)
 
 
@@ -359,6 +367,8 @@ async def edit_note_form(
 async def view_note(
     admin: AdminUser,
     session: DbSession,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
     note_id: int,
 ) -> HTMLResponse:
     """Return the read-only note row (used by the edit form's Cancel button)."""
@@ -367,7 +377,7 @@ async def view_note(
     note = await notes_service.get_by_id(note_id)
     if note is None:
         raise HTTPException(status_code=404, detail="Note not found")
-    html = await _render_note_partial("admin/_note_item.html", note=_to_note_response(note))
+    html = await _render_note_partial(services, theme_engine, "admin/_note_item.html", note=_to_note_response(note))
     return HTMLResponse(content=html)
 
 
@@ -375,19 +385,22 @@ async def view_note(
 @router.post("/cache/refresh", dependencies=[Depends(verify_csrf_token)])
 async def refresh_cache(
     admin: AdminUser,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
 ) -> CacheRefreshResponse:
     """Clear and refresh the content cache."""
+    del admin  # auth side-effect only (AdminUser dependency)
     start = time.time()
 
     # Clear the cache
-    cache = get_cache()
+    cache = services.cache
     cleared = await cache.clear()
 
-    # Reset theme engine to reload templates
-    reset_theme_engine()
+    # Reload theme engine templates and favicon detection
+    await theme_engine.reload()
 
     # Warm the cache by fetching content
-    github_service = get_github_service()
+    github_service = services.github
 
     # Fetch config
     await github_service.get_config(use_cache=True)
@@ -402,12 +415,9 @@ async def refresh_cache(
     for path in page_files:
         await github_service.get_file(path, use_cache=True)
 
-    # Reload theme engine
-    await get_theme_engine(github_service)
-
     # Pre-parse posts, pages, and search indexes so the next request isn't cold
-    await warm_content_caches()
-    await warm_search_indexes()
+    await warm_content_caches(services)
+    await warm_search_indexes(services)
 
     duration_ms = (time.time() - start) * 1000
     warmed = cache.size

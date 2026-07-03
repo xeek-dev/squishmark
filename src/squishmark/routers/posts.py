@@ -4,13 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from squishmark.dependencies import is_admin
+from squishmark.dependencies import ServicesDep, ThemeEngineDep, is_admin
 from squishmark.models.content import Config, Pagination
 from squishmark.models.db import get_db_session
 from squishmark.services.content import build_series_context, get_cached_posts, get_featured_posts
-from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
-from squishmark.services.theme import get_theme_engine
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -18,18 +16,18 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 @router.get("", response_class=HTMLResponse)
 async def list_posts(
     request: Request,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
     page: int = Query(1, ge=1),
 ) -> HTMLResponse:
     """List all published posts with pagination."""
-    github_service = get_github_service()
-
     # Get config
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
     # Get all posts (admins can see drafts)
     include_drafts = is_admin(request)
-    all_posts = await get_cached_posts(include_drafts=include_drafts)
+    all_posts = await get_cached_posts(services, include_drafts=include_drafts)
 
     # Paginate
     per_page = config.posts.per_page
@@ -54,7 +52,6 @@ async def list_posts(
     featured = get_featured_posts(all_posts, config.site)
 
     # Render
-    theme_engine = await get_theme_engine(github_service)
     html = await theme_engine.render_index(config, posts, pagination, featured_posts=featured)
 
     return HTMLResponse(content=html)
@@ -63,19 +60,19 @@ async def list_posts(
 @router.get("/{slug}", response_class=HTMLResponse)
 async def get_post(
     request: Request,
+    services: ServicesDep,
+    theme_engine: ThemeEngineDep,
     slug: str,
     db: AsyncSession = Depends(get_db_session),
 ) -> HTMLResponse:
     """Get a single post by slug."""
-    github_service = get_github_service()
-
     # Get config
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
     # Get all posts and find the matching one (admins can see drafts)
     include_drafts = is_admin(request)
-    all_posts = await get_cached_posts(include_drafts=include_drafts)
+    all_posts = await get_cached_posts(services, include_drafts=include_drafts)
 
     post = next((p for p in all_posts if p.slug == slug), None)
 
@@ -94,7 +91,6 @@ async def get_post(
     series_context = build_series_context(post, all_posts)
 
     # Render
-    theme_engine = await get_theme_engine(github_service)
     html = await theme_engine.render_post(
         config,
         post,

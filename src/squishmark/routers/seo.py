@@ -6,10 +6,9 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from fastapi import APIRouter
 from fastapi.responses import Response
 
+from squishmark.dependencies import ServicesDep
 from squishmark.models.content import Config, Page, Post
-from squishmark.services.cache import get_cache
 from squishmark.services.content import get_cached_pages, get_cached_posts
-from squishmark.services.github import get_github_service
 
 router = APIRouter(tags=["seo"])
 
@@ -68,20 +67,19 @@ def _build_robots_txt(config: Config) -> str:
 
 
 @router.get("/sitemap.xml")
-async def sitemap_xml() -> Response:
+async def sitemap_xml(services: ServicesDep) -> Response:
     """Serve the XML sitemap."""
-    cache = get_cache()
+    cache = services.cache
 
     cached = await cache.get(SITEMAP_CACHE_KEY)
     if cached is not None:
         return Response(content=cached, media_type="application/xml; charset=utf-8")
 
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
-    posts = await get_cached_posts(include_drafts=False)
-    pages = await get_cached_pages(include_hidden=False)
+    posts = await get_cached_posts(services, include_drafts=False)
+    pages = await get_cached_pages(services, include_hidden=False)
 
     xml_bytes = _build_sitemap(config, posts, pages)
     await cache.set(SITEMAP_CACHE_KEY, xml_bytes)
@@ -89,16 +87,15 @@ async def sitemap_xml() -> Response:
 
 
 @router.get("/robots.txt")
-async def robots_txt() -> Response:
+async def robots_txt(services: ServicesDep) -> Response:
     """Serve robots.txt."""
-    cache = get_cache()
+    cache = services.cache
 
     cached = await cache.get(ROBOTS_CACHE_KEY)
     if cached is not None:
         return Response(content=cached, media_type="text/plain; charset=utf-8")
 
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
 
     content = _build_robots_txt(config)

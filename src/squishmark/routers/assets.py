@@ -7,9 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
 from squishmark.config import get_settings
+from squishmark.dependencies import ServicesDep
 from squishmark.models.content import Config
-from squishmark.services.github import get_github_service
-from squishmark.services.markdown import get_markdown_service
 
 router = APIRouter(tags=["assets"])
 
@@ -22,13 +21,11 @@ VALID_THEME_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 # Favicon endpoint - browsers request this automatically
 @router.get("/favicon.ico")
-async def serve_favicon() -> Response:
+async def serve_favicon(services: ServicesDep) -> Response:
     """Serve favicon from content repository."""
-    github_service = get_github_service()
-
     # Try common favicon locations in order of preference
     for path in ["static/favicon.ico", "static/favicon.png", "static/favicon.svg"]:
-        file = await github_service.get_binary_file(path)
+        file = await services.github.get_binary_file(path)
         if file:
             return Response(
                 content=file.content,
@@ -41,12 +38,11 @@ async def serve_favicon() -> Response:
 
 # Dynamic Pygments CSS - generates syntax highlighting styles from config
 @router.get("/pygments.css")
-async def serve_pygments_css() -> Response:
+async def serve_pygments_css(services: ServicesDep) -> Response:
     """Serve dynamically generated Pygments CSS based on configured style."""
-    github_service = get_github_service()
-    config_data = await github_service.get_config()
+    config_data = await services.github.get_config()
     config = Config.from_dict(config_data)
-    md_service = get_markdown_service(config)
+    md_service = services.markdown_for(config)
     css = md_service.get_pygments_css()
     return Response(
         content=css,
@@ -56,7 +52,7 @@ async def serve_pygments_css() -> Response:
 
 
 @router.get("/static/user/{path:path}")
-async def serve_user_static(path: str) -> Response:
+async def serve_user_static(services: ServicesDep, path: str) -> Response:
     """Serve static files from the user's content repository."""
     # Security: reject path traversal (matters in local content mode)
     if ".." in path or "\\" in path or path.startswith("/"):
@@ -67,8 +63,7 @@ async def serve_user_static(path: str) -> Response:
     if ext not in ALLOWED_STATIC_EXTENSIONS:
         raise HTTPException(status_code=404, detail="File not found")
 
-    github_service = get_github_service()
-    file = await github_service.get_binary_file(f"static/{path}")
+    file = await services.github.get_binary_file(f"static/{path}")
 
     if file is None:
         raise HTTPException(status_code=404, detail="File not found")
