@@ -58,6 +58,10 @@ async def serve_pygments_css() -> Response:
 @router.get("/static/user/{path:path}")
 async def serve_user_static(path: str) -> Response:
     """Serve static files from the user's content repository."""
+    # Security: reject path traversal (matters in local content mode)
+    if ".." in path or "\\" in path or path.startswith("/"):
+        raise HTTPException(status_code=404, detail="File not found")
+
     # Security: only allow specific file extensions
     ext = Path(path).suffix.lower()
     if ext not in ALLOWED_STATIC_EXTENSIONS:
