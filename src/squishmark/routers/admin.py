@@ -2,6 +2,9 @@
 
 import json
 import logging
+import re
+import time
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -15,9 +18,11 @@ from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
 from squishmark.services.cache import get_cache
+from squishmark.services.content import warm_content_caches
 from squishmark.services.csrf import get_or_create_csrf_token, verify_csrf_token
 from squishmark.services.github import get_github_service
 from squishmark.services.notes import NotesService
+from squishmark.services.search import warm_search_indexes
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
 
 logger = logging.getLogger(__name__)
@@ -69,6 +74,16 @@ class CSRFTokenResponse(BaseModel):
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+def _inject_dev_auth_banner(html: str) -> str:
+    """Insert the dev-mode auth-bypass banner after the opening <body> tag."""
+    templates_dir = Path(__file__).parent.parent / "templates"
+    banner_html = (templates_dir / "dev_auth_banner.html").read_text(encoding="utf-8")
+    banner_css = (templates_dir / "dev_auth_banner.css").read_text(encoding="utf-8")
+    banner = f"<style>{banner_css}</style>{banner_html}"
+    # Callable replacement so backslashes in the banner are inserted literally
+    return re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + banner, html, count=1)
 
 
 def _to_note_response(note: Note) -> NoteResponse:
@@ -208,14 +223,7 @@ async def admin_dashboard(
     # Inject dev mode banner if auth bypass is active
     settings = get_settings()
     if settings.debug and settings.dev_skip_auth:
-        import re
-        from pathlib import Path
-
-        templates_dir = Path(__file__).parent.parent / "templates"
-        banner_html = (templates_dir / "dev_auth_banner.html").read_text()
-        banner_css = (templates_dir / "dev_auth_banner.css").read_text()
-        banner = f"<style>{banner_css}</style>{banner_html}"
-        html = re.sub(r"(<body[^>]*>)", r"\1" + banner, html, count=1)
+        html = _inject_dev_auth_banner(html)
 
     return HTMLResponse(content=html)
 
@@ -369,8 +377,6 @@ async def refresh_cache(
     admin: AdminUser,
 ) -> CacheRefreshResponse:
     """Clear and refresh the content cache."""
-    import time
-
     start = time.time()
 
     # Clear the cache
@@ -398,6 +404,10 @@ async def refresh_cache(
 
     # Reload theme engine
     await get_theme_engine(github_service)
+
+    # Pre-parse posts, pages, and search indexes so the next request isn't cold
+    await warm_content_caches()
+    await warm_search_indexes()
 
     duration_ms = (time.time() - start) * 1000
     warmed = cache.size

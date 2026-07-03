@@ -35,6 +35,7 @@ class TestPostNotesRendering:
 
         with (
             patch("squishmark.routers.posts.get_github_service") as mock_get_github,
+            patch("squishmark.services.content.get_github_service", mock_get_github),
             patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
@@ -61,6 +62,7 @@ class TestPostNotesRendering:
 
         with (
             patch("squishmark.routers.posts.get_github_service") as mock_get_github,
+            patch("squishmark.services.content.get_github_service", mock_get_github),
             patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=True),
@@ -87,6 +89,7 @@ class TestPostNotesRendering:
 
         with (
             patch("squishmark.routers.posts.get_github_service") as mock_get_github,
+            patch("squishmark.services.content.get_github_service", mock_get_github),
             patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
@@ -114,6 +117,7 @@ class TestPostNotesRendering:
 
         with (
             patch("squishmark.routers.posts.get_github_service") as mock_get_github,
+            patch("squishmark.services.content.get_github_service", mock_get_github),
             patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
@@ -145,6 +149,7 @@ class TestPostNotesRendering:
 
         with (
             patch("squishmark.routers.posts.get_github_service") as mock_get_github,
+            patch("squishmark.services.content.get_github_service", mock_get_github),
             patch("squishmark.routers.posts.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.posts.NotesService") as mock_notes_cls,
             patch("squishmark.routers.posts.is_admin", return_value=False),
@@ -177,6 +182,7 @@ class TestPageNotesRendering:
 
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
@@ -202,6 +208,7 @@ class TestPageNotesRendering:
 
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=True),
@@ -227,6 +234,7 @@ class TestPageNotesRendering:
 
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
@@ -253,6 +261,7 @@ class TestPageNotesRendering:
 
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),
@@ -282,6 +291,7 @@ class TestPageNotesRendering:
 
         with (
             patch("squishmark.routers.pages.get_github_service") as mock_get_github,
+            patch("squishmark.routers.pages.get_cached_posts", AsyncMock(return_value=[])),
             patch("squishmark.routers.pages.get_theme_engine") as mock_get_engine,
             patch("squishmark.routers.pages.NotesService") as mock_notes_cls,
             patch("squishmark.routers.pages.is_admin", return_value=False),

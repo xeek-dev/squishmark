@@ -150,6 +150,7 @@ class TestAtomFeedEndpoint:
 
         with (
             patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()
@@ -180,6 +181,7 @@ class TestAtomFeedEndpoint:
 
         with (
             patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()
@@ -203,6 +205,7 @@ class TestAtomFeedEndpoint:
 
         with (
             patch("squishmark.routers.feed.get_github_service", return_value=mock_github),
+            patch("squishmark.services.content.get_github_service", return_value=mock_github),
             patch("squishmark.routers.feed.get_cache") as mock_cache_fn,
         ):
             mock_cache = AsyncMock()

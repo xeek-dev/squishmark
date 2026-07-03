@@ -8,9 +8,8 @@ from fastapi.responses import Response
 
 from squishmark.models.content import Config, Page, Post
 from squishmark.services.cache import get_cache
-from squishmark.services.content import get_all_pages, get_all_posts
+from squishmark.services.content import get_cached_pages, get_cached_posts
 from squishmark.services.github import get_github_service
-from squishmark.services.markdown import get_markdown_service
 
 router = APIRouter(tags=["seo"])
 
@@ -80,10 +79,9 @@ async def sitemap_xml() -> Response:
     github_service = get_github_service()
     config_data = await github_service.get_config()
     config = Config.from_dict(config_data)
-    markdown_service = get_markdown_service(config)
 
-    posts = await get_all_posts(github_service, markdown_service)
-    pages = await get_all_pages(github_service, markdown_service)
+    posts = await get_cached_posts(include_drafts=False)
+    pages = await get_cached_pages(include_hidden=False)
 
     xml_bytes = _build_sitemap(config, posts, pages)
     await cache.set(SITEMAP_CACHE_KEY, xml_bytes)

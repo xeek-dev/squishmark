@@ -89,7 +89,7 @@ async def test_pygments_css_route():
     }
 
     with (
-        patch("squishmark.main.get_github_service", return_value=mock_github),
+        patch("squishmark.routers.assets.get_github_service", return_value=mock_github),
         patch("squishmark.main.get_theme_engine", new_callable=AsyncMock),
         patch("squishmark.models.db.init_db", new_callable=AsyncMock),
         patch("squishmark.models.db.close_db", new_callable=AsyncMock),
