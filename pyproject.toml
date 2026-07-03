@@ -82,3 +82,7 @@ exclude = ["tests", "themes"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "integration: HTTP integration test driven through the real create_app(); the conftest autouse fixture pins env and injects a FakeGitHubService for these.",
+]

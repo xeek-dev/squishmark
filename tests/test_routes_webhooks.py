@@ -13,6 +13,8 @@ from fastapi.testclient import TestClient
 
 from squishmark.config import get_settings
 
+pytestmark = pytest.mark.integration
+
 WEBHOOK_SECRET = "test-webhook-secret"  # matches the autouse fixture
 
 

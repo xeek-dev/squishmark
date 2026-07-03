@@ -7,7 +7,10 @@ draft-leak property: the cached search index is audience-separated, so an
 admin search must never poison anonymous results (and vice versa).
 """
 
+import pytest
 from fastapi.testclient import TestClient
+
+pytestmark = pytest.mark.integration
 
 RESULT_KEYS = {"title", "url", "date", "tags", "excerpt", "draft"}
 
