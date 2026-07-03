@@ -26,14 +26,16 @@ class Services:
     _markdown: MarkdownService | None = None
 
     def markdown_for(self, config: Config) -> MarkdownService:
-        """Return the markdown service, building it once from the first config.
+        """Return the markdown service, rebuilding it when the pygments style changes.
 
-        The pygments_style is fixed by the first config seen and reused for the
-        app's life (issue #109 revisits this): behavior matches the previous
-        module-global get_markdown_service.
+        The service is cheap to construct, so it is (re)built whenever
+        ``config.theme.pygments_style`` differs from the style it was built with.
+        This lets a config edit to ``pygments_style`` take effect after an admin
+        cache refresh or webhook (which return fresh config) without a restart.
         """
-        if self._markdown is None:
-            self._markdown = MarkdownService(pygments_style=config.theme.pygments_style)
+        style = config.theme.pygments_style
+        if self._markdown is None or self._markdown.pygments_style != style:
+            self._markdown = MarkdownService(pygments_style=style)
         return self._markdown
 
 
