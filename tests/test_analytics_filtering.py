@@ -56,13 +56,12 @@ async def _build_app():
         "theme": {"name": "default", "pygments_style": "github-dark"},
         "site": {"title": "Test"},
     }
+    # Theme engine loads custom templates during the lifespan.
+    mock_github.list_directory.return_value = []
     stack = [
-        patch("squishmark.main.get_github_service", return_value=mock_github),
-        patch("squishmark.main.get_theme_engine", new_callable=AsyncMock),
-        patch("squishmark.models.db.init_db", new_callable=AsyncMock),
-        patch("squishmark.models.db.close_db", new_callable=AsyncMock),
-        patch("squishmark.main.shutdown_github_service", new_callable=AsyncMock),
-        patch("squishmark.main.reset_theme_engine"),
+        patch("squishmark.services.container.create_github_service", return_value=mock_github),
+        patch("squishmark.main.init_db", new_callable=AsyncMock),
+        patch("squishmark.main.close_db", new_callable=AsyncMock),
     ]
     return stack
 
@@ -81,9 +80,6 @@ async def _assert_track_called(headers: dict, path: str, expected: bool, add_htm
         stack[0],
         stack[1],
         stack[2],
-        stack[3],
-        stack[4],
-        stack[5],
         patch("squishmark.services.analytics_middleware.track_page_view", new=tracker),
     ):
         from squishmark.main import create_app
@@ -95,11 +91,14 @@ async def _assert_track_called(headers: dict, path: str, expected: bool, add_htm
             async def _test_html():
                 return HTMLResponse("<html><body>test</body></html>")
 
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            await client.get(path, headers=headers)
-        # Fire-and-forget task may not have completed yet; yield a tick.
-        await asyncio.sleep(0)
+        # ASGITransport does not emit lifespan events, so run the lifespan
+        # explicitly to build the service container on app.state.
+        async with app.router.lifespan_context(app):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                await client.get(path, headers=headers)
+            # Fire-and-forget task may not have completed yet; yield a tick.
+            await asyncio.sleep(0)
         assert tracker.called is expected, (
             f"expected track_page_view.called={expected} for path={path!r} "
             f"ua={headers.get('user-agent')!r}; got called={tracker.called}"

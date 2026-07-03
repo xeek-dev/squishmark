@@ -58,6 +58,8 @@ async def test_create_note_json_returns_json_response():
             request=_request(json_body={"path": "/posts/x", "text": "JSON note", "is_public": True}),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
         )
 
     assert not isinstance(result, HTMLResponse)
@@ -90,13 +92,15 @@ async def test_create_note_htmx_form_returns_html_partial():
             ),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
         )
 
     assert isinstance(result, HTMLResponse)
     assert result.status_code == 201
     assert b'id="note-7"' in result.body
     mock_render.assert_awaited_once()
-    assert mock_render.call_args.args == ("admin/_note_item.html",)
+    assert mock_render.call_args.args[2] == "admin/_note_item.html"
 
 
 @pytest.mark.asyncio
@@ -119,6 +123,8 @@ async def test_create_note_htmx_checkbox_omitted_persists_false():
             ),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
         )
 
     mock_service.create.assert_called_once()
@@ -149,6 +155,8 @@ async def test_update_note_htmx_toggle_off_persists_false():
             ),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
             note_id=1,
         )
 
@@ -169,6 +177,8 @@ async def test_update_note_not_found_raises_404():
                 request=_request(json_body={"text": "x"}),
                 admin="test-admin",
                 session=AsyncMock(),
+                services=MagicMock(),
+                theme_engine=MagicMock(),
                 note_id=999,
             )
 
@@ -251,12 +261,14 @@ async def test_edit_note_form_renders_partial():
         result = await edit_note_form(
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
             note_id=3,
         )
 
     assert isinstance(result, HTMLResponse)
     assert b"note-edit-form" in result.body
-    assert mock_render.call_args.args == ("admin/_note_edit_form.html",)
+    assert mock_render.call_args.args[2] == "admin/_note_edit_form.html"
 
 
 @pytest.mark.asyncio
@@ -277,12 +289,14 @@ async def test_view_note_renders_item_partial():
         result = await view_note(
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
             note_id=3,
         )
 
     assert isinstance(result, HTMLResponse)
     assert b'id="note-3"' in result.body
-    assert mock_render.call_args.args == ("admin/_note_item.html",)
+    assert mock_render.call_args.args[2] == "admin/_note_item.html"
 
 
 @pytest.mark.asyncio
@@ -295,7 +309,13 @@ async def test_edit_form_not_found_raises_404():
 
     with patch("squishmark.routers.admin.NotesService", return_value=mock_service):
         with pytest.raises(HTTPException) as exc_info:
-            await edit_note_form(admin="test-admin", session=AsyncMock(), note_id=999)
+            await edit_note_form(
+                admin="test-admin",
+                session=AsyncMock(),
+                services=MagicMock(),
+                theme_engine=MagicMock(),
+                note_id=999,
+            )
 
     assert exc_info.value.status_code == 404
 
@@ -408,7 +428,13 @@ async def test_create_note_invalid_json_returns_422():
     request.json = AsyncMock(side_effect=json.JSONDecodeError("Expecting value", "x", 0))
 
     with pytest.raises(HTTPException) as exc_info:
-        await create_note(request=request, admin="test-admin", session=AsyncMock())
+        await create_note(
+            request=request,
+            admin="test-admin",
+            session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
+        )
 
     assert exc_info.value.status_code == 422
     assert "Invalid JSON" in str(exc_info.value.detail)
@@ -424,6 +450,8 @@ async def test_create_note_json_missing_required_returns_422():
             request=_request(json_body={"path": "/x"}),  # missing 'text'
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
         )
 
     assert exc_info.value.status_code == 422
@@ -443,6 +471,8 @@ async def test_create_note_htmx_form_missing_path_returns_422():
             ),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
         )
 
     assert exc_info.value.status_code == 422
@@ -468,6 +498,8 @@ async def test_update_note_htmx_form_missing_text_leaves_text_unchanged():
             ),
             admin="test-admin",
             session=AsyncMock(),
+            services=MagicMock(),
+            theme_engine=MagicMock(),
             note_id=1,
         )
 

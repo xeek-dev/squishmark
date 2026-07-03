@@ -6,7 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from squishmark.models.content import Config, ThemeConfig
-from squishmark.services.markdown import MarkdownService, reset_markdown_service
+from squishmark.services.markdown import MarkdownService
 from squishmark.services.theme.engine import THEME_PYGMENTS_DEFAULTS, ThemeEngine
 
 # ---------------------------------------------------------------------------
@@ -81,32 +81,29 @@ def test_get_pygments_css_custom_style():
 @pytest.mark.asyncio
 async def test_pygments_css_route():
     """Test the /pygments.css endpoint returns valid CSS."""
-    reset_markdown_service()
-
     mock_github = AsyncMock()
     mock_github.get_config.return_value = {
         "theme": {"name": "default", "pygments_style": "dracula"},
     }
+    # Theme engine loads custom templates during the lifespan.
+    mock_github.list_directory.return_value = []
 
     with (
-        patch("squishmark.routers.assets.get_github_service", return_value=mock_github),
-        patch("squishmark.main.get_theme_engine", new_callable=AsyncMock),
-        patch("squishmark.models.db.init_db", new_callable=AsyncMock),
-        patch("squishmark.models.db.close_db", new_callable=AsyncMock),
-        patch("squishmark.main.shutdown_github_service", new_callable=AsyncMock),
-        patch("squishmark.main.reset_theme_engine"),
+        patch("squishmark.services.container.create_github_service", return_value=mock_github),
+        patch("squishmark.main.init_db", new_callable=AsyncMock),
+        patch("squishmark.main.close_db", new_callable=AsyncMock),
     ):
         from squishmark.main import create_app
 
         app = create_app()
-        transport = ASGITransport(app=app)
-
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get("/pygments.css")
+        # ASGITransport does not emit lifespan events, so run the lifespan
+        # explicitly to build the service container on app.state.
+        async with app.router.lifespan_context(app):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                response = await client.get("/pygments.css")
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/css; charset=utf-8"
         assert response.headers["cache-control"] == "public, max-age=86400"
         assert ".highlight" in response.text
-
-    reset_markdown_service()

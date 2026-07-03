@@ -11,14 +11,23 @@ from squishmark.services.github import GitHubBinaryFile
 
 @asynccontextmanager
 async def _client_with_github(mock_github: AsyncMock):
-    """Build the app with the assets router's GitHub service mocked."""
-    with patch("squishmark.routers.assets.get_github_service", return_value=mock_github):
+    """Build the app with the GitHub service in the container mocked."""
+    # Theme engine loads custom templates during the lifespan.
+    mock_github.list_directory.return_value = []
+    with (
+        patch("squishmark.services.container.create_github_service", return_value=mock_github),
+        patch("squishmark.main.init_db", new_callable=AsyncMock),
+        patch("squishmark.main.close_db", new_callable=AsyncMock),
+    ):
         from squishmark.main import create_app
 
         app = create_app()
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as client:
-            yield client
+        # ASGITransport does not emit lifespan events, so run the lifespan
+        # explicitly to build the service container on app.state.
+        async with app.router.lifespan_context(app):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                yield client
 
 
 @pytest.mark.asyncio

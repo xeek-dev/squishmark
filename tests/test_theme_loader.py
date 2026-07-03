@@ -8,6 +8,8 @@ import pytest
 from jinja2 import TemplateNotFound
 
 from squishmark.models.content import Config
+from squishmark.services.cache import Cache
+from squishmark.services.container import Services
 from squishmark.services.theme.engine import ThemeEngine
 from squishmark.services.theme.loader import (
     AsyncHybridLoader,
@@ -142,7 +144,11 @@ class TestThemedEnvironmentJoinPath:
 def _make_engine(themes_path: Path) -> ThemeEngine:
     github_service = MagicMock()
     github_service.list_directory = AsyncMock(return_value=[])
-    engine = ThemeEngine(github_service, themes_path=themes_path)
+    github_service.get_config = AsyncMock(return_value={})
+    # get_nav_pages reaches the cached content layer through services; an empty
+    # pages listing yields an empty navbar.
+    services = Services(settings=MagicMock(), cache=Cache(ttl_seconds=0), github=github_service)
+    engine = ThemeEngine(github_service, themes_path=themes_path, services=services)
 
     # Favicon detection is an await point in render(); yield control there so
     # concurrent renders interleave (this is where the old shared state raced).

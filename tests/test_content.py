@@ -6,7 +6,8 @@ from typing import Any
 import pytest
 
 from squishmark.models.content import Post, SiteConfig
-from squishmark.services.cache import get_cache
+from squishmark.services.cache import Cache
+from squishmark.services.container import Services
 from squishmark.services.content import (
     PAGES_ALL_KEY,
     PAGES_VISIBLE_KEY,
@@ -104,70 +105,70 @@ class _CountingGitHub:
 
 
 @pytest.fixture
-def fake_github(monkeypatch: pytest.MonkeyPatch) -> _CountingGitHub:
-    """Install a counting fake as the service the cached layer resolves.
-
-    DEBUG is pinned false so the cache TTL is non-zero (a zero TTL expires
-    entries immediately, which would defeat the reuse assertions).
-    """
-    from squishmark.config import get_settings
-    from squishmark.services.cache import reset_cache
-
-    monkeypatch.setenv("DEBUG", "false")
-    get_settings.cache_clear()
-    reset_cache()
-
+def fake_github() -> _CountingGitHub:
+    """A counting fake with a fixed set of posts and pages."""
     files = {
         "posts/2026-01-02-published.md": _post_md("Published"),
         "posts/2026-01-03-secret.md": _post_md("Secret", draft=True),
         "pages/about.md": _page_md("About"),
         "pages/hidden.md": _page_md("Hidden", visibility="hidden"),
     }
-    fake = _CountingGitHub(files)
-    monkeypatch.setattr("squishmark.services.content.get_github_service", lambda: fake)
-    return fake
+    return _CountingGitHub(files)
+
+
+@pytest.fixture
+def services(fake_github: _CountingGitHub) -> Services:
+    """A service container wrapping the counting fake and a real cache.
+
+    A non-zero TTL keeps entries alive across calls so the reuse assertions
+    hold (a zero TTL expires entries immediately).
+    """
+    from squishmark.config import get_settings
+
+    cache = Cache(ttl_seconds=get_settings().cache_ttl_seconds)
+    return Services(settings=get_settings(), cache=cache, github=fake_github)
 
 
 class TestGetCachedPosts:
     """Draft gating, audience-variant caching, and invalidation for posts."""
 
     @pytest.mark.asyncio
-    async def test_published_variant_excludes_drafts(self, fake_github: _CountingGitHub) -> None:
-        published = await get_cached_posts(include_drafts=False)
+    async def test_published_variant_excludes_drafts(self, services: Services) -> None:
+        published = await get_cached_posts(services, include_drafts=False)
         assert [p.slug for p in published] == ["published"]
 
     @pytest.mark.asyncio
-    async def test_all_variant_includes_drafts(self, fake_github: _CountingGitHub) -> None:
-        all_posts = await get_cached_posts(include_drafts=True)
+    async def test_all_variant_includes_drafts(self, services: Services) -> None:
+        all_posts = await get_cached_posts(services, include_drafts=True)
         assert {p.slug for p in all_posts} == {"published", "secret"}
 
     @pytest.mark.asyncio
-    async def test_one_miss_caches_both_variants(self, fake_github: _CountingGitHub) -> None:
+    async def test_one_miss_caches_both_variants(self, services: Services, fake_github: _CountingGitHub) -> None:
         """A single published miss must also populate the admin variant, so the
         admin request that follows never re-parses (and never leaks the other
         way around)."""
-        await get_cached_posts(include_drafts=False)
+        await get_cached_posts(services, include_drafts=False)
         after_first = fake_github.get_file_calls
         assert after_first > 0
 
         # The drafts-included variant is served from the same miss: no re-fetch.
-        all_posts = await get_cached_posts(include_drafts=True)
+        all_posts = await get_cached_posts(services, include_drafts=True)
         assert fake_github.get_file_calls == after_first
         assert {p.slug for p in all_posts} == {"published", "secret"}
 
     @pytest.mark.asyncio
-    async def test_repeat_call_does_not_refetch(self, fake_github: _CountingGitHub) -> None:
-        await get_cached_posts(include_drafts=False)
+    async def test_repeat_call_does_not_refetch(self, services: Services, fake_github: _CountingGitHub) -> None:
+        await get_cached_posts(services, include_drafts=False)
         after_first = fake_github.get_file_calls
-        await get_cached_posts(include_drafts=False)
+        await get_cached_posts(services, include_drafts=False)
         assert fake_github.get_file_calls == after_first
 
     @pytest.mark.asyncio
-    async def test_clear_invalidates(self, fake_github: _CountingGitHub) -> None:
-        await get_cached_posts(include_drafts=False)
+    async def test_clear_invalidates(self, services: Services, fake_github: _CountingGitHub) -> None:
+        await get_cached_posts(services, include_drafts=False)
         after_first = fake_github.get_file_calls
-        await get_cache().clear()
-        await get_cached_posts(include_drafts=False)
+        await services.cache.clear()
+        await get_cached_posts(services, include_drafts=False)
         assert fake_github.get_file_calls > after_first
 
 
@@ -175,29 +176,29 @@ class TestGetCachedPages:
     """Hidden gating, audience-variant caching, and invalidation for pages."""
 
     @pytest.mark.asyncio
-    async def test_visible_variant_excludes_hidden(self, fake_github: _CountingGitHub) -> None:
-        visible = await get_cached_pages(include_hidden=False)
+    async def test_visible_variant_excludes_hidden(self, services: Services) -> None:
+        visible = await get_cached_pages(services, include_hidden=False)
         assert [p.slug for p in visible] == ["about"]
 
     @pytest.mark.asyncio
-    async def test_all_variant_includes_hidden(self, fake_github: _CountingGitHub) -> None:
-        all_pages = await get_cached_pages(include_hidden=True)
+    async def test_all_variant_includes_hidden(self, services: Services) -> None:
+        all_pages = await get_cached_pages(services, include_hidden=True)
         assert {p.slug for p in all_pages} == {"about", "hidden"}
 
     @pytest.mark.asyncio
-    async def test_one_miss_caches_both_variants(self, fake_github: _CountingGitHub) -> None:
-        await get_cached_pages(include_hidden=False)
+    async def test_one_miss_caches_both_variants(self, services: Services, fake_github: _CountingGitHub) -> None:
+        await get_cached_pages(services, include_hidden=False)
         after_first = fake_github.get_file_calls
-        all_pages = await get_cached_pages(include_hidden=True)
+        all_pages = await get_cached_pages(services, include_hidden=True)
         assert fake_github.get_file_calls == after_first
         assert {p.slug for p in all_pages} == {"about", "hidden"}
 
 
 class TestWarmContentCaches:
     @pytest.mark.asyncio
-    async def test_warm_populates_all_variants(self, fake_github: _CountingGitHub) -> None:
-        await warm_content_caches()
-        cache = get_cache()
+    async def test_warm_populates_all_variants(self, services: Services) -> None:
+        await warm_content_caches(services)
+        cache = services.cache
         assert await cache.get(POSTS_ALL_KEY) is not None
         assert await cache.get(POSTS_PUBLISHED_KEY) is not None
         assert await cache.get(PAGES_ALL_KEY) is not None

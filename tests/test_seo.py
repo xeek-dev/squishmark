@@ -1,13 +1,14 @@
 """Tests for SEO routes: sitemap.xml and robots.txt."""
 
 import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from xml.etree.ElementTree import fromstring
 
 import pytest
 
 from squishmark.models.content import Config, Page, Post
 from squishmark.routers.seo import _build_robots_txt, _build_sitemap
+from squishmark.services.container import Services
 
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
 
@@ -15,6 +16,11 @@ SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
 def _ns(tag: str) -> str:
     """Prefix a tag with the sitemap namespace."""
     return f"{{{SITEMAP_NS}}}{tag}"
+
+
+def _services(github: AsyncMock, cache: AsyncMock) -> Services:
+    """Build a service container wrapping the given github and cache mocks."""
+    return Services(settings=MagicMock(), cache=cache, github=github)
 
 
 @pytest.fixture
@@ -209,18 +215,12 @@ class TestSitemapEndpoint:
         mock_github.get_config.return_value = {"site": {"title": "Test"}}
         mock_github.list_directory.return_value = []
 
-        with (
-            patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.seo import sitemap_xml
+        from squishmark.routers.seo import sitemap_xml
 
-            response = await sitemap_xml()
+        response = await sitemap_xml(_services(mock_github, mock_cache))
 
         assert "application/xml" in response.media_type
 
@@ -228,14 +228,12 @@ class TestSitemapEndpoint:
     async def test_cached_response_returned(self):
         cached_xml = b'<?xml version="1.0"?><urlset>cached</urlset>'
 
-        with patch("squishmark.routers.seo.get_cache") as mock_cache_fn:
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = cached_xml
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = cached_xml
 
-            from squishmark.routers.seo import sitemap_xml
+        from squishmark.routers.seo import sitemap_xml
 
-            response = await sitemap_xml()
+        response = await sitemap_xml(_services(AsyncMock(), mock_cache))
 
         assert response.body == cached_xml
 
@@ -256,18 +254,12 @@ class TestSitemapEndpoint:
             MagicMock(content="---\ntitle: Draft\ndate: 2026-01-02\ndraft: true\n---\nDraft."),
         ]
 
-        with (
-            patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.seo import sitemap_xml
+        from squishmark.routers.seo import sitemap_xml
 
-            response = await sitemap_xml()
+        response = await sitemap_xml(_services(mock_github, mock_cache))
 
         root = fromstring(response.body)
         locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
@@ -281,18 +273,12 @@ class TestRobotsEndpoint:
         mock_github = AsyncMock()
         mock_github.get_config.return_value = {"site": {"title": "Test"}}
 
-        with (
-            patch("squishmark.routers.seo.get_github_service", return_value=mock_github),
-            patch("squishmark.services.content.get_github_service", return_value=mock_github),
-            patch("squishmark.routers.seo.get_cache") as mock_cache_fn,
-        ):
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = None
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
 
-            from squishmark.routers.seo import robots_txt
+        from squishmark.routers.seo import robots_txt
 
-            response = await robots_txt()
+        response = await robots_txt(_services(mock_github, mock_cache))
 
         assert "text/plain" in response.media_type
 
@@ -300,13 +286,11 @@ class TestRobotsEndpoint:
     async def test_cached_response_returned(self):
         cached_txt = "User-agent: *\nAllow: /\n"
 
-        with patch("squishmark.routers.seo.get_cache") as mock_cache_fn:
-            mock_cache = AsyncMock()
-            mock_cache.get.return_value = cached_txt
-            mock_cache_fn.return_value = mock_cache
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = cached_txt
 
-            from squishmark.routers.seo import robots_txt
+        from squishmark.routers.seo import robots_txt
 
-            response = await robots_txt()
+        response = await robots_txt(_services(AsyncMock(), mock_cache))
 
         assert response.body.decode() == cached_txt
