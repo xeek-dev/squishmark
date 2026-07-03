@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from squishmark.dependencies import SiteContext
+from squishmark.models.content import Config
 from squishmark.services.cache import Cache
 from squishmark.services.container import Services
 
@@ -34,6 +36,12 @@ def _services(mock_github: AsyncMock) -> Services:
     return Services(settings=MagicMock(), cache=Cache(ttl_seconds=0), github=mock_github)
 
 
+def _site_context(mock_github: AsyncMock) -> SiteContext:
+    """Wrap the github mock in a SiteContext for direct handler calls."""
+    config = Config.from_dict(mock_github.get_config.return_value)
+    return SiteContext(config=config, services=_services(mock_github))
+
+
 class TestPostNotesRendering:
     """Tests for notes being fetched and passed to templates on post pages."""
 
@@ -56,7 +64,7 @@ class TestPostNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _site_context(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=False)
 
@@ -79,7 +87,7 @@ class TestPostNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_admin_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
+            await get_post(_admin_request(), _site_context(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=True)
 
@@ -102,7 +110,7 @@ class TestPostNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _site_context(mock_github), engine, "my-post", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/posts/my-post", include_private=False)
 
@@ -127,7 +135,7 @@ class TestPostNotesRendering:
             engine = AsyncMock()
             engine.render_post.return_value = "<html></html>"
 
-            await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
+            await get_post(_anonymous_request(), _site_context(mock_github), engine, "my-post", db=AsyncMock())
 
             # Verify notes were passed as the third positional arg to render_post
             call_args = engine.render_post.call_args
@@ -152,7 +160,9 @@ class TestPostNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_post=AsyncMock(return_value="<html></html>"))
 
-            response = await get_post(_anonymous_request(), _services(mock_github), engine, "my-post", db=AsyncMock())
+            response = await get_post(
+                _anonymous_request(), _site_context(mock_github), engine, "my-post", db=AsyncMock()
+            )
 
             assert response.status_code == 200
             call_args = engine.render_post.call_args
@@ -181,7 +191,7 @@ class TestPageNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
+            await get_page(_anonymous_request(), _site_context(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=False)
 
@@ -204,7 +214,7 @@ class TestPageNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_admin_request(), _services(mock_github), engine, "about", db=AsyncMock())
+            await get_page(_admin_request(), _site_context(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=True)
 
@@ -227,7 +237,7 @@ class TestPageNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
+            await get_page(_anonymous_request(), _site_context(mock_github), engine, "about", db=AsyncMock())
 
             mock_notes.get_for_path.assert_called_once_with("/about", include_private=False)
 
@@ -252,7 +262,7 @@ class TestPageNotesRendering:
             engine = AsyncMock()
             engine.render_page.return_value = "<html></html>"
 
-            await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
+            await get_page(_anonymous_request(), _site_context(mock_github), engine, "about", db=AsyncMock())
 
             call_args = engine.render_page.call_args
             assert call_args[0][2] == fake_notes
@@ -276,7 +286,7 @@ class TestPageNotesRendering:
             mock_notes_cls.return_value = mock_notes
             engine = AsyncMock(render_page=AsyncMock(return_value="<html></html>"))
 
-            response = await get_page(_anonymous_request(), _services(mock_github), engine, "about", db=AsyncMock())
+            response = await get_page(_anonymous_request(), _site_context(mock_github), engine, "about", db=AsyncMock())
 
             assert response.status_code == 200
             call_args = engine.render_page.call_args

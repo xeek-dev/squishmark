@@ -13,7 +13,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from squishmark.config import get_settings
-from squishmark.dependencies import AdminUser, ServicesDep, ThemeEngineDep, is_htmx
+from squishmark.dependencies import AdminUser, ServicesDep, SiteContextDep, ThemeEngineDep, is_htmx
 from squishmark.models.content import Config
 from squishmark.models.db import Note, get_db_session
 from squishmark.services.analytics import AnalyticsService
@@ -180,13 +180,11 @@ async def admin_dashboard(
     request: Request,
     admin: AdminUser,
     session: DbSession,
-    services: ServicesDep,
+    context: SiteContextDep,
     theme_engine: ThemeEngineDep,
 ) -> HTMLResponse:
     """Render the admin dashboard."""
-    # Get config
-    config_data = await services.github.get_config()
-    config = Config.from_dict(config_data)
+    config = context.config
 
     # Get analytics
     analytics_service = AnalyticsService(session)
@@ -197,7 +195,7 @@ async def admin_dashboard(
     notes = await notes_service.get_all()
 
     # Get cache info
-    cache = services.cache
+    cache = context.services.cache
 
     # Render admin template
     csrf_token = get_or_create_csrf_token(request)

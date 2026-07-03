@@ -7,8 +7,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, Response
 
 from squishmark.config import get_settings
-from squishmark.dependencies import ServicesDep
-from squishmark.models.content import Config
+from squishmark.dependencies import ServicesDep, SiteContextDep
 
 router = APIRouter(tags=["assets"])
 
@@ -38,12 +37,9 @@ async def serve_favicon(services: ServicesDep) -> Response:
 
 # Dynamic Pygments CSS - generates syntax highlighting styles from config
 @router.get("/pygments.css")
-async def serve_pygments_css(services: ServicesDep) -> Response:
+async def serve_pygments_css(context: SiteContextDep) -> Response:
     """Serve dynamically generated Pygments CSS based on configured style."""
-    config_data = await services.github.get_config()
-    config = Config.from_dict(config_data)
-    md_service = services.markdown_for(config)
-    css = md_service.get_pygments_css()
+    css = context.markdown.get_pygments_css()
     return Response(
         content=css,
         media_type="text/css",

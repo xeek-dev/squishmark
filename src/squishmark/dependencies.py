@@ -1,12 +1,15 @@
 """FastAPI dependency injection utilities."""
 
 import logging
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request
 
 from squishmark.config import Settings, get_settings
+from squishmark.models.content import Config
 from squishmark.services.container import Services
+from squishmark.services.markdown import MarkdownService
 from squishmark.services.theme import ThemeEngine
 
 logger = logging.getLogger(__name__)
@@ -21,6 +24,37 @@ def get_services(request: Request) -> Services:
 
 
 ServicesDep = Annotated[Services, Depends(get_services)]
+
+
+@dataclass
+class SiteContext:
+    """Per-request site context: the parsed config plus the services bundle.
+
+    Folds the config-fetch ritual (``get_config`` + ``Config.from_dict``) that
+    most routes repeat into one dependency. The markdown service is exposed
+    lazily so config-only routes never build it.
+    """
+
+    config: Config
+    services: Services
+
+    @property
+    def markdown(self) -> MarkdownService:
+        """Return the markdown service for this request's config.
+
+        Caching lives in ``Services.markdown_for``; see it for how config
+        changes affect the instance.
+        """
+        return self.services.markdown_for(self.config)
+
+
+async def get_site_context(services: ServicesDep) -> SiteContext:
+    """Fetch and parse the site config, pairing it with the services bundle."""
+    config_data = await services.github.get_config()
+    return SiteContext(config=Config.from_dict(config_data), services=services)
+
+
+SiteContextDep = Annotated[SiteContext, Depends(get_site_context)]
 
 
 def get_theme_engine(request: Request) -> ThemeEngine:
