@@ -23,6 +23,13 @@ def _services(github: AsyncMock, cache: AsyncMock) -> Services:
     return Services(settings=MagicMock(), cache=cache, github=github)
 
 
+def _theme_engine(has_home: bool = False) -> MagicMock:
+    """A theme engine stub whose has_template reports homepage resolution."""
+    engine = MagicMock()
+    engine.has_template.return_value = has_home
+    return engine
+
+
 @pytest.fixture
 def sample_config() -> Config:
     return Config.from_dict(
@@ -146,6 +153,20 @@ class TestBuildSitemap:
         locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
         assert "https://example.com/hidden-page" not in locs
 
+    def test_homepage_included_by_default(self, sample_config, sample_posts, sample_pages):
+        xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages)
+        root = fromstring(xml_bytes)
+        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
+        assert "https://example.com/" in locs
+
+    def test_homepage_excluded_when_include_home_false(self, sample_config, sample_posts, sample_pages):
+        xml_bytes = _build_sitemap(sample_config, sample_posts, sample_pages, include_home=False)
+        root = fromstring(xml_bytes)
+        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
+        assert "https://example.com/" not in locs
+        # The posts listing stays regardless.
+        assert "https://example.com/posts" in locs
+
     def test_empty_content(self, sample_config):
         xml_bytes = _build_sitemap(sample_config, [], [])
         root = fromstring(xml_bytes)
@@ -220,7 +241,7 @@ class TestSitemapEndpoint:
 
         from squishmark.routers.seo import sitemap_xml
 
-        response = await sitemap_xml(_services(mock_github, mock_cache))
+        response = await sitemap_xml(_services(mock_github, mock_cache), _theme_engine())
 
         assert "application/xml" in response.media_type
 
@@ -233,9 +254,48 @@ class TestSitemapEndpoint:
 
         from squishmark.routers.seo import sitemap_xml
 
-        response = await sitemap_xml(_services(AsyncMock(), mock_cache))
+        response = await sitemap_xml(_services(AsyncMock(), mock_cache), _theme_engine())
 
         assert response.body == cached_xml
+
+    @pytest.mark.asyncio
+    async def test_homepage_included_when_theme_has_home(self):
+        mock_github = AsyncMock()
+        mock_github.get_config.return_value = {
+            "site": {"title": "Test", "url": "https://example.com"},
+        }
+        mock_github.list_directory.return_value = []
+
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
+
+        from squishmark.routers.seo import sitemap_xml
+
+        response = await sitemap_xml(_services(mock_github, mock_cache), _theme_engine(has_home=True))
+
+        root = fromstring(response.body)
+        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
+        assert "https://example.com/" in locs
+
+    @pytest.mark.asyncio
+    async def test_homepage_excluded_when_theme_has_no_home(self):
+        mock_github = AsyncMock()
+        mock_github.get_config.return_value = {
+            "site": {"title": "Test", "url": "https://example.com"},
+        }
+        mock_github.list_directory.return_value = []
+
+        mock_cache = AsyncMock()
+        mock_cache.get.return_value = None
+
+        from squishmark.routers.seo import sitemap_xml
+
+        response = await sitemap_xml(_services(mock_github, mock_cache), _theme_engine(has_home=False))
+
+        root = fromstring(response.body)
+        locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]
+        assert "https://example.com/" not in locs
+        assert "https://example.com/posts" in locs
 
     @pytest.mark.asyncio
     async def test_drafts_excluded(self):
@@ -259,7 +319,7 @@ class TestSitemapEndpoint:
 
         from squishmark.routers.seo import sitemap_xml
 
-        response = await sitemap_xml(_services(mock_github, mock_cache))
+        response = await sitemap_xml(_services(mock_github, mock_cache), _theme_engine())
 
         root = fromstring(response.body)
         locs = [u.find(_ns("loc")).text for u in root.findall(_ns("url"))]

@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from fastapi import APIRouter
 from fastapi.responses import Response
 
-from squishmark.dependencies import ServicesDep
+from squishmark.dependencies import ServicesDep, ThemeEngineDep
 from squishmark.models.content import Config, Page, Post
 from squishmark.services.content import get_cached_pages, get_cached_posts
 
@@ -25,14 +25,25 @@ def _add_url(urlset: Element, loc: str, lastmod: datetime.date | None = None) ->
         SubElement(url_el, "lastmod").text = lastmod.isoformat()
 
 
-def _build_sitemap(config: Config, posts: list[Post], pages: list[Page]) -> bytes:
-    """Build a sitemap.xml from config, posts, and pages."""
+def _build_sitemap(
+    config: Config,
+    posts: list[Post],
+    pages: list[Page],
+    include_home: bool = True,
+) -> bytes:
+    """Build a sitemap.xml from config, posts, and pages.
+
+    ``/`` is listed only when ``include_home`` is set (the active theme
+    resolves a homepage); otherwise ``/`` redirects to ``/posts`` and is
+    omitted.
+    """
     site_url = config.site.url.rstrip("/") if config.site.url else ""
     newest_post_date = posts[0].date if posts else None
 
     urlset = Element("urlset", xmlns=SITEMAP_NS)
 
-    _add_url(urlset, f"{site_url}/", newest_post_date)
+    if include_home:
+        _add_url(urlset, f"{site_url}/", newest_post_date)
     _add_url(urlset, f"{site_url}/posts", newest_post_date)
 
     for post in posts:
@@ -67,7 +78,7 @@ def _build_robots_txt(config: Config) -> str:
 
 
 @router.get("/sitemap.xml")
-async def sitemap_xml(services: ServicesDep) -> Response:
+async def sitemap_xml(services: ServicesDep, theme_engine: ThemeEngineDep) -> Response:
     """Serve the XML sitemap."""
     cache = services.cache
 
@@ -81,7 +92,8 @@ async def sitemap_xml(services: ServicesDep) -> Response:
     posts = await get_cached_posts(services, include_drafts=False)
     pages = await get_cached_pages(services, include_hidden=False)
 
-    xml_bytes = _build_sitemap(config, posts, pages)
+    include_home = theme_engine.has_template("home.html", config.theme.name)
+    xml_bytes = _build_sitemap(config, posts, pages, include_home=include_home)
     await cache.set(SITEMAP_CACHE_KEY, xml_bytes)
     return Response(content=xml_bytes, media_type="application/xml; charset=utf-8")
 

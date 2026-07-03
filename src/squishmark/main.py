@@ -5,13 +5,13 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from squishmark.config import get_settings
 from squishmark.models.content import Config
 from squishmark.models.db import close_db, init_db
-from squishmark.routers import admin, archive, assets, auth, feed, pages, posts, search, seo, tags, webhooks
+from squishmark.routers import admin, archive, assets, auth, feed, home, pages, posts, search, seo, tags, webhooks
 from squishmark.services.analytics_middleware import register_analytics_middleware
 from squishmark.services.container import build_services
 from squishmark.services.livereload import LiveReloadService
@@ -142,12 +142,6 @@ def create_app() -> FastAPI:
         """Health check endpoint for container orchestration."""
         return {"status": "healthy"}
 
-    # Home page - redirect to /posts
-    @app.get("/", response_class=HTMLResponse)
-    async def index(request: Request) -> RedirectResponse:
-        """Redirect root to posts listing."""
-        return RedirectResponse(url="/posts", status_code=302)
-
     # LiveReload WebSocket endpoint and middleware (debug mode only)
     if settings.debug:
         from squishmark.services.livereload import LiveReloadMiddleware
@@ -167,6 +161,7 @@ def create_app() -> FastAPI:
     app.include_router(webhooks.router)
     app.include_router(feed.router)
     app.include_router(seo.router)
+    app.include_router(home.router)  # GET / (theme homepage or redirect to /posts)
     app.include_router(search.router)
     app.include_router(assets.router)
     app.include_router(posts.router)
