@@ -44,8 +44,10 @@
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
             </div>
+            {% block nav_search %}
             {% set search_mode = "input" %}
             {% include "_search.html" %}
+            {% endblock %}
             <a href="/posts" class="nav-cta">Read Blog</a>
         </div>
     </nav>

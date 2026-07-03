@@ -56,8 +56,10 @@
                 {% for page in nav_pages %}
                 <a href="{{ page.url }}">{{ page.title }}</a>
                 {% endfor %}
+                {% block nav_search %}
                 {% set search_mode = "button" %}
                 {% include "_search.html" %}
+                {% endblock %}
             </div>
         </div>
     </nav>

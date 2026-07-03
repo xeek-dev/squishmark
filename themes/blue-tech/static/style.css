@@ -189,7 +189,7 @@ img {
 .hero {
     position: relative;
     text-align: center;
-    padding: 180px 24px 120px;
+    padding: 96px 24px 48px;
     max-width: 700px;
     margin: 0 auto;
 }
@@ -1354,7 +1354,7 @@ img {
    ============================================ */
 .hero-search {
     max-width: 560px;
-    margin: 40px auto 0;
+    margin: 28px auto 0;
 }
 
 .hero-search .search {
@@ -1394,7 +1394,7 @@ img {
 }
 
 .home-section-title {
-    font-size: 1.75rem;
+    font-size: 1.05rem;
     font-weight: 700;
     line-height: 1.2;
 }
