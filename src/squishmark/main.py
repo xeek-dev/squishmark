@@ -1,23 +1,19 @@
 """FastAPI application entry point."""
 
-import asyncio
 import logging
-import re
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from squishmark.config import get_settings
 from squishmark.models.content import Config
-from squishmark.models.db import close_db, get_db_session, init_db
-from squishmark.routers import admin, auth, feed, pages, posts, search, seo, webhooks
-from squishmark.services.analytics import AnalyticsService
+from squishmark.models.db import close_db, init_db
+from squishmark.routers import admin, assets, auth, feed, pages, posts, search, seo, webhooks
+from squishmark.services.analytics_middleware import register_analytics_middleware
 from squishmark.services.github import get_github_service, shutdown_github_service
-from squishmark.services.markdown import get_markdown_service
 from squishmark.services.theme import get_theme_engine, reset_theme_engine
 
 # Configure logging
@@ -72,51 +68,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await shutdown_github_service()
     reset_theme_engine()
     await close_db()
-
-
-# Common bot/crawler User-Agent substrings. Matched case-insensitively. Covers
-# Googlebot, Bingbot, Baidu/Yandex/Naver/Apple/Petal, social-card fetchers
-# (Twitterbot, facebookexternalhit, Slackbot, Discordbot, etc.), and headless
-# scripted clients (curl, wget, python-requests, httpx).
-BOT_USER_AGENT_PATTERN = re.compile(
-    r"bot|crawler|spider|slurp|facebookexternalhit|curl|wget|python-requests|httpx",
-    re.IGNORECASE,
-)
-
-
-def is_bot_user_agent(user_agent: str | None) -> bool:
-    """Return True if the User-Agent looks like a bot, crawler, or scripted client."""
-    if not user_agent:
-        # Treat missing UA as a bot — real browsers always send one.
-        return True
-    return bool(BOT_USER_AGENT_PATTERN.search(user_agent))
-
-
-async def track_page_view(request: Request) -> None:
-    """Track a page view asynchronously (fire and forget)."""
-    try:
-        # Get client IP
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            ip = forwarded.split(",")[0].strip()
-        else:
-            ip = request.client.host if request.client else "unknown"
-
-        referrer = request.headers.get("referer")
-        user_agent = request.headers.get("user-agent")
-
-        async for session in get_db_session():
-            analytics = AnalyticsService(session)
-            await analytics.track_view(
-                path=str(request.url.path),
-                ip=ip,
-                referrer=referrer,
-                user_agent=user_agent,
-            )
-            break
-    except Exception as e:
-        # Don't let analytics errors affect the request
-        logger.warning(f"Failed to track page view: {e}")
 
 
 def create_app() -> FastAPI:
@@ -183,35 +134,7 @@ def create_app() -> FastAPI:
     )
 
     # Middleware to track page views (non-blocking)
-    @app.middleware("http")
-    async def analytics_middleware(request: Request, call_next):
-        """Track page views for non-static, non-admin, non-bot HTML requests."""
-        response = await call_next(request)
-
-        if response.status_code != 200:
-            return response
-
-        # Only HTML pages count as page views — excludes /robots.txt,
-        # /sitemap.xml, /feed.xml, /favicon.ico, /pygments.css, etc.
-        if not response.headers.get("content-type", "").startswith("text/html"):
-            return response
-
-        path = request.url.path
-        if (
-            path.startswith("/static")
-            or path.startswith("/admin")
-            or path.startswith("/health")
-            or path.startswith("/auth")
-            or path.startswith("/webhooks")
-        ):
-            return response
-
-        if is_bot_user_agent(request.headers.get("user-agent")):
-            return response
-
-        # Fire and forget - don't await
-        asyncio.create_task(track_page_view(request))
-        return response
+    register_analytics_middleware(app)
 
     # Health check endpoint
     @app.get("/health")
@@ -224,88 +147,6 @@ def create_app() -> FastAPI:
     async def index(request: Request) -> RedirectResponse:
         """Redirect root to posts listing."""
         return RedirectResponse(url="/posts", status_code=302)
-
-    # Favicon endpoint - browsers request this automatically
-    @app.get("/favicon.ico")
-    async def serve_favicon() -> Response:
-        """Serve favicon from content repository."""
-        github_service = get_github_service()
-
-        # Try common favicon locations in order of preference
-        for path in ["static/favicon.ico", "static/favicon.png", "static/favicon.svg"]:
-            file = await github_service.get_binary_file(path)
-            if file:
-                return Response(
-                    content=file.content,
-                    media_type=file.content_type,
-                    headers={"Cache-Control": "public, max-age=86400"},
-                )
-
-        raise HTTPException(status_code=404, detail="Favicon not found")
-
-    # Dynamic Pygments CSS - generates syntax highlighting styles from config
-    @app.get("/pygments.css")
-    async def serve_pygments_css() -> Response:
-        """Serve dynamically generated Pygments CSS based on configured style."""
-        github_service = get_github_service()
-        config_data = await github_service.get_config()
-        config = Config.from_dict(config_data)
-        md_service = get_markdown_service(config)
-        css = md_service.get_pygments_css()
-        return Response(
-            content=css,
-            media_type="text/css",
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
-
-    # User static files from content repository
-    ALLOWED_STATIC_EXTENSIONS = {".ico", ".png", ".svg", ".jpg", ".jpeg", ".webp", ".gif", ".css", ".js"}
-
-    @app.get("/static/user/{path:path}")
-    async def serve_user_static(path: str) -> Response:
-        """Serve static files from the user's content repository."""
-        # Security: only allow specific file extensions
-        ext = Path(path).suffix.lower()
-        if ext not in ALLOWED_STATIC_EXTENSIONS:
-            raise HTTPException(status_code=404, detail="File not found")
-
-        github_service = get_github_service()
-        file = await github_service.get_binary_file(f"static/{path}")
-
-        if file is None:
-            raise HTTPException(status_code=404, detail="File not found")
-
-        return Response(
-            content=file.content,
-            media_type=file.content_type,
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
-
-    # Theme static files - serve from theme directories with fallback
-    VALID_THEME_NAME = re.compile(r"^[a-zA-Z0-9_-]+$")
-
-    @app.get("/static/{theme_name}/{file_path:path}")
-    async def serve_theme_static(theme_name: str, file_path: str) -> Response:
-        """Serve static files from theme directories with fallback to default."""
-        # Security: validate theme name and file path to prevent path traversal
-        if not VALID_THEME_NAME.match(theme_name):
-            raise HTTPException(status_code=400, detail="Invalid theme name")
-        if ".." in file_path or file_path.startswith("/"):
-            raise HTTPException(status_code=400, detail="Invalid file path")
-
-        themes_dir = Path(settings.resolved_themes_path)
-
-        # Try requested theme first
-        file = themes_dir / theme_name / "static" / file_path
-        if file.exists() and file.is_file():
-            return FileResponse(file, headers={"Cache-Control": "public, max-age=86400"})
-
-        # Fall back to default theme
-        fallback = themes_dir / "default" / "static" / file_path
-        if fallback.exists() and fallback.is_file():
-            return FileResponse(fallback, headers={"Cache-Control": "public, max-age=86400"})
-
-        raise HTTPException(status_code=404, detail="Static file not found")
 
     # LiveReload WebSocket endpoint and middleware (debug mode only)
     if settings.debug:
@@ -326,6 +167,7 @@ def create_app() -> FastAPI:
     app.include_router(feed.router)
     app.include_router(seo.router)
     app.include_router(search.router)
+    app.include_router(assets.router)
     app.include_router(posts.router)
     app.include_router(pages.router)  # Catch-all for static pages, must be last
 

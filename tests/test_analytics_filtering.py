@@ -7,7 +7,7 @@ import pytest
 from fastapi.responses import HTMLResponse
 from httpx import ASGITransport, AsyncClient
 
-from squishmark.main import is_bot_user_agent
+from squishmark.services.analytics_middleware import is_bot_user_agent
 
 
 @pytest.mark.parametrize(
@@ -84,7 +84,7 @@ async def _assert_track_called(headers: dict, path: str, expected: bool, add_htm
         stack[3],
         stack[4],
         stack[5],
-        patch("squishmark.main.track_page_view", new=tracker),
+        patch("squishmark.services.analytics_middleware.track_page_view", new=tracker),
     ):
         from squishmark.main import create_app
 
