@@ -6,9 +6,13 @@ GitHub content layer is replaced with an in-memory :class:`FakeGitHubService`
 so no network access is required.
 
 The autouse :func:`_reset_environment` fixture is the linchpin: it clears the
-settings cache and, for the HTTP integration modules, injects a
+settings cache and, for tests marked ``@pytest.mark.integration``, injects a
 :class:`FakeGitHubService` into the lifespan-built service container by patching
 the container's ``create_github_service`` factory.
+
+Integration modules opt in with a module-level ``pytestmark =
+pytest.mark.integration`` rather than being listed here, so adding a new HTTP
+integration module needs no conftest edit.
 """
 
 from collections.abc import Callable, Iterator
@@ -174,15 +178,6 @@ def make_content() -> Callable[..., FakeGitHubService]:
 # --- Autouse environment reset --------------------------------------------
 
 
-_INTEGRATION_MODULES = (
-    "test_routes_posts",
-    "test_routes_pages",
-    "test_routes_admin",
-    "test_routes_webhooks",
-    "test_routes_search",
-)
-
-
 @pytest.fixture(autouse=True)
 def _reset_environment(
     request: pytest.FixtureRequest,
@@ -190,19 +185,19 @@ def _reset_environment(
     tmp_path: Any,
     make_content: Callable[..., FakeGitHubService],
 ) -> Iterator[FakeGitHubService | None]:
-    """Per-test isolation of settings and (for integration modules) the fake.
+    """Per-test isolation of settings and (for integration tests) the fake.
 
-    For the HTTP integration modules this pins the environment the real
-    ``create_app()`` reads (file-based SQLite — ``:memory:`` loses tables across
-    the separate connections SQLAlchemy's async pool opens — plus secret/admin/
-    webhook config) and injects a default fake GitHub service into the
-    lifespan-built container by patching ``create_github_service``.
+    For tests marked ``@pytest.mark.integration`` this pins the environment the
+    real ``create_app()`` reads (file-based SQLite, since ``:memory:`` loses
+    tables across the separate connections SQLAlchemy's async pool opens, plus
+    secret/admin/webhook config) and injects a default fake GitHub service into
+    the lifespan-built container by patching ``create_github_service``.
 
-    The env-pinning is scoped to this PR's integration modules so it never
-    pollutes ``os.environ`` for the pre-existing suites — several of which build
-    a bare ``Settings()`` and assert on environment-derived defaults.
+    The env-pinning is scoped to marked tests so it never pollutes
+    ``os.environ`` for the pre-existing suites, several of which build a bare
+    ``Settings()`` and assert on environment-derived defaults.
     """
-    is_integration = request.module.__name__.rsplit(".", 1)[-1] in _INTEGRATION_MODULES
+    is_integration = request.node.get_closest_marker("integration") is not None
 
     if is_integration:
         db_path = tmp_path / "test.db"
@@ -224,6 +219,17 @@ def _reset_environment(
     yield fake
 
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def fake_github(_reset_environment: FakeGitHubService | None) -> FakeGitHubService:
+    """The injected :class:`FakeGitHubService` for the current integration test.
+
+    Lookups happen at request time, so mutating ``files``/``binary_files`` in a
+    test body affects subsequent requests through an already-built client.
+    """
+    assert _reset_environment is not None, "fake_github requires @pytest.mark.integration"
+    return _reset_environment
 
 
 # --- Clients ---------------------------------------------------------------
