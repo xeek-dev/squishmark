@@ -5,7 +5,7 @@ from typing import Any
 from urllib.parse import quote
 
 from jinja2 import Environment
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 
 def format_date(value: Any, fmt: str = "%B %d, %Y") -> str:
@@ -34,9 +34,9 @@ def accent_first_word(value: str) -> Markup:
         interior_caps = [m.start() for m in re.finditer(r"[A-Z]", word) if m.start() > 0]
         if interior_caps:
             split = interior_caps[-1]
-            return Markup(f'<span class="accent">{word[:split]}</span>{word[split:]}')
-        return Markup(f'<span class="accent">{word}</span>')
-    return Markup(f'<span class="accent">{words[0]}</span> {words[1]}')
+            return Markup(f'<span class="accent">{escape(word[:split])}</span>{escape(word[split:])}')
+        return Markup(f'<span class="accent">{escape(word)}</span>')
+    return Markup(f'<span class="accent">{escape(words[0])}</span> {escape(words[1])}')
 
 
 def accent_last_word(value: str) -> Markup:
@@ -45,8 +45,8 @@ def accent_last_word(value: str) -> Markup:
         return Markup("")
     words = value.rsplit(" ", 1)
     if len(words) == 1:
-        return Markup(f'<span class="accent">{words[0]}</span>')
-    return Markup(f'{words[0]} <span class="accent">{words[1]}</span>')
+        return Markup(f'<span class="accent">{escape(words[0])}</span>')
+    return Markup(f'{escape(words[0])} <span class="accent">{escape(words[1])}</span>')
 
 
 def share_urls(post: Any, canonical_url: str | None) -> list[tuple[str, str]]:

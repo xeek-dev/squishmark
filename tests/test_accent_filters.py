@@ -22,3 +22,10 @@ def test_space_rule_wins_over_capitals():
     """A spaced title splits on the space only; CamelCase in the first word
     is left intact (the rules are mutually exclusive)."""
     assert str(accent_first_word("SquishMark Blog")) == '<span class="accent">SquishMark</span> Blog'
+
+
+def test_html_in_title_is_escaped():
+    """Markup bypasses autoescaping, so the filter must escape the parts."""
+    result = str(accent_first_word("<script>x</script> Blog"))
+    assert "<script>" not in result
+    assert "&lt;script&gt;" in result
