@@ -59,19 +59,19 @@ class ThemeEngine:
         # Favicon detector for content repository
         self.favicon_detector = FaviconDetector(self.github_service)
 
-    async def load_custom_templates(self) -> int:
+    async def load_custom_templates(self, use_cache: bool = True) -> int:
         """
         Pre-load custom templates from the content repository.
 
         Returns:
             Number of custom templates loaded
         """
-        custom_templates = await self.github_service.list_directory("theme")
+        custom_templates = await self.github_service.list_directory("theme", use_cache=use_cache)
         count = 0
 
         for path in custom_templates:
             if path.endswith(".html"):
-                file = await self.github_service.get_file(path)
+                file = await self.github_service.get_file(path, use_cache=use_cache)
                 if file:
                     # Extract template name from path (e.g., "theme/post.html" -> "post.html")
                     template_name = path.split("/")[-1]
@@ -314,4 +314,6 @@ class ThemeEngine:
         # cache must be dropped too or edited templates keep serving stale.
         if self.env.cache is not None:
             self.env.cache.clear()
-        await self.load_custom_templates()
+        # Bypass the content cache so reload does not depend on callers
+        # having cleared it first.
+        await self.load_custom_templates(use_cache=False)

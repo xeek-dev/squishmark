@@ -207,3 +207,5 @@ class TestReload:
         github.get_file = AsyncMock(return_value=GitHubFile(path="theme/snippet.html", content="V2"))
         await engine.reload()
         assert engine.render_partial("snippet.html", theme_override="default") == "V2"
+        # reload must bypass the content cache, not rely on callers clearing it
+        github.get_file.assert_called_with("theme/snippet.html", use_cache=False)
