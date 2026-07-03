@@ -1,6 +1,7 @@
 """Custom Jinja2 filters for SquishMark templates."""
 
 from typing import Any
+from urllib.parse import quote
 
 from jinja2 import Environment
 from markupsafe import Markup
@@ -35,8 +36,31 @@ def accent_last_word(value: str) -> Markup:
     return Markup(f'{words[0]} <span class="accent">{words[1]}</span>')
 
 
+def share_urls(post: Any, canonical_url: str | None) -> list[tuple[str, str]]:
+    """Build (platform, share_url) pairs for a post.
+
+    Takes the absolute post URL (canonical_url from the render context) and
+    returns direct share links with the URL and title percent-encoded.
+    Returns an empty list when canonical_url is falsy (site.url unset) so
+    templates can hide the share section entirely.
+    """
+    if not canonical_url:
+        return []
+    url = quote(canonical_url, safe="")
+    title = quote(getattr(post, "title", "") or "", safe="")
+    return [
+        ("Twitter/X", f"https://twitter.com/intent/tweet?url={url}&text={title}"),
+        ("LinkedIn", f"https://www.linkedin.com/sharing/share-offsite/?url={url}"),
+        ("Facebook", f"https://www.facebook.com/sharer/sharer.php?u={url}"),
+        ("Reddit", f"https://reddit.com/submit?url={url}&title={title}"),
+        ("Hacker News", f"https://news.ycombinator.com/submitlink?u={url}&t={title}"),
+        ("Email", f"mailto:?subject={title}&body={url}"),
+    ]
+
+
 def register_filters(env: Environment) -> None:
     """Register all custom filters on a Jinja2 environment."""
     env.filters["format_date"] = format_date
     env.filters["accent_first_word"] = accent_first_word
     env.filters["accent_last_word"] = accent_last_word
+    env.filters["share_urls"] = share_urls
