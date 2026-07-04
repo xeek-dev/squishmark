@@ -182,9 +182,12 @@ The favicon is automatically detected and served at `/favicon.ico`.
 
 ## Documentation
 
-- [Getting Started Guide](docs/getting-started.md) *(coming soon)*
-- [Theming Guide](docs/theming.md) *(coming soon)*
-- [Configuration Reference](docs/configuration.md) *(coming soon)*
+Full guides live on the official site, which runs on SquishMark itself:
+
+- [Getting started](https://squishmark.dev/docs/getting-started)
+- [Configuration](https://squishmark.dev/docs/configuration)
+- [Theming](https://squishmark.dev/docs/theming)
+- [Frontmatter reference](https://squishmark.dev/docs/frontmatter)
 
 ## Themes
 
