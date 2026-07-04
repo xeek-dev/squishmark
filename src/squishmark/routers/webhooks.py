@@ -73,7 +73,7 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
     pinned_ref = None
     try:
         payload = json.loads(body)
-    except (ValueError, UnicodeDecodeError):
+    except ValueError, UnicodeDecodeError:
         payload = {}
     after = payload.get("after", "")
     branch = payload.get("ref", "")
