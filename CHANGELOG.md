@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/xeek-dev/squishmark/compare/v0.4.0...v0.5.0) (2026-07-04)
+
+
+### Features
+
+* **engine:** support nested pages in subdirectories under pages/ ([#132](https://github.com/xeek-dev/squishmark/issues/132)) ([b01ee31](https://github.com/xeek-dev/squishmark/commit/b01ee31a9781c61f6ae9d4baee2e2f3999ffb205)), closes [#131](https://github.com/xeek-dev/squishmark/issues/131)
+
+
+### Miscellaneous
+
+* **deploy:** move Fly primary region to dfw ([#137](https://github.com/xeek-dev/squishmark/issues/137)) ([b58590f](https://github.com/xeek-dev/squishmark/commit/b58590f6ffb785b94f248df382910c3aaeac672f))
+* **deploy:** prepare fly.toml for the squishmark.xeek.dev deployment ([#134](https://github.com/xeek-dev/squishmark/issues/134)) ([234e1da](https://github.com/xeek-dev/squishmark/commit/234e1da8f8384f00b077fa5f9adbe18cb6c00f23))
+
 ## [0.4.0](https://github.com/xeek-dev/squishmark/compare/v0.3.0...v0.4.0) (2026-07-03)
 
 
