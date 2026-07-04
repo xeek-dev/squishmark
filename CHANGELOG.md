@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.6.0](https://github.com/xeek-dev/squishmark/compare/v0.5.0...v0.6.0) (2026-07-04)
+
+
+### Features
+
+* **engine:** opt-in table of contents for pages ([#148](https://github.com/xeek-dev/squishmark/issues/148)) ([961efff](https://github.com/xeek-dev/squishmark/commit/961efffde5f63a50ca241d50cc61943414db844b)), closes [#147](https://github.com/xeek-dev/squishmark/issues/147)
+
+
+### Bug Fixes
+
+* **engine:** mount the API explorer only in debug mode ([#142](https://github.com/xeek-dev/squishmark/issues/142)) ([76c44ef](https://github.com/xeek-dev/squishmark/commit/76c44ef9e9d888fd0b84f75a55512bfdf7d1a7ea)), closes [#140](https://github.com/xeek-dev/squishmark/issues/140)
+* **engine:** static assets revalidate with ETags instead of caching for a day ([#151](https://github.com/xeek-dev/squishmark/issues/151)) ([c26a8e8](https://github.com/xeek-dev/squishmark/commit/c26a8e8a36a80c816cfe0b8d5282fbb8a0f19e2f))
+* **engine:** warm content at the pushed commit SHA ([#150](https://github.com/xeek-dev/squishmark/issues/150)) ([4d4bf31](https://github.com/xeek-dev/squishmark/commit/4d4bf3132afc23e27d5d0894819c87beb91740f0))
+
+
+### Documentation
+
+* **readme:** restructure around the live site ([#149](https://github.com/xeek-dev/squishmark/issues/149)) ([12e3a31](https://github.com/xeek-dev/squishmark/commit/12e3a31ff1c35cfc335308c4cbe53cbf3aa89916))
+
+
+### Miscellaneous
+
+* **deploy:** keep the engine fly.toml generic ([#143](https://github.com/xeek-dev/squishmark/issues/143)) ([dc19f68](https://github.com/xeek-dev/squishmark/commit/dc19f688eaa78941ff58864a18fdd7aceac94332))
+
 ## [0.5.0](https://github.com/xeek-dev/squishmark/compare/v0.4.0...v0.5.0) (2026-07-04)
 
 
