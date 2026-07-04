@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from httpx import ASGITransport, AsyncClient
 
 from squishmark.services.analytics_middleware import is_bot_user_agent
+from tests.conftest import promote_last_route
 
 
 @pytest.mark.parametrize(
@@ -90,6 +91,8 @@ async def _assert_track_called(headers: dict, path: str, expected: bool, add_htm
             @app.get("/_test/html", response_class=HTMLResponse)
             async def _test_html():
                 return HTMLResponse("<html><body>test</body></html>")
+
+            promote_last_route(app)
 
         # ASGITransport does not emit lifespan events, so run the lifespan
         # explicitly to build the service container on app.state.

@@ -12,7 +12,7 @@ from squishmark.services.notes import NotesService
 router = APIRouter(tags=["pages"])
 
 
-@router.get("/{slug}", response_class=HTMLResponse)
+@router.get("/{slug:path}", response_class=HTMLResponse)
 async def get_page(
     request: Request,
     context: SiteContextDep,
@@ -21,13 +21,17 @@ async def get_page(
     db: AsyncSession = Depends(get_db_session),
 ) -> HTMLResponse:
     """
-    Get a static page by slug.
+    Get a static page by slug, including nested pages like /docs/setup.
 
     This route has lower priority than /posts routes and is designed
     to be a catch-all for pages like /about, /contact, etc.
     """
     config = context.config
     markdown_service = context.markdown
+
+    # Reject empty, dot, and traversal segments before touching the content store
+    if not slug or any(not seg or seg.startswith(".") for seg in slug.split("/")):
+        raise HTTPException(status_code=404, detail="Page not found")
 
     # Try to find the page
     page_path = f"pages/{slug}.md"

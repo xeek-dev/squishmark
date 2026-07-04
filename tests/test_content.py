@@ -94,9 +94,11 @@ class _CountingGitHub:
     async def get_config(self, use_cache: bool = True) -> dict[str, Any]:
         return _CONFIG
 
-    async def list_directory(self, path: str, ref: str = "main", use_cache: bool = True) -> list[str]:
+    async def list_directory(
+        self, path: str, ref: str = "main", use_cache: bool = True, recursive: bool = False
+    ) -> list[str]:
         prefix = f"{path.rstrip('/')}/"
-        return sorted(k for k in self.files if k.startswith(prefix) and "/" not in k[len(prefix) :])
+        return sorted(k for k in self.files if k.startswith(prefix) and (recursive or "/" not in k[len(prefix) :]))
 
     async def get_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubFile | None:
         self.get_file_calls += 1

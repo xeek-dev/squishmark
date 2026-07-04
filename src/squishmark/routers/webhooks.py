@@ -83,7 +83,7 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
         await github_service.get_file(path, use_cache=True)
 
     # Fetch all pages
-    page_files = await github_service.list_directory("pages", use_cache=True)
+    page_files = await github_service.list_directory("pages", use_cache=True, recursive=True)
     for path in page_files:
         await github_service.get_file(path, use_cache=True)
 
