@@ -80,6 +80,12 @@ def create_app() -> FastAPI:
         version="0.1.0",
         debug=settings.debug,
         lifespan=lifespan,
+        # Outside debug, the API explorer must not occupy /docs, /redoc, and
+        # /openapi.json: those URLs belong to the site's own content (a blog's
+        # /docs page would otherwise be unreachable).
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/openapi.json" if settings.debug else None,
     )
 
     # Custom exception handler for HTTP exceptions
