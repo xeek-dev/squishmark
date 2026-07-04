@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/xeek-dev/squishmark/compare/v0.7.0...v1.0.0) (2026-07-04)
+
+
+### Miscellaneous
+
+* **release:** bump patch by default and cut 1.0.0 ([#158](https://github.com/xeek-dev/squishmark/issues/158)) ([d61cd12](https://github.com/xeek-dev/squishmark/commit/d61cd125b9d58284cbac18f53040783db0d47714))
+
 ## [0.7.0](https://github.com/xeek-dev/squishmark/compare/v0.6.1...v0.7.0) (2026-07-04)
 
 
