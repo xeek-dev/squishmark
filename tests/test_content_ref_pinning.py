@@ -63,8 +63,6 @@ async def test_fetches_use_pinned_sha_in_urls():
 
 # --- Integration: webhook pins from the payload ------------------------------
 
-pytestmark_integration = pytest.mark.integration
-
 WEBHOOK_SECRET = "test-webhook-secret"  # matches the autouse fixture
 
 

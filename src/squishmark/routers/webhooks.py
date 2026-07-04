@@ -75,7 +75,7 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
         payload = json.loads(body)
     except ValueError, UnicodeDecodeError:
         payload = {}
-    after = payload.get("after", "")
+    after = str(payload.get("after") or "").lower()
     branch = payload.get("ref", "")
     is_sha = len(after) == 40 and set(after) <= set(string.hexdigits.lower()) and set(after) != {"0"}
     if branch == f"refs/heads/{github_service.DEFAULT_BRANCH}" and is_sha:
@@ -115,5 +115,5 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
         "status": "ok",
         "cleared": cleared,
         "warmed": cache.size,
-        "content_ref": pinned_ref or github_service.DEFAULT_BRANCH,
+        "content_ref": pinned_ref or github_service.content_ref,
     }
