@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/xeek-dev/squishmark/compare/v1.0.0...v1.0.1) (2026-07-04)
+
+
+### Continuous Integration
+
+* **release:** auto-deploy the site on minor and major releases ([#160](https://github.com/xeek-dev/squishmark/issues/160)) ([6beebe8](https://github.com/xeek-dev/squishmark/commit/6beebe8281bd5168ba832646e080ec2617e79ae0))
+
 ## [1.0.0](https://github.com/xeek-dev/squishmark/compare/v0.7.0...v1.0.0) (2026-07-04)
 
 
