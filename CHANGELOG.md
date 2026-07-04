@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/xeek-dev/squishmark/compare/v0.6.1...v0.7.0) (2026-07-04)
+
+
+### Features
+
+* **blue-tech:** mute the homepage navbar title and separate the share row ([#156](https://github.com/xeek-dev/squishmark/issues/156)) ([37fd2f0](https://github.com/xeek-dev/squishmark/commit/37fd2f048c8085de2387d73f94d28c2772a92263))
+
 ## [0.6.1](https://github.com/xeek-dev/squishmark/compare/v0.6.0...v0.6.1) (2026-07-04)
 
 
