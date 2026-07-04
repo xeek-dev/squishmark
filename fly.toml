@@ -2,7 +2,7 @@
 # See https://fly.io/docs/reference/configuration/ for documentation
 
 app = "squishmark"
-primary_region = "sea"
+primary_region = "dfw"
 
 [build]
   dockerfile = "Dockerfile"
