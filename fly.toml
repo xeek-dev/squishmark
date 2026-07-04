@@ -13,16 +13,16 @@ primary_region = "dfw"
   # Three would be relative to the workdir and skip the mount.
   DATABASE_URL = "sqlite+aiosqlite:////data/squishmark.db"
   CACHE_TTL_SECONDS = "300"
-  GITHUB_CONTENT_REPO = "xeek-dev/squishmark-content"
+  # Set GITHUB_CONTENT_REPO via `fly secrets set` (see the deploy guide).
 
 [http_service]
   internal_port = 8000
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  # Keep one machine warm: the content cache is in-memory, so a stopped
-  # machine wakes cold and loses webhook-warmed content.
-  min_machines_running = 1
+  # 0 keeps costs down; bump to 1 to keep the in-memory content cache warm
+  # between visits.
+  min_machines_running = 0
   processes = ["app"]
 
 [[vm]]
