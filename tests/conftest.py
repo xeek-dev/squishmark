@@ -37,6 +37,8 @@ class FakeGitHubService:
     GitHub/local directory.
     """
 
+    DEFAULT_BRANCH = "main"
+
     def __init__(
         self,
         files: dict[str, str] | None = None,
@@ -46,6 +48,14 @@ class FakeGitHubService:
         self.files: dict[str, str] = dict(files or {})
         self.binary_files: dict[str, bytes] = dict(binary_files or {})
         self.config: dict[str, Any] | None = config
+        self.pinned_refs: list[str] = []
+
+    def pin_content_ref(self, ref: str, ttl_seconds: float = 600) -> None:
+        self.pinned_refs.append(ref)
+
+    @property
+    def content_ref(self) -> str:
+        return self.pinned_refs[-1] if self.pinned_refs else self.DEFAULT_BRANCH
 
     async def get_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubFile | None:
         content = self.files.get(path)

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,11 +38,33 @@ class GitHubService:
 
     GITHUB_API_BASE = "https://api.github.com"
     GITHUB_RAW_BASE = "https://raw.githubusercontent.com"
+    DEFAULT_BRANCH = "main"
 
     def __init__(self, settings: Settings, cache: Cache) -> None:
         self.settings = settings
         self.cache = cache
         self._client: httpx.AsyncClient | None = None
+        self._pinned_ref: str | None = None
+        self._pin_expires: float = 0.0
+
+    def pin_content_ref(self, ref: str, ttl_seconds: float = 600) -> None:
+        """Pin content fetches to a specific commit for a bounded time.
+
+        The push webhook pins fetches to the pushed commit's SHA: commit
+        URLs are immutable, so the raw CDN can never serve a stale copy of
+        them, unlike branch-path URLs which it caches for minutes. The pin
+        expires so a missed webhook can never strand the site on an old
+        commit; after expiry, fetches return to the branch head.
+        """
+        self._pinned_ref = ref
+        self._pin_expires = time.monotonic() + ttl_seconds
+
+    @property
+    def content_ref(self) -> str:
+        """The ref content is fetched at: a pinned commit, or the branch."""
+        if self._pinned_ref and time.monotonic() < self._pin_expires:
+            return self._pinned_ref
+        return self.DEFAULT_BRANCH
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
@@ -101,18 +124,20 @@ class GitHubService:
             logger.warning("Failed to fetch %s from GitHub: %s", url, exc)
             return None
 
-    async def get_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubFile | None:
+    async def get_file(self, path: str, ref: str | None = None, use_cache: bool = True) -> GitHubFile | None:
         """
         Fetch a file from the content repository.
 
         Args:
             path: Path to the file within the repository
-            ref: Git ref (branch, tag, or commit) - only used for GitHub
+            ref: Git ref (branch, tag, or commit) - only used for GitHub.
+                Defaults to the current content ref (see ``content_ref``).
             use_cache: Whether to use cached content
 
         Returns:
             GitHubFile if found, None otherwise
         """
+        ref = ref or self.content_ref
         cache_key = f"file:{path}:{ref}"
 
         # Check cache first
@@ -191,7 +216,9 @@ class GitHubService:
             logger.warning("Failed to fetch binary %s from GitHub: %s", url, exc)
             return None
 
-    async def get_binary_file(self, path: str, ref: str = "main", use_cache: bool = True) -> GitHubBinaryFile | None:
+    async def get_binary_file(
+        self, path: str, ref: str | None = None, use_cache: bool = True
+    ) -> GitHubBinaryFile | None:
         """
         Fetch a binary file from the content repository.
 
@@ -203,6 +230,7 @@ class GitHubService:
         Returns:
             GitHubBinaryFile if found, None otherwise
         """
+        ref = ref or self.content_ref
         cache_key = f"binary:{path}:{ref}"
 
         if use_cache:
@@ -300,7 +328,7 @@ class GitHubService:
             return []
 
     async def list_directory(
-        self, path: str, ref: str = "main", use_cache: bool = True, recursive: bool = False
+        self, path: str, ref: str | None = None, use_cache: bool = True, recursive: bool = False
     ) -> list[str]:
         """
         List files in a directory.
@@ -314,6 +342,7 @@ class GitHubService:
         Returns:
             List of file paths within the directory
         """
+        ref = ref or self.content_ref
         cache_key = f"dir:{path}:{ref}:{int(recursive)}"
 
         # Check cache first
