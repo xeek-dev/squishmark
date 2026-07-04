@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.1](https://github.com/xeek-dev/squishmark/compare/v0.6.0...v0.6.1) (2026-07-04)
+
+
+### Documentation
+
+* **readme:** restore docker pull instructions ([#155](https://github.com/xeek-dev/squishmark/issues/155)) ([be1c65f](https://github.com/xeek-dev/squishmark/commit/be1c65f0280d0026a2e1ba46efc03ff99b073326))
+
+
+### Continuous Integration
+
+* **release:** publish the container image to GHCR ([#152](https://github.com/xeek-dev/squishmark/issues/152)) ([b964974](https://github.com/xeek-dev/squishmark/commit/b964974cf283f9e0f316c6f7733f3ccec5c47f0c))
+
 ## [0.6.0](https://github.com/xeek-dev/squishmark/compare/v0.5.0...v0.6.0) (2026-07-04)
 
 
