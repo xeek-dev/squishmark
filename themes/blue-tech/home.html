@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block nav_logo %}
+{# The hero already shows the site title prominently; keep the navbar
+   version quiet on the homepage. #}
+<a href="/" class="nav-logo nav-logo-muted">{{ site.title }}</a>
+{% endblock %}
+
 {% block title %}{{ site.title }}{% endblock %}
 
 {% macro post_card(post) %}
