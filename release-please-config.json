@@ -3,16 +3,38 @@
   "packages": {
     ".": {
       "release-type": "python",
+      "versioning": "always-bump-patch",
       "package-name": "squishmark",
       "include-component-in-tag": false,
       "changelog-sections": [
-        { "type": "feat", "section": "Features" },
-        { "type": "fix", "section": "Bug Fixes" },
-        { "type": "refactor", "section": "Code Refactoring" },
-        { "type": "docs", "section": "Documentation" },
-        { "type": "test", "section": "Tests" },
-        { "type": "ci", "section": "Continuous Integration" },
-        { "type": "chore", "section": "Miscellaneous" }
+        {
+          "type": "feat",
+          "section": "Features"
+        },
+        {
+          "type": "fix",
+          "section": "Bug Fixes"
+        },
+        {
+          "type": "refactor",
+          "section": "Code Refactoring"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "test",
+          "section": "Tests"
+        },
+        {
+          "type": "ci",
+          "section": "Continuous Integration"
+        },
+        {
+          "type": "chore",
+          "section": "Miscellaneous"
+        }
       ]
     }
   }
