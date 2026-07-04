@@ -132,7 +132,7 @@ async def test_pygments_css_route():
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/css; charset=utf-8"
-        assert response.headers["cache-control"] == "public, max-age=86400"
+        assert response.headers["cache-control"] == "public, no-cache"
         assert ".highlight" in response.text
 
 
