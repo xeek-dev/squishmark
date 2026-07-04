@@ -142,6 +142,7 @@ class Page(BaseModel):
     image: str | None = None  # Featured image URL (used for og:image)
     visibility: Literal["public", "unlisted", "hidden"] = "public"
     nav_order: int | None = None  # Explicit ordering for navbar
+    toc: str = ""  # Rendered TOC fragment (HTML); pages opt in via frontmatter
 
     @property
     def url(self) -> str:

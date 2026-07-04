@@ -222,10 +222,11 @@ class MarkdownService:
             Parsed Page object
         """
         frontmatter, markdown_content = self.parse_frontmatter(content)
-        # Pages don't carry a TOC by design — discard render_markdown's toc
-        # output so Page never gains a TOC field by accident.
-        html, _toc = self.render_markdown(markdown_content)
+        # Pages are opt-IN for the TOC (the reverse of posts): only an explicit
+        # `toc: true` in the frontmatter enables it, so short pages stay clean.
+        html, toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
+        toc_enabled = "toc" in frontmatter.model_fields_set and frontmatter.toc
 
         # Extract slug from path, keeping subdirectories
         # (e.g., "pages/about.md" -> "about", "pages/docs/setup.md" -> "docs/setup")
@@ -250,6 +251,7 @@ class MarkdownService:
             image=frontmatter.image,
             visibility=frontmatter.visibility,
             nav_order=frontmatter.nav_order,
+            toc=toc if toc_enabled else "",
         )
 
     @staticmethod
