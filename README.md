@@ -53,14 +53,13 @@ print("Hello from SquishMark!")
 ```
 ````
 
-Prefer Docker? Any Docker host works; build the image from this repo (a published image is planned, [#146](https://github.com/xeek-dev/squishmark/issues/146)):
+Prefer Docker? Any Docker host works; the image is published for amd64 and arm64:
 
 ```bash
-docker build -t squishmark .
 docker run -d -p 8000:8000 \
   -v squishmark_data:/data \
   -e GITHUB_CONTENT_REPO=your-username/your-content-repo \
-  squishmark
+  ghcr.io/xeek-dev/squishmark:latest
 ```
 
 ## Documentation
