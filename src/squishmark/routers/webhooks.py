@@ -2,6 +2,8 @@
 
 import hashlib
 import hmac
+import json
+import string
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -64,6 +66,22 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
     if event != "push":
         return {"status": "ignored", "event": event}
 
+    # Pin content fetches to the pushed commit. Fetching by SHA sidesteps
+    # the raw CDN's branch-path caching, which can otherwise serve the
+    # pre-push file for minutes and poison the warm below (issue #138).
+    github_service = services.github
+    pinned_ref = None
+    try:
+        payload = json.loads(body)
+    except (ValueError, UnicodeDecodeError):
+        payload = {}
+    after = payload.get("after", "")
+    branch = payload.get("ref", "")
+    is_sha = len(after) == 40 and set(after) <= set(string.hexdigits.lower()) and set(after) != {"0"}
+    if branch == f"refs/heads/{github_service.DEFAULT_BRANCH}" and is_sha:
+        github_service.pin_content_ref(after)
+        pinned_ref = after
+
     # Refresh cache
     cache = services.cache
     cleared = await cache.clear()
@@ -97,4 +115,5 @@ async def github_webhook(request: Request, services: ServicesDep, theme_engine: 
         "status": "ok",
         "cleared": cleared,
         "warmed": cache.size,
+        "content_ref": pinned_ref or github_service.DEFAULT_BRANCH,
     }
