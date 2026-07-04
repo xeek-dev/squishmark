@@ -25,6 +25,13 @@
     </aside>
     {% endif %}
 
+    {% if page.toc %}
+    <details class="post-toc">
+        <summary>Contents</summary>
+        {{ page.toc | safe }}
+    </details>
+    {% endif %}
+
     <div class="page-content">
         {{ page.html | safe }}
     </div>
