@@ -8,262 +8,104 @@
 
 A lightweight, GitHub-powered blogging engine with Jinja2 theming.
 
-**Status:** In development
+**See it live:** [squishmark.dev](https://squishmark.dev) is the official site, and it runs on SquishMark itself.
+
+**Status:** approaching [1.0](https://github.com/xeek-dev/squishmark/milestone/1)
 
 ## What is SquishMark?
 
-SquishMark is a blogging platform that fetches your content from a GitHub repository and renders it as a website. Write your posts in Markdown, push to GitHub, and your blog updates automatically.
+SquishMark renders a website straight from a GitHub repository. Write posts in Markdown, push, and your blog updates in seconds. There is no build step and your content stays in plain files you own.
 
-### Key Features
+- **GitHub as CMS**: posts and pages live in a Git repo, with version control and PRs built in
+- **Jinja2 themes**: three bundled, and you can reskin or override any of them from your content repo without forking the engine
+- **Syntax highlighting**: server-side Pygments, 500+ languages
+- **Search, tags, series, drafts, feeds, sitemaps**: blog essentials included
+- **Admin features**: GitHub OAuth login, page analytics, content notes
 
-- **GitHub as CMS** - Your posts and pages live in a Git repo. Version control, PRs, and collaboration built-in.
-- **Jinja2 Themes** - Create themes with HTML, CSS, and Jinja2 templates. No Python required.
-- **Syntax Highlighting** - Server-side code highlighting with Pygments (500+ languages).
-- **Simple Deployment** - Deploy to Fly.io or any Docker host.
-- **Admin Features** - GitHub OAuth login, page analytics, content notes/corrections.
+## Quick start
 
-### Contents
-
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Themes](#themes)
-- [Development](#development)
-- [Tech Stack](#tech-stack)
-- [Contributing](#contributing)
-
-## Quick Start
-
-### 1. Create your content repository
-
-Use the [squishmark-starter](https://github.com/xeek-dev/squishmark-starter) template to create your content repo.
-
-### 2. Deploy SquishMark
-
-Choose your deployment method:
-
-#### Option A: Fly.io (Recommended)
-
-The easiest way to get started. Fly.io offers a free tier that works great for personal blogs.
+1. Create your content repo from the [squishmark-starter](https://github.com/xeek-dev/squishmark-starter) template.
+2. Deploy the engine and point it at your repo. The full walkthrough (including Windows commands and the push webhook) is the [getting started guide](https://squishmark.dev/docs/getting-started); the short version for Fly.io:
 
 ```bash
-# Install Fly CLI: https://fly.io/docs/hands-on/install-flyctl/
-
-# Clone SquishMark
 git clone https://github.com/xeek-dev/squishmark.git
 cd squishmark
-
-# Launch on Fly.io
 fly launch
-
-# Create a volume for the database
 fly volumes create squishmark_data --size 1
-
-# Set your content repo
 fly secrets set GITHUB_CONTENT_REPO=your-username/your-content-repo
-
-# For private content repos, add a GitHub token
-fly secrets set GITHUB_TOKEN=ghp_your_token_here
-
-# Deploy
+fly secrets set SECRET_KEY=$(openssl rand -hex 32)
 fly deploy
 ```
 
-#### Option B: Docker
+3. Write a post in your content repo's `posts/` directory and push:
 
-Run SquishMark anywhere Docker is supported (DigitalOcean, Linode, AWS, your own server, etc.)
-
-```bash
-# Pull the image
-docker pull ghcr.io/xeek-dev/squishmark:latest
-
-# Run with environment variables
-docker run -d \
-  --name squishmark \
-  -p 8000:8000 \
-  -v squishmark_data:/data \
-  -e GITHUB_CONTENT_REPO=your-username/your-content-repo \
-  -e GITHUB_TOKEN=ghp_your_token_here \
-  ghcr.io/xeek-dev/squishmark:latest
-```
-
-Or use Docker Compose:
-
-```yaml
-# docker-compose.yml
-services:
-  squishmark:
-    image: ghcr.io/xeek-dev/squishmark:latest
-    ports:
-      - "8000:8000"
-    volumes:
-      - squishmark_data:/data
-    environment:
-      - GITHUB_CONTENT_REPO=your-username/your-content-repo
-      - GITHUB_TOKEN=ghp_your_token_here  # Only for private repos
-
-volumes:
-  squishmark_data:
-```
-
-```bash
-docker-compose up -d
-```
-
-### 3. Write posts
-
-Create markdown files in your content repo's `posts/` directory:
-
-```markdown
+````markdown
 ---
 title: My First Post
 date: 2026-01-25
 tags: [hello, world]
-featured: true        # Optional: include in featured_posts context
-featured_order: 1     # Optional: sort order (lower = first)
 ---
 
-# Hello World
-
-This is my first post written in **Markdown**.
+Hello from **Markdown**.
 
 ```python
 print("Hello from SquishMark!")
 ```
+````
+
+Prefer Docker? Any Docker host works; build the image from this repo (a published image is planned, [#146](https://github.com/xeek-dev/squishmark/issues/146)):
+
+```bash
+docker build -t squishmark .
+docker run -d -p 8000:8000 \
+  -v squishmark_data:/data \
+  -e GITHUB_CONTENT_REPO=your-username/your-content-repo \
+  squishmark
 ```
-
-Push to GitHub, and your blog updates automatically.
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GITHUB_CONTENT_REPO` | Yes | Your content repo (e.g., `username/my-blog-content`) |
-| `GITHUB_TOKEN` | For private repos | GitHub personal access token |
-| `CACHE_TTL_SECONDS` | No | How long to cache content (default: 300) |
-| `DATABASE_URL` | No | SQLite path (default: `/data/squishmark.db`) |
-
-### Content Repository Config
-
-Create a `config.yml` in your content repo:
-
-```yaml
-site:
-  title: "My Blog"
-  description: "A blog about things"
-  author: "Your Name"
-  url: "https://yourdomain.com"
-  favicon: "/static/user/custom-icon.png"  # Optional
-  featured_max: 5                           # Optional: max featured posts (default: 5)
-
-theme:
-  name: default
-  pygments_style: monokai
-
-posts:
-  per_page: 10
-```
-
-### Favicon
-
-Add a favicon by placing `favicon.ico`, `favicon.png`, or `favicon.svg` in your content repo's `static/` directory:
-
-```
-my-content-repo/
-├── posts/
-├── pages/
-├── static/
-│   └── favicon.ico    # Auto-detected
-└── config.yml
-```
-
-The favicon is automatically detected and served at `/favicon.ico`.
 
 ## Documentation
 
-Full guides live on the official site, which runs on SquishMark itself:
+Full guides live on the official site:
 
 - [Getting started](https://squishmark.dev/docs/getting-started)
-- [Configuration](https://squishmark.dev/docs/configuration)
+- [Configuration](https://squishmark.dev/docs/configuration): every environment variable and `config.yml` field
 - [Theming](https://squishmark.dev/docs/theming)
 - [Frontmatter reference](https://squishmark.dev/docs/frontmatter)
 
 ## Themes
 
-SquishMark includes bundled themes:
+- **default**: clean and minimal, light and dark
+- **blue-tech**: dark SaaS aesthetic with electric blue accents and its own landing page
+- **terminal**: terminal aesthetic with CSS pixel art titles and configurable backgrounds
 
-- **default** - Clean, minimal design
-- **blue-tech** - Dark SaaS aesthetic with electric blue accents, frosted glass nav, and hero section
-- **terminal** - Dark terminal aesthetic with CSS pixel art titles, 9 configurable backgrounds, and custom syntax highlighting
-
-Set your theme in `config.yml`:
-
-```yaml
-theme:
-  name: blue-tech
-  pygments_style: nord
-```
-
-You can also override the theme per-page using frontmatter:
-
-```yaml
----
-title: Special Page
-theme: default  # Use default theme for just this page
----
-```
+Pick one in your content repo's `config.yml` (`theme: name: blue-tech`), override it per page in frontmatter, or reskin it from your own repo; the [theming guide](https://squishmark.dev/docs/theming) covers all three. There's a visual tour in [Meet the themes](https://squishmark.dev/posts/meet-the-themes).
 
 ## Development
 
-### Quick Start
-
 ```bash
-# Clone the repo
 git clone https://github.com/xeek-dev/squishmark.git
 cd squishmark
-
-# Create and activate virtual environment
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Start development server (auto-installs dependencies)
 python scripts/start-dev.py
 ```
 
-The dev server:
-- Installs dependencies from `pyproject.toml` if missing
-- Uses local `content/` folder for test content
-- Creates `data/` directory for SQLite database
-- Runs with auto-reload enabled
-
-### Options
+The dev server installs dependencies on first run, serves the local `content/` folder as test content, and auto-reloads. Options:
 
 ```bash
 python scripts/start-dev.py --host=0.0.0.0 --port=3000 --no-reload
 python scripts/start-dev.py -b  # run in background (prints PID)
 ```
 
-### Running with Docker
+Run the same checks CI runs with `python scripts/run-checks.py`. Docker-based dev: `docker compose up --build`. Dependency updates are automated weekly via [Dependabot](.github/dependabot.yml).
 
-```bash
-docker compose up --build
-```
+## Tech stack
 
-### Dependency Updates
-
-Dependency updates are automated weekly via [Dependabot](.github/dependabot.yml) across pip, GitHub Actions, and Docker, with minor and patch bumps grouped into a single PR per ecosystem.
-
-## Tech Stack
-
-- **Python 3.14+** with FastAPI
-- **Jinja2** for templating
-- **Pygments** for syntax highlighting
-- **SQLite** for analytics and admin features
+Python 3.14+ with FastAPI, Jinja2 templating, Pygments highlighting, and SQLite for analytics and admin features.
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) *(coming soon)* for guidelines.
+Issues and PRs are welcome.
 
 ## License
 
