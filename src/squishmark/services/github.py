@@ -220,7 +220,7 @@ class GitHubService:
 
         return result
 
-    async def _list_local_directory(self, path: str) -> list[str]:
+    async def _list_local_directory(self, path: str, recursive: bool = False) -> list[str]:
         """List files in a local directory."""
         try:
             base_path = self._get_local_path()
@@ -233,9 +233,14 @@ class GitHubService:
 
             def _list_files() -> list[str]:
                 files = []
-                for item in dir_path.iterdir():
-                    if item.is_file() and not item.name.startswith("."):
-                        files.append(f"{path}/{item.name}")
+                items = dir_path.rglob("*") if recursive else dir_path.iterdir()
+                for item in items:
+                    if not item.is_file():
+                        continue
+                    rel = item.relative_to(base_path)
+                    if any(part.startswith(".") for part in rel.parts):
+                        continue
+                    files.append(str(rel))
                 return sorted(files)
 
             return await loop.run_in_executor(None, _list_files)
@@ -266,7 +271,37 @@ class GitHubService:
             logger.warning("Failed to list GitHub directory %s: %s", url, exc)
             return []
 
-    async def list_directory(self, path: str, ref: str = "main", use_cache: bool = True) -> list[str]:
+    async def _list_github_tree(self, path: str, ref: str = "main") -> list[str]:
+        """List files under a directory recursively using the git trees API."""
+        client = await self._get_client()
+        repo = self.settings.github_content_repo
+
+        url = f"{self.GITHUB_API_BASE}/repos/{repo}/git/trees/{ref}"
+        params = {"recursive": "1"}
+
+        try:
+            response = await client.get(url, params=params)
+            if response.status_code == 404:
+                return []
+            response.raise_for_status()
+
+            data = response.json()
+            if data.get("truncated"):
+                logger.warning("Git tree for %s is truncated; some files may be missing", repo)
+
+            prefix = f"{path}/"
+            return sorted(
+                item["path"]
+                for item in data.get("tree", [])
+                if item.get("type") == "blob" and item.get("path", "").startswith(prefix)
+            )
+        except httpx.HTTPError as exc:
+            logger.warning("Failed to list GitHub tree %s: %s", url, exc)
+            return []
+
+    async def list_directory(
+        self, path: str, ref: str = "main", use_cache: bool = True, recursive: bool = False
+    ) -> list[str]:
         """
         List files in a directory.
 
@@ -274,11 +309,12 @@ class GitHubService:
             path: Directory path within the repository
             ref: Git ref (branch, tag, or commit) - only used for GitHub
             use_cache: Whether to use cached content
+            recursive: Whether to include files in subdirectories
 
         Returns:
             List of file paths within the directory
         """
-        cache_key = f"dir:{path}:{ref}"
+        cache_key = f"dir:{path}:{ref}:{int(recursive)}"
 
         # Check cache first
         if use_cache:
@@ -288,7 +324,9 @@ class GitHubService:
 
         # Fetch from source
         if self.settings.is_local_content:
-            result = await self._list_local_directory(path)
+            result = await self._list_local_directory(path, recursive=recursive)
+        elif recursive:
+            result = await self._list_github_tree(path, ref)
         else:
             result = await self._list_github_directory(path, ref)
 

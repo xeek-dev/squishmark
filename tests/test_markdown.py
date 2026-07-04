@@ -157,6 +157,25 @@ def test_extract_slug(markdown_service):
     assert slug_no_date == "about"
 
 
+def test_extract_slug_keeps_subdirectories(markdown_service):
+    """keep_dirs preserves path segments below the top-level content dir."""
+    nested = markdown_service._extract_slug("pages/docs/setup.md", strip_date=False, keep_dirs=True)
+    assert nested == "docs/setup"
+
+    deep = markdown_service._extract_slug("pages/docs/guides/themes.md", strip_date=False, keep_dirs=True)
+    assert deep == "docs/guides/themes"
+
+    flat = markdown_service._extract_slug("pages/about.md", strip_date=False, keep_dirs=True)
+    assert flat == "about"
+
+
+def test_parse_page_nested_slug_and_url(markdown_service):
+    """Nested page files get multi-segment slugs and matching URLs."""
+    page = markdown_service.parse_page("pages/docs/setup.md", "---\ntitle: Setup\n---\n\nBody.\n")
+    assert page.slug == "docs/setup"
+    assert page.url == "/docs/setup"
+
+
 def test_heading_text_is_anchor_link(markdown_service):
     """Heading text should be wrapped in a self-referencing anchor link."""
     html, _toc = markdown_service.render_markdown("## Hello World")

@@ -227,8 +227,9 @@ class MarkdownService:
         html, _toc = self.render_markdown(markdown_content)
         html = rewrite_image_urls(html, path)
 
-        # Extract slug from path (e.g., "pages/about.md" -> "about")
-        slug = self._extract_slug(path, strip_date=False)
+        # Extract slug from path, keeping subdirectories
+        # (e.g., "pages/about.md" -> "about", "pages/docs/setup.md" -> "docs/setup")
+        slug = self._extract_slug(path, strip_date=False, keep_dirs=True)
 
         # Auto-generate description from content if not set in frontmatter
         description = frontmatter.description
@@ -271,10 +272,10 @@ class MarkdownService:
             chunk = chunk.rsplit(" ", 1)[0]
         return chunk + "..."
 
-    def _extract_slug(self, path: str, strip_date: bool = True) -> str:
+    def _extract_slug(self, path: str, strip_date: bool = True, keep_dirs: bool = False) -> str:
         """Extract slug from a file path."""
-        # Get filename without extension
-        filename = path.split("/")[-1]
+        segments = path.split("/")
+        filename = segments[-1]
         if filename.endswith(".md"):
             filename = filename[:-3]
 
@@ -282,6 +283,11 @@ class MarkdownService:
             # Remove date prefix if present (YYYY-MM-DD-)
             date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}-")
             filename = date_pattern.sub("", filename)
+
+        if keep_dirs and len(segments) > 2:
+            # Keep subdirectories below the top-level content dir
+            # ("pages/docs/setup.md" -> "docs/setup")
+            return "/".join([*segments[1:-1], filename])
 
         return filename
 

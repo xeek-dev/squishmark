@@ -259,7 +259,7 @@ async def get_all_pages(
     include_hidden: bool = False,
 ) -> list[Page]:
     """Fetch and parse all pages from the content repository."""
-    page_files = await github_service.list_directory("pages")
+    page_files = await github_service.list_directory("pages", recursive=True)
 
     pages: list[Page] = []
     for path in page_files:

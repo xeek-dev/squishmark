@@ -59,15 +59,16 @@ class FakeGitHubService:
             return None
         return GitHubBinaryFile(path=path, content=content, content_type=_content_type_for(path))
 
-    async def list_directory(self, path: str, ref: str = "main", use_cache: bool = True) -> list[str]:
+    async def list_directory(
+        self, path: str, ref: str = "main", use_cache: bool = True, recursive: bool = False
+    ) -> list[str]:
         prefix = f"{path.rstrip('/')}/"
         children: set[str] = set()
         for key in (*self.files, *self.binary_files):
             if key.startswith(prefix):
                 remainder = key[len(prefix) :]
-                # Only direct children (no nested subdirectories), matching the
-                # real service which lists a single directory level.
-                if "/" not in remainder:
+                # Direct children only unless recursive, matching the real service.
+                if recursive or "/" not in remainder:
                     children.add(key)
         return sorted(children)
 
@@ -237,6 +238,16 @@ def fake_github(_reset_environment: FakeGitHubService | None) -> FakeGitHubServi
 _SEED_ROUTE = "/_test/seed-session"
 
 
+def promote_last_route(app: Any) -> None:
+    """Move the most recently added route ahead of the pages catch-all.
+
+    Test-only routes are registered after ``create_app()``, which would leave
+    them shadowed by the ``/{slug:path}`` catch-all (routes match in
+    registration order).
+    """
+    app.router.routes.insert(0, app.router.routes.pop())
+
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     """Anonymous client over the real ``create_app()`` with lifespan active."""
@@ -266,6 +277,8 @@ def admin_client() -> Iterator[TestClient]:
         request.session["user"] = {"login": "admin-user"}
         return {"ok": True}
 
+    promote_last_route(app)
+
     with TestClient(app, base_url="https://testserver") as test_client:
         resp = test_client.get(_SEED_ROUTE)
         assert resp.status_code == 200, resp.text
@@ -292,6 +305,8 @@ def seeded_client() -> Iterator[Callable[[dict[str, Any]], TestClient]]:
             for key, value in session_data.items():
                 request.session[key] = value
             return {"ok": True}
+
+        promote_last_route(app)
 
         test_client = TestClient(app, base_url="https://testserver")
         test_client.__enter__()

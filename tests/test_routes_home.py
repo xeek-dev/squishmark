@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from squishmark.main import create_app
-from tests.conftest import FakeGitHubService
+from tests.conftest import FakeGitHubService, promote_last_route
 
 pytestmark = pytest.mark.integration
 
@@ -39,6 +39,8 @@ def home_client(fake_github: FakeGitHubService, *, admin: bool = False) -> Itera
         async def _seed(request: Request) -> dict:
             request.session["user"] = {"login": "admin-user"}
             return {"ok": True}
+
+        promote_last_route(app)
 
     base_url = "https://testserver" if admin else "http://testserver"
     with TestClient(app, base_url=base_url) as client:
