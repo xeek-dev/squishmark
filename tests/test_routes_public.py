@@ -87,7 +87,7 @@ def test_favicon_served_from_content_repo(client: TestClient) -> None:
     resp = client.get("/favicon.ico")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/png"
-    assert resp.headers["cache-control"] == "public, max-age=86400"
+    assert resp.headers["cache-control"] == "public, no-cache"
     assert resp.content.startswith(b"\x89PNG")
 
 
@@ -104,7 +104,7 @@ def test_user_static_allowed_extension_served(client: TestClient) -> None:
     resp = client.get("/static/user/favicon.png")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/png"
-    assert resp.headers["cache-control"] == "public, max-age=86400"
+    assert resp.headers["cache-control"] == "public, no-cache"
 
 
 def test_user_static_disallowed_extension_404(fake_github: FakeGitHubService, client: TestClient) -> None:
@@ -127,7 +127,7 @@ def test_theme_static_serves_real_file(client: TestClient) -> None:
     resp = client.get("/static/default/style.css")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/css")
-    assert resp.headers["cache-control"] == "public, max-age=86400"
+    assert resp.headers["cache-control"] == "public, no-cache"
 
 
 def test_theme_static_unknown_theme_falls_back_to_default(client: TestClient) -> None:

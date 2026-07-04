@@ -70,5 +70,5 @@ async def test_user_static_serves_nested_path():
 
     assert response.status_code == 200
     assert response.content == b"body { color: red; }"
-    assert response.headers["cache-control"] == "public, max-age=86400"
+    assert response.headers["cache-control"] == "public, no-cache"
     mock_github.get_binary_file.assert_awaited_once_with("static/css/site.css")
