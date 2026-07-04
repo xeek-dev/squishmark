@@ -14,6 +14,10 @@ permissions:
 
 jobs:
   publish:
+    # Releases publish from their tag; manual runs only from main, so a
+    # dispatch from a feature branch can never overwrite latest with
+    # unreleased code.
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
