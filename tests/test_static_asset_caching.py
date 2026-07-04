@@ -5,15 +5,18 @@ browsers keep a copy but ask before using it, so an unchanged asset costs an
 empty 304 and a changed one arrives immediately after a content push.
 """
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+
+from tests.conftest import FakeGitHubService
 
 pytestmark = pytest.mark.integration
 
 CSS = b"body { color: rebeccapurple; }"
 
 
-def _first_get(client: TestClient, url: str):
+def _first_get(client: TestClient, url: str) -> httpx.Response:
     resp = client.get(url)
     assert resp.status_code == 200, url
     assert resp.headers["cache-control"] == "public, no-cache"
@@ -21,7 +24,7 @@ def _first_get(client: TestClient, url: str):
     return resp
 
 
-def test_user_static_conditional_flow(fake_github, client: TestClient) -> None:
+def test_user_static_conditional_flow(fake_github: FakeGitHubService, client: TestClient) -> None:
     fake_github.binary_files["static/site.css"] = CSS
     first = _first_get(client, "/static/user/site.css")
 
@@ -31,7 +34,7 @@ def test_user_static_conditional_flow(fake_github, client: TestClient) -> None:
     assert again.headers["etag"] == first.headers["etag"]
 
 
-def test_user_static_changed_content_misses_conditional(fake_github, client: TestClient) -> None:
+def test_user_static_changed_content_misses_conditional(fake_github: FakeGitHubService, client: TestClient) -> None:
     fake_github.binary_files["static/site.css"] = CSS
     first = _first_get(client, "/static/user/site.css")
 
@@ -54,7 +57,7 @@ def test_favicon_conditional_flow(client: TestClient) -> None:
     assert again.status_code == 304
 
 
-def test_weak_etag_prefix_matches(fake_github, client: TestClient) -> None:
+def test_weak_etag_prefix_matches(fake_github: FakeGitHubService, client: TestClient) -> None:
     fake_github.binary_files["static/site.css"] = CSS
     first = _first_get(client, "/static/user/site.css")
     weak = client.get("/static/user/site.css", headers={"If-None-Match": f"W/{first.headers['etag']}"})

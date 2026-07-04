@@ -1,5 +1,6 @@
 """Asset routes: favicon, dynamic Pygments CSS, and static file serving."""
 
+import asyncio
 import hashlib
 import mimetypes
 import re
@@ -95,12 +96,21 @@ async def serve_theme_static(request: Request, theme_name: str, file_path: str) 
 
     themes_dir = Path(get_settings().resolved_themes_path)
 
-    for candidate in (
-        themes_dir / theme_name / "static" / file_path,
-        themes_dir / "default" / "static" / file_path,  # fallback
-    ):
-        if candidate.exists() and candidate.is_file():
-            media_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
-            return _conditional_response(request, candidate.read_bytes(), media_type)
+    def _read_first_match() -> tuple[bytes, str] | None:
+        for candidate in (
+            themes_dir / theme_name / "static" / file_path,
+            themes_dir / "default" / "static" / file_path,  # fallback
+        ):
+            if candidate.exists() and candidate.is_file():
+                media_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+                return candidate.read_bytes(), media_type
+        return None
 
-    raise HTTPException(status_code=404, detail="Static file not found")
+    # File I/O off the event loop, matching the local-content fetch pattern
+    loop = asyncio.get_event_loop()
+    found = await loop.run_in_executor(None, _read_first_match)
+    if found is None:
+        raise HTTPException(status_code=404, detail="Static file not found")
+
+    content, media_type = found
+    return _conditional_response(request, content, media_type)
