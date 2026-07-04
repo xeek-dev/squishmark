@@ -147,6 +147,11 @@ img {
     transition: border-color var(--transition);
 }
 
+.nav-logo-muted,
+.nav-logo-muted:hover {
+    color: var(--color-text-muted);
+}
+
 .nav-logo:hover {
     border-color: var(--color-accent-light);
 }
@@ -820,6 +825,9 @@ img {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
     margin-bottom: 1.5rem;
 }
 
