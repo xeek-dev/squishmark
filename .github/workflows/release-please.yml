@@ -44,3 +44,19 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # Minor and major releases (x.y.0) roll to squishmark.dev automatically;
+  # patch releases wait for the content repo's manual deploy button.
+  deploy-site:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true' && endsWith(needs.release-please.outputs.version, '.0')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch site deploy
+        env:
+          GH_TOKEN: ${{ secrets.CONTENT_DISPATCH_TOKEN }}
+          VERSION: ${{ needs.release-please.outputs.version }}
+        run: |
+          gh api -X POST repos/xeek-dev/squishmark-content/dispatches \
+            -f event_type=engine-release \
+            -f "client_payload[version]=${VERSION}"
