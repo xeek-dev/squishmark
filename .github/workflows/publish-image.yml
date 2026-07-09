@@ -45,7 +45,7 @@ jobs:
 
       # linux/amd64 covers servers (Fly included); linux/arm64 covers the
       # local Docker preview on Apple Silicon.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           target: prod
